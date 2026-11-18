@@ -703,7 +703,7 @@ function analizza(sim){
   }
   // congelatore pieno
   if(T.eccesso > 0){
-    out.push({ peso: T.eccesso*CONFIG.costoKg, ic:'🧊', tema:'scorte',
+    out.push({ peso: T.eccesso*CONFIG.costoKg, ic:'❄️', tema:'scorte',
       t:`Il congelatore era pieno: hai buttato ${round1(T.eccesso)} kg di ingredienti!`,
       x:`Il magazzino contiene al massimo ${CONFIG.magazzinoMax} kg.`, fix:'🔧 Riordina meno kg, o solo quando il magazzino è quasi vuoto.' });
   }
@@ -713,7 +713,7 @@ function analizza(sim){
     out.push({ peso: 120, ic:'💸', tema:'prezzo', t:`Prezzo alto (in media ${eur(prezzoMedio,2)}): molti clienti sono andati dalla concorrenza.`,
       x:'Guadagni tanto su ogni cono, ma ne vendi pochi.', fix:'🔧 Prova un prezzo un po\' più basso.' });
   } else if(prezzoMedio <= 2.25){
-    out.push({ peso: 100, ic:'🪙', tema:'prezzo', t:`Prezzo basso (in media ${eur(prezzoMedio,2)}): vendi tanto ma guadagni poco su ogni cono.`,
+    out.push({ peso: 100, ic:'💰', tema:'prezzo', t:`Prezzo basso (in media ${eur(prezzoMedio,2)}): vendi tanto ma guadagni poco su ogni cono.`,
       x:`Ogni cono ti costa ${eur(costoCono,2)} di ingredienti.`, fix:'🔧 Prova ad alzare un po\' il prezzo.' });
   }
   // troppe consegne
@@ -1003,7 +1003,7 @@ const TUT = [
     say:`Domani ☀️ <b>31 °C</b>: arriveranno <b>tantissimi</b> clienti! Con 60 coni il gelato finisce subito.`,
     task:'Aggiungi questa regola:',
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='temp');
-      if(!ok) return 'Manca la regola con 🌡️ temperatura. Premi ➕ Aggiungi regola (o 🪄 Aiutami).';
+      if(!ok) return 'Manca la regola con 🌡️ temperatura. Premi ➕ Aggiungi regola (o ✨ Aiutami).';
       if(d.persi > 5) return 'La regola c\'è, ma i coni sono ancora pochi: arriveranno circa 100 clienti!';
       return null; } },
   { target:{ c:'meteo', cv:'pioggia', a:'produci', av:20 },
@@ -1050,7 +1050,7 @@ function renderTutorial(){
   coach.innerHTML = `<div class="mascot">🍦</div><div class="body">
      <p class="say">${T.say}</p>
      <div>${T.task}</div><div class="target">${bloccoTarget(T.target)}</div>
-     <div class="btns"><button class="btn yellow" id="btn-help">🪄 Aiutami</button></div>
+     <div class="btns"><button class="btn yellow" id="btn-help">✨ Aiutami</button></div>
      <p class="err hidden" id="coach-err"></p></div>`;
   $('#btn-help').onclick = ()=>{
     const t = T.target;
@@ -1171,7 +1171,7 @@ function renderDecisione(d){
     `<div><span>🚚 Riordino</span><span>${d.ordine ? d.ordine+' kg' : '—'}</span></div>`
   ];
   if(d.limitato) rows.push(`<div class="warn"><span>⚠️ Ingredienti finiti!</span><span>solo ${d.prodotti}</span></div>`);
-  if(d.eccesso > 0) rows.push(`<div class="warn"><span>🧊 Congelatore pieno</span><span>−${round1(d.eccesso)} kg</span></div>`);
+  if(d.eccesso > 0) rows.push(`<div class="warn"><span>❄️ Congelatore pieno</span><span>−${round1(d.eccesso)} kg</span></div>`);
   $('#s-decision').innerHTML = rows.join('');
 }
 function renderMiniRegole(fired){
