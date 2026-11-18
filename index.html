@@ -288,7 +288,8 @@ select,input{font-family:inherit}
       <input id="nick" maxlength="14" placeholder="es. SuperGelato" autocomplete="off">
       <small>Non usare il tuo vero nome!</small></label>
     <label class="field" for="gruppo">👥 Codice gruppo
-      <input id="gruppo" maxlength="30" placeholder="te lo dà il prof" autocomplete="off" autocapitalize="characters"></label>
+      <input id="gruppo" maxlength="30" placeholder="te lo dà il prof" autocomplete="off" autocapitalize="characters">
+      <small>Niente gruppo? Scrivi <b id="codice-libero">LIBERO</b> e giochi da solo.</small></label>
   </div>
   <p class="welcome-msg" id="welcome-msg"></p>
   <button class="btn big pink" id="btn-play">GIOCA ▶</button>
@@ -867,7 +868,7 @@ async function entra(saltaTutorial){
     }
     entrando = false; $('#btn-play').disabled = false; messaggioBenvenuto('');
   }
-  save(KEY_ULTIMO, { gruppo:S.gruppo, codice:S.gruppo });   // il codice LIBERO non viene ricordato: i ragazzi non lo vedono
+  save(KEY_ULTIMO, { gruppo:S.gruppo, codice:S.gruppo });   // il codice LIBERO non viene precompilato
   S.nick = nick;
   const d = datiGiocatore(nick);
   S.prog = d ? d.prog : progBase();
@@ -1389,6 +1390,7 @@ $('#btn-board-reset').onclick = async ()=>{
 // esposto per i test
 window.GELATERIA = { CONFIG, simula, generaGiorni, statoIniziale, analizza, giorniTutorial };
 $('#gruppo').value = (()=>{ const u = load(KEY_ULTIMO, {}); return u.codice ?? u.gruppo ?? params.get('gruppo') ?? ''; })();
+$('#codice-libero').textContent = CONFIG.codiceSenzaGruppo;
 $('#gruppo').addEventListener('keydown', e => { if(e.key==='Enter') entra(false); });
 show('welcome');
 </script>
