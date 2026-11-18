@@ -118,3 +118,19 @@ function scatolaRuotata(cx, cy, z, L, W, h, ang, col, o={}){
   }
   poli(P(...C.map(p => [...p, z+h])), o.top || tono(col, .2));
 }
+
+// "adesivo": disegno appoggiato su un piano del mondo. o = angolo in alto a sinistra, pu/pv = punti a 1 unità lungo i due assi.
+// Dentro si disegna in centesimi di unità (100 = 1 unità di mondo).
+function adesivo(o, pu, pv, disegno){
+  const O = iso(...o), U = iso(...pu), V = iso(...pv);
+  g.save(); g.transform((U[0]-O[0])/100, (U[1]-O[1])/100, (V[0]-O[0])/100, (V[1]-O[1])/100, O[0], O[1]); disegno(); g.restore();
+}
+function disegnoCono(cx, cy, s, gusto='#F7A1BC'){      // un cono "disegnato" (per adesivi e pacchi), in coordinate locali
+  g.fillStyle = '#F2B866'; g.beginPath(); g.moveTo(cx - 17*s, cy); g.lineTo(cx + 17*s, cy); g.lineTo(cx, cy + 42*s); g.closePath(); g.fill();
+  g.strokeStyle = '#D9963F'; g.lineWidth = 2.5*s;
+  for(let k=-1; k<=1; k++){ g.beginPath(); g.moveTo(cx + k*10*s - 6*s, cy + 2*s); g.lineTo(cx + k*10*s + 8*s, cy + 22*s); g.stroke(); }
+  g.fillStyle = gusto; g.beginPath(); g.arc(cx, cy - 8*s, 19*s, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.ellipse(cx - 10*s, cy + 3*s, 5*s, 7*s, 0, 0, Math.PI*2); g.ellipse(cx + 8*s, cy + 4*s, 4*s, 8*s, 0, 0, Math.PI*2); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.arc(cx - 7*s, cy - 15*s, 5*s, 0, Math.PI*2); g.fill();
+  g.fillStyle = '#E2465E'; g.beginPath(); g.arc(cx + 2*s, cy - 28*s, 6*s, 0, Math.PI*2); g.fill();
+}

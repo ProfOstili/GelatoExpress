@@ -117,9 +117,18 @@ function camion(px, py, ang, t, fermo){
   const [c1x, c1y] = pt(-.6, 0, 0), [c2x, c2y] = pt(1.55, 0, 0);
   scatolaRuotata(c1x, c1y, .35 + b, 3.0, 1.35, 1.6, ang, '#FFFFFF', { top:'#FFFFFF' });
   scatolaRuotata(c2x, c2y, .35 + b, 1.2, 1.25, 1.15, ang, COL.cabina);
-  const s = (v[0] + v[1]) > 0 ? 1 : -1, w = .69*s;
+  const s = (v[0] + v[1]) > 0 ? 1 : -1, w = .68*s;
   poli(P(pt(-2.1, w, .75+b), pt(.9, w, .75+b), pt(.9, w, 1.0+b), pt(-2.1, w, 1.0+b)), COL.tenda);
-  const [cx, cy] = iso(...pt(-.6, w, 1.5 + b)); coneIcona(cx, cy - 4, .8);
+  // adesivo sulla fiancata: si legge sempre da sinistra a destra
+  const avanti = iso(...pt(1, w, 1))[0] >= iso(...pt(0, w, 1))[0] ? 1 : -1, a0 = avanti > 0 ? -1.75 : .55;
+  adesivo(pt(a0, w, 1.9 + b), pt(a0 + avanti, w, 1.9 + b), pt(a0, w, .9 + b), () => {
+    g.fillStyle = '#FFE3EC'; g.beginPath(); g.roundRect(4, 6, 222, 88, 30); g.fill();
+    disegnoCono(52, 34, .85); disegnoCono(115, 34, .85, '#9FE3F0'); disegnoCono(178, 34, .85, '#B8E07A');
+  });
+  // adesivo sul tetto del cassone: un grande cono
+  adesivo(pt(-1.95, -.55, 1.96 + b), pt(-.95, -.55, 1.96 + b), pt(-1.95, .45, 1.96 + b), () => {
+    g.save(); g.translate(130, 55); g.rotate(-Math.PI/2); disegnoCono(0, -10, 1.55); g.restore();
+  });
   poli(P(pt(1.15, .64*s, .85+b), pt(1.95, .64*s, .85+b), pt(1.95, .64*s, 1.35+b), pt(1.15, .64*s, 1.35+b)), '#E8F7FD');
   if(u[0] + u[1] > 0) poli(P(pt(2.16, -.5, .85+b), pt(2.16, .5, .85+b), pt(2.16, .5, 1.35+b), pt(2.16, -.5, 1.35+b)), '#CDEFFB');
   if(u[0] + u[1] < 0) linea(pt(-2.11, 0, .4+b), pt(-2.11, 0, 1.9+b), '#C9CCD6', 2);
@@ -139,7 +148,7 @@ const GIORNI = [
 ];
 const CAM = { entra:.62, ferma:.76, riparte:.84, esce:.97 };
 const CHIUDE = .87, BUIO = .95;
-const PACCHI = [[16.25, 8.85, .1], [16.8, 8.85, .1], [16.52, 8.85, .48]];
+const PACCHI = [[16.2, 8.85, .1], [16.95, 8.85, .1], [16.57, 8.85, .67]];
 let durataGiorno = 12, modo = 'scena';
 function scena(t){
   const n = Math.floor(t / durataGiorno), p = frac(t / durataGiorno), G = GIORNI[n % 3], ieri = GIORNI[(n + 2) % 3];
@@ -202,7 +211,7 @@ function scena(t){
     PACCHI.forEach(([px, py, pz], i) => {
       const c = clamp((p - CAM.ferma)/(CAM.riparte - CAM.ferma)*1.5 - i*.25);
       if(c <= 0) return;
-      const da = lungoPercorso(PERCORSO.sStop - 2.1), x = lerp(da.x, px, c), y = lerp(da.y, py, c), z = lerp(.9, pz, c) + Math.sin(c*Math.PI)*1.2;
+      const da = lungoPercorso(PERCORSO.sStop - 2.1), x = lerp(da.x, px, c), y = lerp(da.y, py, c), z = lerp(1.0, pz, c) + Math.sin(c*Math.PI)*1.2;
       dinamici.push({ y, f: () => pacco(x, y, z) });
     });
   }
