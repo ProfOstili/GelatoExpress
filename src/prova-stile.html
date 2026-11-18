@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prova Stile Gelateria</title>
+<!--
+  PROVA DI FATTIBILITÀ dello stile dipinto per "La Gelateria Automatica".
+  File sorgente: viene "impacchettato" in prova-stile.html da strumenti/build.py
+  (librerie, font e loghi incorporati, così funziona offline).
+  Tecnica di pittura ripresa da ClaudeAnimationBase di John Heibel (licenza MIT):
+  https://github.com/JohnHeibel/ClaudeAnimationBase  — librerie p5.js (LGPL) e p5.brush (MIT).
+-->
+<style>
+@font-face{font-family:"Permanent Marker";src:url("@DATA:assets/fonts/PermanentMarker.woff2@") format("woff2");font-display:block}
+@font-face{font-family:"Patrick Hand";src:url("@DATA:assets/fonts/PatrickHand.woff2@") format("woff2");font-display:block}
+:root{
+  --paper:#F3EBDC; --paper2:#EADFCB; --ink:#2B2233; --ink-soft:#6A5E70;
+  --clay:#D97757; --rose:#E27A92; --ochre:#E8AA38; --sap:#6E9F58; --teal:#3A9C98; --sky:#8EC3E6; --cream:#FFF5E2;
+  --school:#6E9F38;
+  --title:"Permanent Marker","Comic Sans MS",cursive;
+  --body:"Patrick Hand","Comic Sans MS",cursive;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:20px;
+  background-image:radial-gradient(rgba(160,125,80,.06) 1px,transparent 1.5px);background-size:7px 7px}
+.wrap{max-width:1180px;margin:0 auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;gap:14px}
+header img{width:74px;height:74px;border-radius:50%;object-fit:cover;box-shadow:2px 3px 0 rgba(43,34,51,.25);flex:none}
+header .t{flex:1;text-align:center;min-width:0}
+header h1{font-family:var(--title);font-weight:400;font-size:clamp(24px,4vw,40px);margin:0;line-height:1.05;transform:rotate(-1deg)}
+header h1 span{color:var(--clay)}
+header p{margin:2px 0 0;color:var(--ink-soft);font-size:18px}
+.stage{position:relative;border:3px solid var(--ink);border-radius:14px 18px 12px 20px/18px 12px 20px 14px;overflow:hidden;
+  box-shadow:4px 5px 0 rgba(43,34,51,.2);background:var(--paper)}
+.stage canvas.main{display:block;width:100%!important;height:auto!important;aspect-ratio:16/9}
+.stage canvas.grain{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:multiply;pointer-events:none}
+.hud{position:absolute;top:10px;right:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.hud span{background:rgba(255,245,226,.92);border:2px solid var(--ink);border-radius:10px 14px 9px 13px;padding:1px 10px;font-size:20px;
+  box-shadow:2px 2px 0 rgba(43,34,51,.2)}
+.carica{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--paper);font-family:var(--title);font-size:26px;z-index:2}
+.carica .barra{width:min(60%,420px);height:18px;border:3px solid var(--ink);border-radius:10px 14px 9px 12px;overflow:hidden;background:var(--cream)}
+.carica .barra i{display:block;height:100%;background:var(--ochre)}
+.carica small{font-family:var(--body);font-size:18px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--title);font-size:19px;border:3px solid var(--ink);background:var(--cream);color:var(--ink);padding:6px 16px;cursor:pointer;
+  border-radius:14px 10px 16px 9px/10px 15px 9px 14px;box-shadow:3px 4px 0 var(--ink);transform:rotate(-.6deg)}
+.btn:nth-child(even){transform:rotate(.7deg)}
+.btn.on{background:var(--ochre)}
+.btn:active{box-shadow:1px 1px 0 var(--ink);translate:2px 3px}
+.btn:focus-visible{outline:3px dashed var(--clay);outline-offset:3px}
+.perf{margin-left:auto;font-size:18px;color:var(--ink-soft);text-align:right}
+.perf b{color:var(--ink)}
+.note{background:var(--cream);border:2px dashed var(--ink-soft);border-radius:12px;padding:8px 14px;font-size:19px}
+.note h2{font-family:var(--title);font-weight:400;font-size:22px;margin:0 0 4px}
+.note ul{margin:4px 0;padding-left:22px}
+.emo-labels{display:grid;grid-template-columns:repeat(6,1fr);text-align:center;font-size:19px;margin-top:-4px}
+footer{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--ink-soft);font-size:16px;text-align:center;flex-wrap:wrap}
+@media (max-width:640px){
+  header img{width:52px;height:52px}
+  header p{font-size:15px}
+  .hud span{font-size:15px;padding:0 6px}
+  .perf{margin-left:0;text-align:left;width:100%}
+  .emo-labels{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="@DATA:assets/logo-istituto.jpg@" alt="Logo Liceo Tecnologico e Professionale Ciuffelli-Einaudi, Todi">
+    <div class="t">
+      <h1>La Gelateria <span>Automatica</span></h1>
+      <p>Prova dello stile dipinto · corso SIA</p>
+    </div>
+    <img src="@DATA:assets/logo-einaudi.jpg@" alt="Logo Liceo Tecnologico Luigi Einaudi, Todi">
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="hud" id="hud"></div>
+  </div>
+  <div class="emo-labels hidden" id="emo-labels" hidden>
+    <span>felice</span><span>preoccupato</span><span>triste</span><span>sorpreso</span><span>fiero</span><span>pensieroso</span>
+  </div>
+
+  <div class="bar">
+    <button class="btn on" id="b-scene">🏪 Scena</button>
+    <button class="btn" id="b-sheet">🍦 Mascotte</button>
+    <button class="btn" id="b-speed">🐢 Rallentato</button>
+    <div class="perf" id="perf">misuro…</div>
+  </div>
+
+  <div class="note">
+    <h2>Cosa guardare in questa prova</h2>
+    <ul>
+      <li>La scena si ridipinge 12 volte al secondo: il tremolio delle linee è voluto, come nei cartoni fatti a mano.</li>
+      <li>I giorni si alternano: ☀️ sole (il gelato finisce e la mascotte si dispera), 🌧️ pioggia (avanzano coni), ⛅ nuvoloso (tutto ok). Il camion parte il primo giorno e arriva la mattina dopo.</li>
+      <li>All'apertura il computer dipinge tutte le figurine una volta sola (barra "Sto dipingendo…"); poi le anima. Qui sotto vedi quanto ci ha messo e quante immagini al secondo riesce a mostrare.</li>
+    </ul>
+  </div>
+  <footer>Stile pittorico basato su ClaudeAnimationBase (MIT) · p5.js · p5.brush</footer>
+</div>
+
+<script>/*@JS:vendor/p5.min.js@*/</script>
+<script>/*@JS:vendor/p5.brush.js@*/</script>
+<script>
+/* =====================================================================
+   MOTORE DI PITTURA (adattato da ClaudeAnimationBase, MIT)
+   ===================================================================== */
+const W = 1600, H = 900;            // coordinate del "mondo"
+const BOIL = 12;                    // ridisegni al secondo: il tremolio a mano
+const TAU = Math.PI * 2;
+const PAL = {
+  paper:'#F3EBDC', ink:'#2B2233', clay:'#D97757', clayDk:'#A84D33', clayLt:'#F2A283', rose:'#E27A92', ochre:'#E8AA38',
+  sap:'#6E9F58', teal:'#3A9C98', violet:'#7B5CA8', cream:'#FFF5E2', sky:'#8EC3E6', indigo:'#2F3C7A',
+  waffle:'#E3A857', waffleDk:'#B9772F', strawberry:'#F2A0B5', mint:'#9FD8C0', choc:'#8A5A44', pistachio:'#B8D07A',
+  hill:'#A9C48E', hillFar:'#C9D8B4', road:'#B9AE9C', school:'#6E9F38'
+};
+const clamp = (x,a=0,b=1) => Math.max(a, Math.min(b, x));
+const lerp = (a,b,x) => a + (b-a)*x;
+const ease = x => { x = clamp(x); return x*x*(3-2*x); };
+const easeOut = x => 1 - Math.pow(1-clamp(x), 3);
+const seg = (t,a,b) => clamp((t-a)/(b-a));
+const frac = x => x - Math.floor(x);
+const hash = i => { const x = Math.sin(i*127.1 + 311.7)*43758.5453; return x - Math.floor(x); };
+const jit = a => (random()*2 - 1)*a;
+let BOILN = 0;
+let MASK = false;                  // true = dipingo la sagoma tutta nera (serve a calcolare la trasparenza)
+const mc = c => MASK ? '#000000' : c;
+const boilSeed = key => { let h = 2166136261; for (const c of key + '|' + BOILN) h = Math.imul(h ^ c.charCodeAt(0), 16777619); randomSeed(h >>> 0); };
+const spring = (t,t0,k=6,w=18) => t < t0 ? 0 : Math.exp(-k*(t-t0))*Math.sin(w*(t-t0));
+
+function rectPts(x,y,w,h,j=0){ return [[x+jit(j),y+jit(j)],[x+w/2+jit(j),y+jit(j)*.5],[x+w+jit(j),y+jit(j)],[x+w+jit(j)*.5,y+h/2],[x+w+jit(j),y+h+jit(j)],[x+w/2+jit(j),y+h+jit(j)*.5],[x+jit(j),y+h+jit(j)],[x+jit(j)*.5,y+h/2]]; }
+function ellPts(cx,cy,rx,ry,n=28,j=0,rot=0){ const p=[]; for(let i=0;i<n;i++){ const a=rot+i/n*TAU; p.push([cx+Math.cos(a)*rx+jit(j), cy+Math.sin(a)*ry+jit(j)]); } return p; }
+function rrPts(x,y,w,h,r,j=0){ const p=[],s=5,c=(cx,cy,a0)=>{ for(let i=0;i<=s;i++){ const a=a0+i/s*Math.PI/2; p.push([cx+Math.cos(a)*r+jit(j), cy+Math.sin(a)*r+jit(j)]); } };
+  c(x+w-r,y+r,-Math.PI/2); c(x+w-r,y+h-r,0); c(x+r,y+h-r,Math.PI/2); c(x+r,y+r,Math.PI); return p; }
+function starPts(cx,cy,r,inner=.38,n=4,rot=-Math.PI/2){ const p=[]; for(let i=0;i<n*2;i++){ const a=rot+i*Math.PI/n, q=i%2?r*inner:r; p.push([cx+Math.cos(a)*q, cy+Math.sin(a)*q]); } return p; }
+function through(P,n=6){ if(P.length<3) return P.slice(); const out=[];
+  for(let i=0;i<P.length-1;i++){ const p0=P[Math.max(0,i-1)],p1=P[i],p2=P[i+1],p3=P[Math.min(P.length-1,i+2)];
+    for(let k=0;k<n;k++){ const u=k/n,u2=u*u,u3=u2*u; out.push([0,1].map(d=>.5*(2*p1[d]+(p2[d]-p0[d])*u+(2*p0[d]-5*p1[d]+4*p2[d]-p3[d])*u2+(3*p1[d]-p0[d]-3*p2[d]+p3[d])*u3))); } }
+  out.push(P[P.length-1]); return out; }
+function ribbon(P,w0,w1=w0){ const C=through(P),n=C.length,L=[],R=[];
+  for(let i=0;i<n;i++){ const a=C[Math.max(0,i-1)],b=C[Math.min(n-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy)||1,w=lerp(w0,w1,i/Math.max(1,n-1))/2;
+    L.push([C[i][0]-dy/d*w, C[i][1]+dx/d*w]); R.push([C[i][0]+dy/d*w, C[i][1]-dx/d*w]); }
+  return L.concat(R.reverse()); }
+function centred(pts, draw){ if(!pts.length) return; let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  for(const [x,y] of pts){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  const cx=(x0+x1)/2, cy=(y0+y1)/2; push(); translate(cx,cy); draw(pts.map(([x,y])=>[x-cx,y-cy])); pop(); }
+// Una chiamata = una forma dipinta: colore piatto (wash) + contorno a inchiostro. Niente acquerello: troppo lento sui PC senza scheda grafica.
+function paint(pts, o={}){ centred(pts, P => {
+  if(o.wash){ brush.wash(mc(o.wash), o.washOp ?? 255); brush.noFill(); brush.noHatch(); brush.noStroke();
+    if(o.curv){ brush.beginShape(o.curv); for(const p of P) brush.vertex(p[0],p[1]); brush.endShape(true); } else brush.polygon(P); }
+  if(o.ink !== null && Q.ink){ brush.noWash(); brush.noFill(); brush.noHatch(); brush.set(o.br || 'ink', mc(o.ink || PAL.ink), (o.sw ?? 1));
+    brush.beginShape(o.curv || 0); for(const p of P) brush.vertex(p[0],p[1]); brush.endShape(true); }
+}); }
+function inkLine(pts, sw=1, col=PAL.ink, br='ink', curv=.5){ centred(pts, P => { brush.noFill(); brush.noWash(); brush.noHatch(); brush.set(br, mc(col), sw); brush.spline(P, curv); }); }
+function defineBrushes(){
+  brush.add('ink',     { type:'default', weight:5,   scatter:.25, sharpness:.8,  grain:40, opacity:235, spacing:.2, pressure:[1.15,.75], rotate:'natural', noise:.15 });
+  brush.add('inkfine', { type:'default', weight:2.6, scatter:.15, sharpness:.85, grain:40, opacity:230, spacing:.2, pressure:[1.1,.8],  rotate:'natural', noise:.1 });
+}
+function lcg(seed){ let s=seed; return () => (s=(s*16807)%2147483647)/2147483647; }
+function makePaper(w,h){ const g=createGraphics(w,h); g.pixelDensity(1); const c=g.drawingContext, rnd=lcg(11);
+  c.fillStyle=PAL.paper; c.fillRect(0,0,w,h);
+  for(let i=0;i<50;i++){ const x=rnd()*w,y=rnd()*h,r=(80+rnd()*260)*w/1600,gr=c.createRadialGradient(x,y,0,x,y,r),a=.045*rnd(); gr.addColorStop(0,`rgba(160,125,80,${a})`); gr.addColorStop(1,'rgba(160,125,80,0)'); c.fillStyle=gr; c.fillRect(x-r,y-r,2*r,2*r); }
+  c.lineWidth=1; for(let i=0;i<900;i++){ const x=rnd()*w,y=rnd()*h,l=5+rnd()*18,a=rnd()*TAU; c.strokeStyle=`rgba(110,88,60,${.03+rnd()*.05})`; c.beginPath(); c.moveTo(x,y); c.quadraticCurveTo(x+Math.cos(a+.6)*l*.5,y+Math.sin(a+.6)*l*.5,x+Math.cos(a)*l,y+Math.sin(a)*l); c.stroke(); }
+  return g; }
+function makeGrain(cv){ const w=cv.width,h=cv.height,c=cv.getContext('2d'),rnd=lcg(5),id=c.createImageData(w,h),d=id.data;
+  for(let i=0;i<d.length;i+=4){ const v=255-(rnd()<.55?rnd()*rnd()*30:0); d[i]=v; d[i+1]=v-1; d[i+2]=v-3; d[i+3]=255; }
+  c.putImageData(id,0,0); const g=c.createRadialGradient(w/2,h/2,h*.45,w/2,h/2,h*1.05); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(1,'rgba(120,95,70,.3)'); c.fillStyle=g; c.fillRect(0,0,w,h); }
+
+/* =====================================================================
+   QUALITÀ (si abbassa da sola se il PC è lento)
+   ===================================================================== */
+const Q = { level:'alta', ink:true, rain:36, smoke:5, hatch:true };
+function setQuality(l){
+  Q.level = l;
+  if(l==='alta'){ Q.ink=true; Q.rain=36; Q.smoke=5; Q.hatch=true; }
+  else { Q.ink=true; Q.rain=14; Q.smoke=3; Q.hatch=false; }
+}
+
+/* =====================================================================
+   LA MASCOTTE: "Cono", un cono gelato alla fragola
+   x,y = punta del cono (piedi); s = scala (1 = alto circa 230 px)
+   emo: felice | preoccupato | triste | sorpreso | fiero | pensieroso
+   ===================================================================== */
+function mascotte(x, y, s, emo, t, o={}){
+  const key = o.key || 'cono';
+  const sq = o.sq || 0;                       // schiacciamento (+) / allungamento (−)
+  const bob = Math.sin(t*3.2)*3*s;            // respira sempre: è vivo
+  const sx = s*(1+sq*.6), sy = s*(1-sq);
+  push(); translate(x, y + (o.dy||0)*s);
+  // ombra
+  boilSeed(key+'ombra'); paint(ellPts(0, 6*s, 62*s, 12*s, 18), { wash:'#8F86A0', washOp:70, ink:null });
+  translate(0, bob);
+  // cono di cialda (un'unica forma)
+  boilSeed(key+'cono');
+  const cw = 70*sx, ch = 120*sy, top = -ch;
+  const cono = [[-cw, top], [cw, top], [0, 0]];
+  paint(cono, { wash:PAL.waffle, sw:1.1 });
+  if(Q.hatch){                                 // la trama della cialda
+    for(let i=1;i<4;i++){ const k=i/4;
+      inkLine([[lerp(-cw,0,k)*1, lerp(top,0,k)], [cw*(1-k)*.98 - cw*k*.0, top+ (0-top)*0 + 4*s]], .45, PAL.waffleDk, 'inkfine', 0);
+      inkLine([[lerp(cw,0,k), lerp(top,0,k)], [-cw*(1-k)*.98, top + 4*s]], .45, PAL.waffleDk, 'inkfine', 0);
+    }
+  }
+  // braccine
+  boilSeed(key+'braccia');
+  const wave = emo==='felice' || emo==='fiero' ? Math.sin(t*9)*.25 : 0;
+  const armUp = emo==='sorpreso' ? -1 : emo==='triste' ? .6 : emo==='preoccupato' ? -.5 : 0;
+  const ay = top + 34*sy;
+  inkLine([[-cw*.78, ay], [-cw*1.25, ay + (14+armUp*40)*s], [-cw*1.45 - wave*30*s, ay + (4+armUp*70 - wave*60)*s]], 1.1, PAL.ink, 'ink', .6);
+  inkLine([[ cw*.78, ay], [ cw*1.25, ay + (14+armUp*40)*s], [ cw*1.45, ay + (4+armUp*70)*s]], 1.1, PAL.ink, 'ink', .6);
+  // pallina di gelato = la testa, con le gocce che colano sul cono
+  boilSeed(key+'testa');
+  const hr = 78*sx, hy = top - 52*sy;
+  const head = [];
+  for(let i=0;i<34;i++){ const a = i/34*TAU; let r = 1;
+    if(Math.sin(a) > .35) r += .1*Math.max(0, Math.sin(a*5 + 1.3));   // gocce in basso
+    head.push([Math.cos(a)*hr*r, hy + Math.sin(a)*hr*.86*r]); }
+  paint(head, { wash:PAL.strawberry, sw:1.15, curv:.5 });
+  // ciliegina
+  boilSeed(key+'ciliegia');
+  inkLine([[6*s, hy-hr*.82], [14*s, hy-hr*1.12], [26*s, hy-hr*1.2]], .8, PAL.sap, 'ink', .6);
+  paint(ellPts(4*s, hy-hr*.86, 15*s, 14*s, 16), { wash:'#D9475E', sw:.9 });
+  // faccia
+  boilSeed(key+'faccia');
+  const ex = 26*sx, eyY = hy + 2*sy;
+  const blink = frac(t*.27 + (o.ph||0)) < .035;
+  const eye = (cx) => {
+    if(emo==='fiero') inkLine([[cx-10*s, eyY+2*s],[cx, eyY-7*s],[cx+10*s, eyY+2*s]], .9);
+    else if(blink) inkLine([[cx-9*s, eyY],[cx+9*s, eyY]], .9);
+    else { const big = emo==='sorpreso' ? 1.35 : 1; paint(ellPts(cx, eyY, 7.5*s*big, 12*s*big, 14), { wash:PAL.ink, ink:null });
+           paint(ellPts(cx-2.5*s, eyY-5*s, 2.6*s, 3.2*s, 8), { wash:PAL.cream, ink:null }); }
+  };
+  eye(-ex); eye(ex);
+  if(emo==='preoccupato' || emo==='triste'){            // sopracciglia inclinate
+    inkLine([[-ex-12*s, eyY-20*s],[-ex+10*s, eyY-26*s]], .7); inkLine([[ex-10*s, eyY-26*s],[ex+12*s, eyY-20*s]], .7);
+  }
+  paint(ellPts(-ex-14*s, eyY+20*s, 11*s, 6*s, 12), { wash:PAL.rose, washOp:140, ink:null });   // guance
+  paint(ellPts( ex+14*s, eyY+20*s, 11*s, 6*s, 12), { wash:PAL.rose, washOp:140, ink:null });
+  const my = eyY + 30*s;
+  if(emo==='felice' || emo==='fiero') paint([[-16*s,my-3*s],[16*s,my-3*s],[10*s,my+9*s],[0,my+12*s],[-10*s,my+9*s]], { wash:'#8E3B4E', sw:.7, curv:.6 });
+  else if(emo==='triste') inkLine([[-14*s,my+8*s],[0,my-2*s],[14*s,my+8*s]], .9);
+  else if(emo==='sorpreso') paint(ellPts(0,my+3*s,8*s,10*s,14), { wash:'#8E3B4E', sw:.7 });
+  else if(emo==='preoccupato') inkLine([[-14*s,my+4*s],[-7*s,my],[0,my+4*s],[7*s,my],[14*s,my+4*s]], .8);
+  else inkLine([[-10*s,my+2*s],[10*s,my]], .8);       // pensieroso
+  // segni dipinti sopra la testa (niente scritte)
+  boilSeed(key+'emote');
+  const ehx = hr*.95, ehy = hy - hr*.95;
+  if(emo==='preoccupato' || emo==='triste'){            // goccia di sudore
+    const d = frac(t*1.2)*20*s;
+    paint([[ehx, ehy+d-18*s],[ehx+9*s, ehy+d],[ehx, ehy+d+9*s],[ehx-9*s, ehy+d]], { wash:PAL.sky, sw:.7, curv:.7 });
+  }
+  if(emo==='triste'){                                    // nuvoletta di pioggia
+    const cy = hy - hr*1.55;
+    paint(ellPts(0, cy, 46*s, 20*s, 20, 1.5), { wash:'#9AA3B8', sw:.8 });
+    for(let i=0;i<3;i++){ const yy = frac(t*2 + i*.33)*30*s; inkLine([[(-20+i*20)*s, cy+22*s+yy],[(-23+i*20)*s, cy+32*s+yy]], .6, PAL.indigo, 'inkfine', 0); }
+  }
+  if(emo==='sorpreso'){                                  // punto esclamativo dipinto
+    paint(ribbon([[ehx, ehy-40*s],[ehx+2*s, ehy-6*s]], 13*s, 6*s), { wash:PAL.ochre, sw:.8 });
+    paint(ellPts(ehx+3*s, ehy+8*s, 6*s, 6*s, 10), { wash:PAL.ochre, sw:.7 });
+  }
+  if(emo==='fiero' || (emo==='felice' && o.sparkle)){    // stelline
+    const k = .8 + .2*Math.sin(t*10);
+    paint(starPts(ehx, ehy-6*s, 20*s*k, .35, 4), { wash:PAL.cream, sw:.7 });
+    paint(starPts(ehx+28*s, ehy+20*s, 10*s*k, .35, 4), { wash:PAL.ochre, sw:.6 });
+  }
+  if(emo==='pensieroso'){                                // tre puntini
+    for(let i=0;i<3;i++) paint(ellPts(ehx-10*s+i*16*s, ehy+(i===Math.floor(t*3)%3?-5*s:0), 5*s, 5*s, 10), { wash:PAL.ink, ink:null });
+  }
+  pop();
+}
+
+/* =====================================================================
+   CLIENTI, CAMION, SCENARIO
+   ===================================================================== */
+const COL_CLIENTI = [PAL.teal, PAL.violet, PAL.sky, PAL.clay, PAL.sap, PAL.rose, PAL.ochre];
+// gamba: -1 / 1 (passo); umore: 1 felice, 0 neutro, -1 triste
+function cliente(x, y, i, gamba, mood, hasCone){
+  const col = COL_CLIENTI[i % COL_CLIENTI.length], s = .8 + hash(i*3.1)*.35, h = 64*s, w = 30*s;
+  const step = gamba, dy = -Math.abs(step)*5;
+  push(); translate(x, y);
+  inkLine([[-8*s, -18*s+dy], [-8*s + step*10*s, 0]], .9, PAL.ink, 'ink', 0);
+  inkLine([[ 8*s, -18*s+dy], [ 8*s - step*10*s, 0]], .9, PAL.ink, 'ink', 0);
+  paint(ellPts(0, -h*.62+dy, w, h*.5, 20), { wash:col, sw:.95, curv:.4 });
+  paint(ellPts(9*s, -h*.78+dy, 4*s, 6*s, 10), { wash:PAL.ink, ink:null });
+  paint(ellPts(20*s, -h*.78+dy, 4*s, 6*s, 10), { wash:PAL.ink, ink:null });
+  const my = -h*.6 + dy;
+  if(mood > 0) inkLine([[8*s,my],[15*s,my+5*s],[22*s,my]], .7);
+  else if(mood < 0) inkLine([[8*s,my+5*s],[15*s,my],[22*s,my+5*s]], .7);
+  else inkLine([[9*s,my+2*s],[21*s,my+2*s]], .6);
+  if(hasCone){
+    paint([[22*s,-h*.5+dy],[38*s,-h*.5+dy],[30*s,-h*.2+dy]], { wash:PAL.waffle, sw:.6 });
+    paint(ellPts(30*s, -h*.56+dy, 10*s, 9*s, 12), { wash:[PAL.mint, PAL.strawberry, PAL.pistachio][i%3], sw:.6 });
+  }
+  if(mood < 0){ paint([[-w*.9, -h*1.1],[-w*.9+7, -h*1.1+12],[-w*.9, -h*1.1+18],[-w*.9-7, -h*1.1+12]], { wash:PAL.sky, sw:.6, curv:.7 }); }
+  pop();
+}
+function camion(x, y, ruota){
+  push(); translate(x, y);
+  paint(rectPts(-6, -34, 18, 9), { wash:'#6B6475', sw:.6 });                      // tubo di scappamento
+  paint(rrPts(0, -120, 150, 96, 10), { wash:PAL.rose, sw:1.1 });                 // cassone
+  paint(ellPts(60, -76, 22, 18, 16), { wash:PAL.cream, sw:.7 });                 // un gelato disegnato sul cassone
+  paint([[42,-70],[78,-70],[60,-40]], { wash:PAL.waffle, sw:.6 });
+  paint([[150,-96],[196,-96],[222,-60],[222,-24],[150,-24]], { wash:PAL.sky, sw:1.1 });     // cabina
+  paint([[160,-88],[192,-88],[210,-62],[160,-62]], { wash:PAL.cream, sw:.7 });               // finestrino
+  for(const wx of [40, 180]){
+    paint(ellPts(wx, -12, 20, 20, 16), { wash:'#3F3848', sw:.9 });
+    inkLine([[wx+Math.cos(ruota)*12, -12+Math.sin(ruota)*12],[wx-Math.cos(ruota)*12, -12-Math.sin(ruota)*12]], .6, PAL.cream, 'inkfine', 0);
+  }
+  pop();
+}
+function nuvola(x, y, s, col, key){
+  boilSeed(key);
+  const p = []; for(let i=0;i<30;i++){ const a=i/30*TAU; const r = 1 + .16*Math.max(0, Math.sin(a*5+.5)) * (Math.sin(a)<.2?1:0);
+    p.push([x + Math.cos(a)*90*s*r, y + Math.sin(a)*38*s*r]); }
+  paint(p, { wash:col, washOp:235, sw:.8, curv:.5 });
+}
+function scenario(t, meteo, sera){
+  // cielo
+  boilSeed('cielo');
+  const cielo = meteo==='sole' ? '#BFE0F2' : meteo==='nuvoloso' ? '#C9D3DE' : '#A5B2C4';
+  paint(rectPts(-20, -20, W+40, 600), { wash:cielo, washOp:230, ink:null });
+  if(meteo !== 'pioggia'){
+    boilSeed('sole');
+    const sx = 230, sy = 150, rot = t*.25;
+    for(let i=0;i<8;i++){ const a = rot + i/8*TAU; inkLine([[sx+Math.cos(a)*78, sy+Math.sin(a)*78],[sx+Math.cos(a)*110, sy+Math.sin(a)*110]], 1, PAL.ochre, 'ink', 0); }
+    paint(ellPts(sx, sy, 58, 58, 24), { wash:'#F6C75A', sw:1 });
+  }
+  if(meteo !== 'sole'){
+    const c = meteo==='pioggia' ? '#8C97AC' : PAL.cream;
+    nuvola(380 + frac(t*.02)*80, 140, 1.2, c, 'n1');
+    nuvola(820 + Math.sin(t*.3)*30, 90, 1, c, 'n2');
+    nuvola(1250 - frac(t*.015)*80, 160, 1.3, c, 'n3');
+  }
+  // colline e Todi con il Tempio della Consolazione
+  boilSeed('colline');
+  paint(through([[-20,470],[200,400],[420,360],[620,390],[900,330],[1200,380],[1620,350],[1620,600],[-20,600]], 4), { wash:PAL.hillFar, washOp:230, sw:.6 });
+  boilSeed('todi');
+  const tx = 520, ty = 362;                                 // il tempio sulla collina
+  paint(rectPts(tx-46, ty-40, 92, 40), { wash:'#EFE3CC', sw:.7 });
+  const dome = []; for(let i=0;i<=16;i++){ const a = Math.PI + i/16*Math.PI; dome.push([tx + Math.cos(a)*40, ty-40 + Math.sin(a)*38]); }
+  paint(dome, { wash:'#C9C0B0', sw:.7 });
+  paint(rectPts(tx-6, ty-96, 12, 18), { wash:'#EFE3CC', sw:.5 });
+  for(let i=0;i<5;i++){ const hx = 700 + i*52, hh = 26 + hash(i)*22;    // case del borgo
+    paint(rectPts(hx, 372-hh - i*6, 44, hh), { wash:'#F1E2C6', sw:.5 });
+    paint([[hx-4, 372-hh-i*6],[hx+22, 352-hh-i*6],[hx+48, 372-hh-i*6]], { wash:PAL.clayLt, sw:.5 }); }
+  boilSeed('prato');
+  paint(through([[-20,560],[300,530],[700,555],[1100,520],[1620,545],[1620,720],[-20,720]], 4), { wash:PAL.hill, washOp:240, sw:.6 });
+  // strada
+  boilSeed('strada');
+  paint(rectPts(-20, 720, W+40, 140), { wash:PAL.road, washOp:240, ink:null });
+  for(let i=0;i<8;i++) inkLine([[i*220+20, 792],[i*220+110, 792]], .7, PAL.cream, 'ink', 0);
+}
+function tesseraPioggia(x0, y0, v){        // 400 x 380 unità di mondo, si ripete e scorre
+  for(let i=0;i<12;i++){ const x = x0 + hash(i+v*31)*380 + 10, y = y0 + hash(i*7+v*13)*340;
+    inkLine([[x, y],[x-8, y+28]], .5, '#5D6E92', 'inkfine', 0); } }
+function negozio(t){
+  boilSeed('negozio');
+  const x = 1150, y = 300, w = 400, h = 420;
+  paint(rectPts(x, y, w, h, 2), { wash:'#FBEFD9', sw:1.1 });                         // muro
+  paint(rrPts(x+250, y+150, 110, 270, 8), { wash:'#B98A6A', sw:.9 });                 // porta
+  // tenda a strisce, con il bordo smerlato: un'unica forma per striscia
+  for(let i=0;i<6;i++){ const sx = x - 20 + i*(w+40)/6, sw = (w+40)/6;
+    const p = [[sx, y-50],[sx+sw, y-50],[sx+sw, y+20]]; for(let k=1;k<=6;k++){ const a = k/6; p.push([sx+sw*(1-a), y+20 + Math.sin(a*Math.PI)*16]); }
+    paint(p, { wash: i%2 ? PAL.cream : PAL.rose, sw:.8 }); }
+  // insegna dipinta: un cono (niente scritte)
+  boilSeed('insegna');
+  paint(ellPts(x+w/2, y-86, 54, 34, 20), { wash:PAL.cream, sw:.9 });
+  paint([[x+w/2-18, y-90],[x+w/2+18, y-90],[x+w/2, y-56]], { wash:PAL.waffle, sw:.6 });
+  paint(ellPts(x+w/2, y-98, 17, 15, 14), { wash:PAL.mint, sw:.6 });
+  // bancone con le vaschette di gelato
+  boilSeed('bancone');
+  paint(rrPts(x-30, y+250, 260, 170, 10), { wash:PAL.sky, sw:1.1 });
+  const gusti = [PAL.strawberry, PAL.pistachio, PAL.choc, PAL.mint];
+  for(let i=0;i<4;i++) paint(ellPts(x-2 + i*58, y+250, 24, 12, 14), { wash:gusti[i], sw:.6 });
+}
+// pila di coni pronti sul bancone: si svuota durante il giorno (parte che si muove)
+function pilaConi(coni, maxConi){
+  boilSeed('pila');
+  const x = 1150, y = 300, n = Math.ceil(6 * coni / Math.max(1, maxConi));
+  for(let i=0;i<n;i++) paint([[x+40+i*28, y+300],[x+60+i*28, y+300],[x+50+i*28, y+336]], { wash:PAL.waffle, sw:.5 });
+}
+
+/* =====================================================================
+   STUDIO DI PITTURA
+   Ogni figurina (mascotte, clienti, camion, sfondi…) viene dipinta UNA volta
+   all'apertura, in più varianti per il tremolio. Poi il gioco muove solo
+   queste figurine già dipinte: velocissimo anche su PC vecchi e telefoni.
+   ===================================================================== */
+const CW = 1120, CH = 630, K = CW / W;      // da coordinate del mondo a pixel
+const VAR = 3;                              // varianti di ogni disegno (il "tremolio")
+const SPR = {}, BG = {};
+let paperG, bianco, ctx, vista;
+const EMOZIONI = ['felice','felice2','preoccupato','triste','sorpreso','fiero','pensieroso'];
+const METEO = ['sole','pioggia','nuvoloso'];
+
+function listaLavori(){
+  const L = [];
+  for(const m of METEO) for(let v=0; v<VAR; v++) L.push({ tipo:'sfondo', key:m+'|'+v, meteo:m, v });
+  const sp = [];
+  for(const e of EMOZIONI) for(let v=0; v<VAR; v++)
+    sp.push({ key:`m|${e}|${v}`, w:340, h:480, ax:170, ay:450, v,
+      draw:() => mascotte(0, 0, .95, e==='felice2' ? 'felice' : e, v*.37 + (e==='felice2' ? .17 : 0), { key:'m', sparkle:true, ph:.5 }) });
+  for(let c=0; c<6; c++) for(const st of ['in','ok','ko']) for(const g of [-1, 1]) for(let v=0; v<2; v++)
+    sp.push({ key:`c|${c}|${st}|${g}|${v}`, w:130, h:150, ax:60, ay:140, v,
+      draw:() => cliente(0, 0, c, g, st==='ok' ? 1 : st==='ko' ? -1 : 0, st==='ok') });
+  for(const r of [0, 1]) for(let v=0; v<VAR; v++)
+    sp.push({ key:`camion|${r}|${v}`, w:300, h:200, ax:50, ay:175, v, draw:() => camion(0, 0, r ? Math.PI/2 : .3) });
+  for(let v=0; v<VAR; v++){
+    sp.push({ key:`fumo|${v}`, w:90, h:90, ax:45, ay:45, v, draw:() => paint(ellPts(0, 0, 30, 26, 14), { wash:'#A8A2B4', sw:.5 }) });
+    sp.push({ key:`cono|${v}`, w:40, h:50, ax:4, ay:4, v, draw:() => paint([[0,0],[20,0],[10,36]], { wash:PAL.waffle, sw:.5 }) });
+    sp.push({ key:`pioggia|${v}`, w:410, h:390, ax:5, ay:5, v, draw:() => tesseraPioggia(0, 0, v) });
+  }
+  // impacchetto le figurine nel foglio dello studio (1600 x 900 unità), un foglio per "lotto"
+  let lotto = [], x = 10, y = 10, rigaH = 0;
+  const chiudi = () => { if(lotto.length) L.push({ tipo:'lotto', celle:lotto }); lotto = []; x = 10; y = 10; rigaH = 0; };
+  for(const s of sp){
+    if(x + s.w > W - 10){ x = 10; y += rigaH + 10; rigaH = 0; }
+    if(y + s.h > H - 10) chiudi();
+    lotto.push({ ...s, x, y }); x += s.w + 10; rigaH = Math.max(rigaH, s.h);
+  }
+  chiudi();
+  return L;
+}
+
+let lavori = [], fatti = 0, totale = 0, inSospeso = null, inizioPittura = 0, pronto = false;
+async function setup(){
+  try{
+    const cnv = createCanvas(CW, CH, WEBGL);
+    cnv.elt.style.display = 'none';
+    pixelDensity(1); frameRate(60);
+    brush.scaleBrushes(5 * W / 1920); defineBrushes();
+    paperG = makePaper(CW, CH);
+    bianco = createGraphics(CW, CH); bianco.pixelDensity(1); bianco.background(255);
+  }catch(e){ return fallito(e); }
+  const stage = document.getElementById('stage');
+  vista = document.createElement('canvas'); vista.width = CW; vista.height = CH; vista.className = 'main'; stage.prepend(vista);
+  ctx = vista.getContext('2d');
+  const g = document.createElement('canvas'); g.width = CW/2; g.height = CH/2; g.className = 'grain'; makeGrain(g); stage.appendChild(g);
+  lavori = listaLavori(); totale = lavori.length; inizioPittura = performance.now();
+  mostraCaricamento(0);
+}
+function fallito(e){
+  document.getElementById('perf').textContent = '⚠️ Questo computer non riesce a dipingere la scena (' + (e && e.message || e) + '). Il gioco userebbe la grafica semplice.';
+  noLoop();
+}
+function mostraCaricamento(p){
+  let el = document.getElementById('carica');
+  if(!el){ el = document.createElement('div'); el.id = 'carica'; el.className = 'carica'; document.getElementById('stage').appendChild(el); }
+  el.innerHTML = `<div>🖌️ Sto dipingendo la gelateria…</div><div class="barra"><i style="width:${Math.round(p*100)}%"></i></div><small>${Math.round(p*100)}%</small>`;
+  if(p >= 1) el.remove();
+}
+function cattura(){ return get(0, 0, CW, CH).canvas; }
+function inizioFoglio(img){ push(); translate(-CW/2, -CH/2); image(img, 0, 0, CW, CH); scale(K); }
+function dipingiLotto(lotto, maschera){
+  inizioFoglio(bianco); MASK = maschera;
+  for(const c of lotto.celle){ push(); translate(c.x + c.ax, c.y + c.ay); BOILN = c.v; boilSeed(c.key); c.draw(); pop(); }
+  MASK = false; pop();
+}
+function ritaglia(lotto, col, mas){
+  const a = col.getContext('2d').getImageData(0, 0, CW, CH).data, m = mas.getContext('2d').getImageData(0, 0, CW, CH).data;
+  for(const c of lotto.celle){
+    const px = Math.floor(c.x*K), py = Math.floor(c.y*K), pw = Math.ceil(c.w*K), ph = Math.ceil(c.h*K);
+    const out = document.createElement('canvas'); out.width = pw; out.height = ph;
+    const oc = out.getContext('2d'), id = oc.createImageData(pw, ph), d = id.data;
+    for(let yy=0; yy<ph; yy++) for(let xx=0; xx<pw; xx++){
+      const i = ((py+yy)*CW + px+xx)*4, o = (yy*pw + xx)*4;
+      const al = 1 - (m[i] + m[i+1] + m[i+2]) / 765;          // sagoma nera = opaco
+      if(al < .02) continue;
+      for(let k=0;k<3;k++) d[o+k] = clamp((a[i+k] - 255*(1-al)) / al, 0, 255);   // tolgo il bianco del foglio
+      d[o+3] = Math.round(al*255);
+    }
+    oc.putImageData(id, 0, 0);
+    SPR[c.key] = { c: out, ax: c.ax*K, ay: c.ay*K };
+  }
+}
+function draw(){
+  if(pronto || !ctx) return;
+  // 1) raccolgo quello che ho dipinto al giro precedente
+  if(inSospeso){
+    const J = inSospeso; inSospeso = null;
+    if(J.fase === 'sfondo'){ BG[J.lav.key] = copia(cattura()); fatti++; }
+    else if(J.fase === 'colore'){ J.lav.col = copia(cattura()); dipingiLotto(J.lav, true); inSospeso = { lav:J.lav, fase:'maschera' }; return; }
+    else if(J.fase === 'maschera'){ ritaglia(J.lav, J.lav.col, cattura()); fatti++; }
+  }
+  mostraCaricamento(fatti / totale);
+  // 2) dipingo il prossimo lavoro
+  const lav = lavori.shift();
+  if(!lav){ pronto = true; noLoop(); avvia(); return; }
+  if(lav.tipo === 'sfondo'){
+    inizioFoglio(paperG); BOILN = lav.v; boilSeed('sfondo'); paint([[-90,-90],[-80,-90],[-80,-80]], { wash:PAL.paper, ink:null }); /* la prima forma del foglio va persa: questa è sacrificabile */ scenario(lav.v*.4, lav.meteo); negozio(0); pop();
+    inSospeso = { lav, fase:'sfondo' };
+  } else { dipingiLotto(lav, false); inSospeso = { lav, fase:'colore' }; }
+}
+function copia(src){ const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.getContext('2d').drawImage(src, 0, 0); return c; }
+
+/* =====================================================================
+   SCENA ANIMATA (solo figurine già dipinte: canvas 2D)
+   ===================================================================== */
+const GIORNI = [
+  { meteo:'sole',     clienti:9, coni:6 },    // il gelato finisce
+  { meteo:'pioggia',  clienti:3, coni:6 },    // avanzano coni
+  { meteo:'nuvoloso', clienti:6, coni:6 }     // perfetto
+];
+let durataGiorno = 8, modo = 'scena', T = 0, t0 = 0, ultimoInfo = null;
+const vb = (t, off=0, n=VAR) => (Math.floor(t*BOIL) + off) % n;          // variante che "bolle" 12 volte al secondo
+function spr(key, x, y, o={}){
+  const S = SPR[key]; if(!S) return;
+  ctx.save(); ctx.translate(x*K, y*K);
+  if(o.flip) ctx.scale(-1, 1);
+  if(o.sx || o.sy) ctx.scale(o.sx || 1, o.sy || 1);
+  if(o.alpha != null) ctx.globalAlpha = clamp(o.alpha);
+  ctx.drawImage(S.c, -S.ax, -S.ay); ctx.restore();
+}
+function ombra(x, y, rx){ ctx.fillStyle = 'rgba(143,134,160,.28)'; ctx.beginPath(); ctx.ellipse(x*K, y*K, rx*K, rx*.22*K, 0, 0, TAU); ctx.fill(); }
+
+function scena(t){
+  const n = Math.floor(t / durataGiorno), p = frac(t / durataGiorno), G = GIORNI[n % 3];
+  const ora = 8 + 12*p;
+  ctx.drawImage(BG[G.meteo + '|' + vb(t)], 0, 0);
+  if(G.meteo === 'pioggia'){
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, CW, 770*K); ctx.clip();
+    const off = frac(t*1.1)*380;
+    for(let cx=0; cx<4; cx++) for(let r=-1; r<2; r++) spr('pioggia|' + vb(t, cx), cx*400, r*380 + off);
+    ctx.restore();
+  }
+  // camion: ordinato la mattina del giorno di sole, arriva la mattina dopo
+  let camionX = null;
+  if(n % 3 === 0 && p > .12) camionX = lerp(-260, 860, ease(seg(p, .12, 1)));
+  if(n % 3 === 1 && p < .2) camionX = lerp(860, 980, easeOut(seg(p, 0, .1)));
+  if(camionX !== null){
+    const dy = -Math.abs(Math.sin(t*22))*5;
+    ombra(camionX + 110, 852, 120);
+    for(let i=0; i<5; i++){ const a = frac(t*1.6 + i/5); const s = (9 + a*24)/30;
+      spr('fumo|' + vb(t, i), camionX - 14 - a*70, 850 - 26 - a*50 + dy, { sx:s, sy:s, alpha:.85*(1-a) }); }
+    spr(`camion|${Math.floor(t*10)%2}|${vb(t, 1)}`, camionX, 850 + dy);
+  }
+  // clienti
+  const counterX = 1120, startX = -60, walkT = .22;
+  let serviti = 0, persi = 0, ultimoServito = -9;
+  const visti = [];
+  for(let i=0; i<G.clienti; i++){
+    const pi = .1 + .66*(i+.5)/G.clienti, q = (p - pi)/walkT, servito = i < G.coni;
+    if(q >= .55){ if(servito){ serviti++; ultimoServito = Math.max(ultimoServito, pi + walkT*.55); } else persi++; }
+    if(q < 0 || q > 1) continue;
+    let x, flip = false, cammina = true, st = 'in';
+    if(q < .55) x = lerp(startX, counterX, ease(q/.55));
+    else if(q < .68){ x = counterX; cammina = false; st = servito ? 'ok' : 'ko'; }
+    else { x = lerp(counterX, startX - 40, ease((q-.68)/.32)); flip = true; st = servito ? 'ok' : 'ko'; }
+    const gamba = cammina ? (Math.floor(t*8 + i) % 2 ? 1 : -1) : -1;
+    visti.push([x, 760 - (i%2)*14, (i + n*2) % 6, st, gamba, flip]);
+  }
+  const rimasti = G.coni - serviti;
+  const nCon = Math.ceil(6 * rimasti / G.coni);
+  for(let i=0; i<nCon; i++) spr('cono|' + vb(t, i), 1150 + 40 + i*28, 300 + 300);
+  // mascotte
+  let emo = 'felice', sq = 0;
+  if(n % 3 === 1 && p < .2){ emo = 'sorpreso'; sq = -.12*Math.exp(-p*durataGiorno*4); }
+  else if(rimasti === 0 && persi > 0) emo = 'triste';
+  else if(rimasti <= 1 && p > .1 && G.clienti > G.coni) emo = 'preoccupato';
+  else if(G.meteo === 'pioggia' && p > .5) emo = 'pensieroso';
+  else if(p > .85 && rimasti <= 1) emo = 'fiero';
+  if(emo === 'felice' && Math.floor(t*3) % 2) emo = 'felice2';             // saluta con la mano
+  sq += spring(p*durataGiorno, ultimoServito*durataGiorno, 7, 20) * .12;   // saltello a ogni cono venduto
+  const bob = Math.sin(t*3.2)*4;
+  spr(`m|${emo}|${vb(t, 2)}`, 1290, 560 + bob, { sx:1 + sq*.6, sy:1 - sq });
+  for(const [x, y, c, st, g, flip] of visti){ ombra(x, y + 4, 30); spr(`c|${c}|${st}|${g}|${vb(t, c, 2)}`, x, y, { flip }); }
+  // sera
+  if(p > .86){ ctx.fillStyle = `rgba(47,60,122,${.38*seg(p, .86, 1)})`; ctx.fillRect(0, 0, CW, CH); }
+  return { giorno:n+1, meteo:G.meteo, ora, rimasti, serviti, persi, camion: (n%3===0 && p>.12) ? Math.max(0, Math.ceil(24 - (ora-8))) : null };
+}
+function schedaMascotte(t){
+  ctx.drawImage(paperG.canvas || paperG.elt, 0, 0, CW, CH);
+  ctx.fillStyle = 'rgba(43,34,51,.45)'; ctx.fillRect(40*K, 760*K, (W-80)*K, 3);
+  ['felice','preoccupato','triste','sorpreso','fiero','pensieroso'].forEach((e, i) => {
+    const ee = e === 'felice' && Math.floor(t*3) % 2 ? 'felice2' : e;
+    spr(`m|${ee}|${vb(t, i)}`, 160 + i*256, 720 + Math.sin(t*3.2 + i)*4);
+  });
+}
+
+/* ---------- ciclo e misura ---------- */
+const meteoIc = { sole:'☀️', pioggia:'🌧️', nuvoloso:'⛅' };
+let tempi = [], intervalli = [], ultimoFrame = 0, nFrame = 0, msPittura = 0;
+function avvia(){
+  msPittura = performance.now() - inizioPittura;
+  t0 = performance.now();
+  requestAnimationFrame(ciclo);
+}
+function ciclo(now){
+  const inizio = performance.now();
+  T = Math.max(0, (performance.now() - t0) / 1000);
+  ultimoInfo = modo === 'scena' ? scena(T) : (schedaMascotte(T), null);
+  tempi.push(performance.now() - inizio); if(tempi.length > 30) tempi.shift();
+  if(ultimoFrame) { intervalli.push(now - ultimoFrame); if(intervalli.length > 30) intervalli.shift(); }
+  ultimoFrame = now; nFrame++;
+  aggiornaHud();
+  requestAnimationFrame(ciclo);
+}
+const media = a => a.reduce((s,x)=>s+x,0)/Math.max(1,a.length);
+function aggiornaHud(){
+  const hud = document.getElementById('hud');
+  if(ultimoInfo){
+    const I = ultimoInfo, hh = String(Math.floor(I.ora)).padStart(2,'0');
+    hud.innerHTML = `<span>📅 Giorno ${I.giorno} ${meteoIc[I.meteo]}</span><span>🕗 ${hh}:00</span><span>🍦 ${I.rimasti}</span>` +
+      (I.persi ? `<span>😞 ${I.persi}</span>` : '') + (I.camion !== null ? `<span>🚚 tra ${I.camion} h</span>` : '');
+  } else hud.innerHTML = '';
+  if(nFrame % 15 === 0){
+    const ms = media(tempi), fps = 1000 / media(intervalli);
+    const giudizio = fps >= 20 ? '✅ fluido' : fps >= 10 ? '🟡 accettabile' : '🔴 lento';
+    document.getElementById('perf').innerHTML = `animazione: <b>${fps.toFixed(0)} immagini/s</b> (${ms.toFixed(1)} ms ciascuna) · ${giudizio}<br>` +
+      `<small>pittura iniziale: ${(msPittura/1000).toFixed(1)} s · ${Object.keys(SPR).length} figurine · ${rendererInfo()}</small>`;
+  }
+}
+let _ri = null;
+function rendererInfo(){ if(_ri) return _ri; try{ const gl = drawingContext, e = gl.getExtension('WEBGL_debug_renderer_info'); _ri = e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); }catch(e){ _ri = 'scheda grafica sconosciuta'; } return _ri; }
+
+// pulsanti
+const $ = s => document.querySelector(s);
+$('#b-scene').onclick = () => { modo = 'scena'; $('#b-scene').classList.add('on'); $('#b-sheet').classList.remove('on'); $('#emo-labels').hidden = true; };
+$('#b-sheet').onclick = () => { modo = 'scheda'; $('#b-sheet').classList.add('on'); $('#b-scene').classList.remove('on'); $('#emo-labels').hidden = false; };
+$('#b-speed').onclick = () => {
+  const p = frac(T / durataGiorno), n = Math.floor(T / durataGiorno);
+  durataGiorno = durataGiorno === 8 ? 1.5 : 8;
+  t0 = performance.now() - (n + p) * durataGiorno * 1000;
+  $('#b-speed').textContent = durataGiorno === 8 ? '🐢 Rallentato' : '⚡ Ritmo del gioco';
+  $('#b-speed').classList.toggle('on', durataGiorno !== 8);
+};
+window.addEventListener('error', e => { const p = document.getElementById('perf'); if(p) p.textContent = '⚠️ Errore: ' + e.message; });
+window.PROVA = { get info(){ return ultimoInfo; }, get pronto(){ return pronto; }, get fps(){ return 1000/media(intervalli); },
+  get msPittura(){ return msPittura; }, get figurine(){ return Object.keys(SPR).length; }, renderer: () => rendererInfo() };
+</script>
+</body>
+</html>
