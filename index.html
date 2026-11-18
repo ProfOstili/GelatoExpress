@@ -225,6 +225,10 @@ select,input{font-family:inherit}
 .board li .pos{width:44px;text-align:center;font-size:24px;color:var(--ink)}
 .board li .nm{flex:1}
 .board li.me{background:#fff0a8;border-color:var(--orange)}
+.board .tabs{display:flex;gap:8px;justify-content:center;margin:4px 0 10px;flex-wrap:wrap}
+.board .tabs button{border:3px solid var(--line);border-radius:99px;padding:6px 16px;font-weight:900;font-size:17px;background:#fff;color:var(--ink)}
+.board .tabs button.on{background:var(--yellow)}
+.board li .grp{font-size:13px;font-weight:800;color:var(--ink-soft);background:#eee;border-radius:8px;padding:1px 7px}
 .board .tabs-note{text-align:center;font-weight:800;margin:0 0 10px}
 .board .small{font-size:13px;color:var(--ink-soft);font-weight:700}
 
@@ -414,6 +418,10 @@ select,input{font-family:inherit}
 <section id="scr-board" class="screen hidden">
   <div class="board card">
     <h2 style="font-size:28px;text-align:center">🏆 Classifica</h2>
+    <div class="tabs" id="board-tabs">
+      <button id="tab-gruppo">👥 Il mio gruppo</button>
+      <button id="tab-globale">🌍 Globale</button>
+    </div>
     <p class="tabs-note" id="board-sub"></p>
     <ol id="board-list"></ol>
     <div class="res-actions" style="margin-top:14px">
@@ -469,6 +477,8 @@ const CONFIG = {
   // CLASSIFICA ONLINE: incolla qui l'indirizzo dell'app web di Google (vedi classifica-google/ISTRUZIONI.md).
   // Se resta vuoto, la classifica è solo su questo computer (sempre divisa per gruppo).
   classificaOnline: { url: '' , timeoutMs: 8000 },
+  // Chi scrive questo codice gioca SENZA gruppo: compare solo nella classifica globale.
+  codiceSenzaGruppo: 'LIBERO',
 
   sogliaSpreco: 10,         // "ieri ho buttato gelato" = almeno 10 coni avanzati
   durataGiornoMs: 1250,     // animazione di un giorno (più la notte)
@@ -733,9 +743,12 @@ function salvaGiocatore(){
   save(KEY_PLAYERS, all);
 }
 const norm = s => String(s||'').trim().toLowerCase();
+// gruppo = null -> classifica globale di questo computer
 function classificaLocale(gruppo){
-  return load(KEY_BOARD, []).filter(e => norm(e.gruppo) === norm(gruppo)).sort((x,y)=>y.best-x.best);
+  return load(KEY_BOARD, []).filter(e => gruppo === null || norm(e.gruppo) === norm(gruppo)).sort((x,y)=>y.best-x.best);
 }
+const chiaveGiocatore = () => norm(S.gruppo) + '|' + norm(S.nick);
+const posizione = lista => ({ pos: lista.findIndex(x => x.k === chiaveGiocatore()) + 1, tot: lista.length });
 function registraPunteggio(profitto){
   const b = load(KEY_BOARD, []);
   const k = norm(S.gruppo) + '|' + norm(S.nick);
@@ -744,8 +757,7 @@ function registraPunteggio(profitto){
   e.tentativi++;
   if(profitto > e.best) e.best = profitto;
   save(KEY_BOARD, b);
-  const lista = classificaLocale(S.gruppo);
-  return { pos: lista.findIndex(x=>x.k===k)+1, tot: lista.length };
+  return { gruppo: S.gruppo ? posizione(classificaLocale(S.gruppo)) : null, globale: posizione(classificaLocale(null)) };
 }
 
 /* ---------- classifica online (Foglio Google) ---------- */
@@ -772,10 +784,11 @@ async function inviaPunteggio(profitto){
   save(KEY_CODA, coda.slice(i));
   return inviato;
 }
+// gruppo = null -> classifica globale
 async function classificaOnline(gruppo){
-  const r = await api({ azione:'classifica', gruppo });
+  const r = await api(gruppo === null ? { azione:'classifica', tipo:'globale' } : { azione:'classifica', gruppo });
   if(!r.ok) throw new Error(r.errore || 'errore');
-  return r.righe.map(x => ({ ...x, k: norm(gruppo) + '|' + norm(x.nick) }));
+  return r.righe.map(x => { const g = gruppo === null ? (x.gruppo || '') : gruppo; return { ...x, gruppo:g, k: norm(g) + '|' + norm(x.nick) }; });
 }
 
 /* =====================================================================
@@ -804,8 +817,8 @@ function show(name){
 function aggiornaTopbar(){
   $('#tb-nick').classList.toggle('hidden', !S.nick);
   $('#tb-nick').textContent = '👤 ' + S.nick;
-  $('#tb-group').classList.toggle('hidden', !S.gruppo);
-  $('#tb-group').textContent = '👥 ' + S.gruppo + (S.gruppo && !S.online && ONLINE_CONF() ? ' (offline)' : '');
+  $('#tb-group').classList.toggle('hidden', !S.nick);
+  $('#tb-group').textContent = (S.gruppo ? '👥 ' + S.gruppo : '🌍 senza gruppo') + (S.nick && !S.online && ONLINE_CONF() ? ' (offline)' : '');
   $('#tb-att').classList.toggle('hidden', !S.nick || S.mode==='tutorial');
   $('#tb-att').textContent = 'Tentativi: ' + S.tentativi;
 }
@@ -841,7 +854,9 @@ async function entra(saltaTutorial){
   if(!nick) return scuoti('nick', '✏️ Scrivi il tuo nickname.');
   if(!gruppo) return scuoti('gruppo', '✏️ Scrivi il codice del gruppo che ti ha dato il prof.');
   S.online = false; S.gruppo = gruppo;
-  if(ONLINE_CONF()){
+  const senzaGruppo = norm(gruppo) === norm(CONFIG.codiceSenzaGruppo);
+  if(senzaGruppo){ S.gruppo = ''; S.online = ONLINE_CONF(); }
+  else if(ONLINE_CONF()){
     entrando = true; $('#btn-play').disabled = true; messaggioBenvenuto('🔎 Controllo il gruppo…', true);
     try{
       const r = await api({ azione:'gruppo', codice:gruppo });
@@ -852,7 +867,7 @@ async function entra(saltaTutorial){
     }
     entrando = false; $('#btn-play').disabled = false; messaggioBenvenuto('');
   }
-  save(KEY_ULTIMO, { gruppo:S.gruppo });
+  save(KEY_ULTIMO, { gruppo:S.gruppo, codice:S.gruppo });   // il codice LIBERO non viene ricordato: i ragazzi non lo vedono
   S.nick = nick;
   const d = datiGiocatore(nick);
   S.prog = d ? d.prog : progBase();
@@ -865,8 +880,8 @@ async function entra(saltaTutorial){
 $('#btn-play').onclick = () => entra(false);
 $('#nick').addEventListener('keydown', e => { if(e.key==='Enter') entra(false); });
 $('#lnk-skip').onclick = () => entra(true);
-$('#lnk-board').onclick = () => mostraClassifica();
-$('#tb-board').onclick = () => mostraClassifica();
+$('#lnk-board').onclick = () => mostraClassifica('gruppo');
+$('#tb-board').onclick = () => mostraClassifica('gruppo');
 
 /* =====================================================================
    EDITOR DEL PROGRAMMA
@@ -1255,7 +1270,7 @@ function mostraRisultati(sim, recordPrima, pos){
   let rec = `Tentativo ${S.tentativi} · Record: ${eurS(S.best)}`;
   if(recordPrima !== null && T.profitto > recordPrima) rec = `🎉 Nuovo record! (prima: ${eurS(recordPrima)})`;
   $('#r-record').innerHTML = rec;
-  $('#r-rank').textContent = `🏆 Sei ${pos.pos}° su ${pos.tot} nel gruppo ${S.gruppo}`;
+  mostraPosizioni(pos.gruppo, pos.globale);
   $('#r-online').textContent = '';
   if(S.online || ONLINE_CONF()) aggiornaOnline(T.profitto);
   $('#r-accounts').innerHTML = `
@@ -1275,17 +1290,21 @@ function mostraRisultati(sim, recordPrima, pos){
   $('#r-diary').innerHTML = diarioHTML(sim.giorni);
   show('results');
 }
+function mostraPosizioni(gruppo, globale){
+  const righe = [];
+  if(S.gruppo && gruppo && gruppo.pos) righe.push(`👥 Sei ${gruppo.pos}° su ${gruppo.tot} nel gruppo ${S.gruppo}`);
+  if(globale && globale.pos) righe.push(`🌍 ${globale.pos}° su ${globale.tot} nella classifica globale`);
+  $('#r-rank').innerHTML = righe.join('<br>');
+}
 async function aggiornaOnline(profitto){
   const box = $('#r-online');
   box.textContent = '☁️ Invio il punteggio…';
   const ok = await inviaPunteggio(profitto);
   if(!ok){ box.textContent = '📶 Niente internet: il punteggio verrà inviato più tardi.'; return; }
   try{
-    const lista = await classificaOnline(S.gruppo);
-    const k = norm(S.gruppo) + '|' + norm(S.nick);
-    const pos = lista.findIndex(x => x.k === k) + 1;
-    if(pos) $('#r-rank').textContent = `🏆 Sei ${pos}° su ${lista.length} nel gruppo ${S.gruppo}`;
-    box.textContent = '☁️ Salvato nella classifica online del gruppo.';
+    const [gr, glob] = await Promise.all([ S.gruppo ? classificaOnline(S.gruppo) : null, classificaOnline(null) ]);
+    mostraPosizioni(gr && posizione(gr), posizione(glob));
+    box.textContent = '☁️ Salvato nella classifica online.';
   }catch(e){ box.textContent = '☁️ Salvato online.'; }
 }
 function graficoSVG(G){
@@ -1317,30 +1336,45 @@ function diarioHTML(G){
 }
 $('#btn-fix').onclick = ()=> vaiAlGioco();
 $('#btn-diary').onclick = ()=> $('#r-diary').classList.toggle('hidden');
-$('#btn-toboard').onclick = ()=> mostraClassifica();
+$('#btn-toboard').onclick = ()=> mostraClassifica('gruppo');
 
-async function mostraClassifica(){
-  const gruppo = S.gruppo || (load(KEY_ULTIMO, {}).gruppo || '');
+let schedaClassifica = 'gruppo';
+async function mostraClassifica(scheda){
+  const ultimo = load(KEY_ULTIMO, {});
+  const gruppo = S.nick ? S.gruppo : (ultimo.gruppo || '');
+  if(scheda) schedaClassifica = scheda;
+  if(!gruppo) schedaClassifica = 'globale';
+  const globale = schedaClassifica === 'globale';
+  $('#tab-gruppo').classList.toggle('hidden', !gruppo);
+  $('#tab-gruppo').textContent = '👥 ' + (gruppo || 'Gruppo');
+  $('#tab-gruppo').classList.toggle('on', !globale);
+  $('#tab-globale').classList.toggle('on', globale);
   const sub = $('#board-sub');
-  let b = classificaLocale(gruppo), fonte = 'su questo computer';
+  const filtro = globale ? null : gruppo;
+  let b = classificaLocale(filtro), fonte = 'di questo computer';
   show('board');
-  sub.textContent = gruppo ? `👥 Gruppo ${gruppo}` : 'Inserisci un gruppo per vedere la sua classifica';
-  if(ONLINE_CONF() && gruppo){
+  sub.textContent = '';
+  if(ONLINE_CONF()){
     $('#board-list').innerHTML = '<li><span class="nm">☁️ Carico la classifica…</span></li>';
-    try{ b = await classificaOnline(gruppo); fonte = 'online'; }
-    catch(e){ fonte = 'su questo computer (niente internet)'; }
+    try{ b = await classificaOnline(filtro); fonte = 'online'; }
+    catch(e){ fonte = 'di questo computer (niente internet)'; }
+    if((schedaClassifica === 'globale') !== globale) return;   // nel frattempo è stata cambiata scheda
   }
-  if(gruppo) sub.textContent = `👥 Gruppo ${gruppo} · classifica ${fonte}`;
+  sub.textContent = (globale ? '🌍 Tutti i giocatori' : `👥 Solo il gruppo ${gruppo}`) + ` · classifica ${fonte}`;
   const me = norm(gruppo) + '|' + norm(S.nick);
   const medal = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'°';
-  let html = b.slice(0,10).map((e,i)=>`<li class="${e.k===me?'me':''}"><span class="pos">${medal(i)}</span><span class="nm">${esc(e.nick)}</span>
-     <span class="${e.best>=0?'pos':'neg'}">${eurS(e.best)}</span></li>`).join('');
-  const myIdx = b.findIndex(e=>e.k===me);
-  if(myIdx >= 10) html += `<li class="me"><span class="pos">${myIdx+1}°</span><span class="nm">${esc(b[myIdx].nick)}</span><span>${eurS(b[myIdx].best)}</span></li>`;
+  const riga = (e,i) => `<li class="${S.nick && e.k===me?'me':''}"><span class="pos">${medal(i)}</span><span class="nm">${esc(e.nick)}
+     ${globale ? `<span class="grp">${e.gruppo ? esc(e.gruppo) : 'senza gruppo'}</span>` : ''}</span>
+     <span class="${e.best>=0?'pos':'neg'}">${eurS(e.best)}</span></li>`;
+  let html = b.slice(0,10).map(riga).join('');
+  const myIdx = S.nick ? b.findIndex(e=>e.k===me) : -1;
+  if(myIdx >= 10) html += riga(b[myIdx], myIdx);
   $('#board-list').innerHTML = html || '<li><span class="nm">Ancora nessun punteggio: gioca per primo!</span></li>';
   $('#btn-board-back').textContent = S.nick ? '🔧 Prova ancora' : '◀ Indietro';
   $('#btn-board-reset').classList.toggle('hidden', !params.has('admin'));
 }
+$('#tab-gruppo').onclick = () => mostraClassifica('gruppo');
+$('#tab-globale').onclick = () => mostraClassifica('globale');
 $('#btn-board-back').onclick = ()=>{
   if(!S.nick) return show('welcome');
   if(S.mode==='tutorial'){ show('program'); return; }
@@ -1354,7 +1388,7 @@ $('#btn-board-reset').onclick = async ()=>{
 
 // esposto per i test
 window.GELATERIA = { CONFIG, simula, generaGiorni, statoIniziale, analizza, giorniTutorial };
-$('#gruppo').value = load(KEY_ULTIMO, {}).gruppo || params.get('gruppo') || '';
+$('#gruppo').value = (()=>{ const u = load(KEY_ULTIMO, {}); return u.codice ?? u.gruppo ?? params.get('gruppo') ?? ''; })();
 $('#gruppo').addEventListener('keydown', e => { if(e.key==='Enter') entra(false); });
 show('welcome');
 </script>

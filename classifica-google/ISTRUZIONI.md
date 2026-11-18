@@ -34,7 +34,8 @@ Nella scheda **Gruppi** aggiungi una riga per ogni gruppo nuovo:
 
 - I ragazzi scrivono nickname + codice gruppo (maiuscole/minuscole non contano).
 - Un codice che non esiste o con **NO** nella colonna "Attivo" viene rifiutato.
-- La classifica mostra solo i ragazzi dello stesso gruppo (miglior profitto di ogni nickname).
+- La classifica ha due schede: **👥 Gruppo** (solo i ragazzi dello stesso gruppo) e **🌍 Globale** (tutti, con il nome del gruppo accanto). Per ogni nickname conta il miglior profitto; lo stesso nickname in due gruppi diversi vale come due giocatori.
+- **Giocare senza gruppo**: scrivi il codice speciale **`LIBERO`** (si cambia in `CONFIG.codiceSenzaGruppo` in `index.html`). Non serve aggiungerlo alla scheda Gruppi. Il punteggio viene salvato con la colonna Gruppo vuota e compare solo nella classifica globale. Il gioco non ricorda questo codice, così il ragazzo che usa il PC dopo di te non lo vede.
 - Per togliere un nickname inappropriato basta cancellarne le righe nella scheda **Punteggi**.
 - Se lo modifichi, `Codice.gs` va ripubblicato: **Esegui il deployment → Gestisci deployment → ✏️ → Nuova versione**. L'URL resta lo stesso.
 
