@@ -69,6 +69,10 @@ select,input{font-family:inherit}
 #scr-welcome p.sub{font-size:20px;margin:0;max-width:560px}
 .nick-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
 .nick-row input{font-size:22px;padding:12px 16px;border:3px solid var(--line);border-radius:16px;width:260px;max-width:80vw;text-align:center;font-weight:700}
+.nick-row .field{display:flex;flex-direction:column;gap:4px;text-align:left;font-weight:800}
+.nick-row .field small{color:var(--ink-soft);font-weight:700}
+.welcome-msg{font-weight:800;color:var(--red);min-height:1.4em;margin:0}
+.welcome-msg.info{color:var(--ink-soft)}
 .links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
 .links button{background:none;border:0;color:var(--ink-soft);font-size:16px;text-decoration:underline;font-weight:700}
 
@@ -221,6 +225,7 @@ select,input{font-family:inherit}
 .board li .pos{width:44px;text-align:center;font-size:24px;color:var(--ink)}
 .board li .nm{flex:1}
 .board li.me{background:#fff0a8;border-color:var(--orange)}
+.board .tabs-note{text-align:center;font-weight:800;margin:0 0 10px}
 .board .small{font-size:13px;color:var(--ink-soft);font-weight:700}
 
 /* ---------- schermi stretti / telefono ---------- */
@@ -264,6 +269,7 @@ select,input{font-family:inherit}
   <div class="logo">🍦🤖 Gelateria Automatica</div>
   <div class="sp"></div>
   <span class="chip hidden" id="tb-nick"></span>
+  <span class="chip att hidden" id="tb-group"></span>
   <span class="chip att hidden" id="tb-att"></span>
   <button id="tb-board">🏆</button>
 </header>
@@ -274,9 +280,14 @@ select,input{font-family:inherit}
   <h1>La Gelateria <span>Automatica</span></h1>
   <p class="sub">Non vendi tu il gelato: scrivi il <b>programma</b> che gestisce la gelateria al posto tuo!</p>
   <div class="nick-row">
-    <input id="nick" maxlength="14" placeholder="Il tuo nickname" autocomplete="off">
-    <button class="btn big pink" id="btn-play">GIOCA ▶</button>
+    <label class="field" for="nick">👤 Nickname
+      <input id="nick" maxlength="14" placeholder="es. SuperGelato" autocomplete="off">
+      <small>Non usare il tuo vero nome!</small></label>
+    <label class="field" for="gruppo">👥 Codice gruppo
+      <input id="gruppo" maxlength="30" placeholder="te lo dà il prof" autocomplete="off" autocapitalize="characters"></label>
   </div>
+  <p class="welcome-msg" id="welcome-msg"></p>
+  <button class="btn big pink" id="btn-play">GIOCA ▶</button>
   <div class="links">
     <button id="lnk-skip">Salta il tutorial</button>
     <button id="lnk-board">🏆 Classifica</button>
@@ -377,6 +388,8 @@ select,input{font-family:inherit}
         <div class="lbl">Profitto in 14 giorni</div>
         <div class="val" id="r-profit">0 €</div>
         <div class="rec" id="r-record"></div>
+        <div class="rec" id="r-rank"></div>
+        <div class="muted" id="r-online" style="font-weight:700;font-size:14px;margin-top:4px"></div>
       </div>
       <div class="card">
         <h2>🧾 I conti</h2>
@@ -401,7 +414,7 @@ select,input{font-family:inherit}
 <section id="scr-board" class="screen hidden">
   <div class="board card">
     <h2 style="font-size:28px;text-align:center">🏆 Classifica</h2>
-    <p class="small" style="text-align:center">Il miglior profitto di ogni giocatore su questo computer</p>
+    <p class="tabs-note" id="board-sub"></p>
     <ol id="board-list"></ol>
     <div class="res-actions" style="margin-top:14px">
       <button class="btn big pink" id="btn-board-back">🔧 Prova ancora</button>
@@ -452,6 +465,10 @@ const CONFIG = {
     sensibilitaPrezzo: 0.4, // ogni 1 € sopra il prezzo normale perdi il 40% dei clienti
     effettoPrezzoMax: 1.5
   },
+
+  // CLASSIFICA ONLINE: incolla qui l'indirizzo dell'app web di Google (vedi classifica-google/ISTRUZIONI.md).
+  // Se resta vuoto, la classifica è solo su questo computer (sempre divisa per gruppo).
+  classificaOnline: { url: '' , timeoutMs: 8000 },
 
   sogliaSpreco: 10,         // "ieri ho buttato gelato" = almeno 10 coni avanzati
   durataGiornoMs: 1250,     // animazione di un giorno (più la notte)
@@ -715,16 +732,50 @@ function salvaGiocatore(){
   all[S.nick.toLowerCase()] = { nick:S.nick, prog:S.prog, tutorialFatto:S.tutorialFatto, tentativi:S.tentativi, best:S.best };
   save(KEY_PLAYERS, all);
 }
+const norm = s => String(s||'').trim().toLowerCase();
+function classificaLocale(gruppo){
+  return load(KEY_BOARD, []).filter(e => norm(e.gruppo) === norm(gruppo)).sort((x,y)=>y.best-x.best);
+}
 function registraPunteggio(profitto){
   const b = load(KEY_BOARD, []);
-  const k = S.nick.toLowerCase();
+  const k = norm(S.gruppo) + '|' + norm(S.nick);
   let e = b.find(x => x.k === k);
-  if(!e){ e = { k, nick:S.nick, best:profitto, tentativi:0 }; b.push(e); }
+  if(!e){ e = { k, gruppo:S.gruppo, nick:S.nick, best:profitto, tentativi:0 }; b.push(e); }
   e.tentativi++;
   if(profitto > e.best) e.best = profitto;
-  b.sort((x,y)=>y.best-x.best);
   save(KEY_BOARD, b);
-  return { pos: b.findIndex(x=>x.k===k)+1, tot: b.length };
+  const lista = classificaLocale(S.gruppo);
+  return { pos: lista.findIndex(x=>x.k===k)+1, tot: lista.length };
+}
+
+/* ---------- classifica online (Foglio Google) ---------- */
+const KEY_CODA = 'gelateria.daInviare.v1', KEY_ULTIMO = 'gelateria.ultimo.v1';
+const ONLINE_CONF = () => !!CONFIG.classificaOnline.url;
+async function api(parametri){
+  const u = new URL(CONFIG.classificaOnline.url);
+  Object.entries(parametri).forEach(([k,v]) => u.searchParams.set(k, v));
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), CONFIG.classificaOnline.timeoutMs);
+  try{ const r = await fetch(u.toString(), { signal:ctrl.signal }); return await r.json(); }
+  finally{ clearTimeout(t); }
+}
+// Invia il punteggio; se manca internet lo mette in coda e lo riprova la volta dopo.
+async function inviaPunteggio(profitto){
+  const coda = load(KEY_CODA, []);
+  coda.push({ azione:'salva', gruppo:S.gruppo, nick:S.nick, profitto:Math.round(profitto), tentativo:S.tentativi });
+  const ultima = coda[coda.length-1];
+  let inviato = false, i = 0;
+  for(; i < coda.length; i++){
+    try{ const r = await api(coda[i]); if(coda[i] === ultima) inviato = !!r.ok; }  // il server ha risposto: tolgo dalla coda
+    catch(e){ break; }                                                            // niente internet: riprovo la prossima volta
+  }
+  save(KEY_CODA, coda.slice(i));
+  return inviato;
+}
+async function classificaOnline(gruppo){
+  const r = await api({ azione:'classifica', gruppo });
+  if(!r.ok) throw new Error(r.errore || 'errore');
+  return r.righe.map(x => ({ ...x, k: norm(gruppo) + '|' + norm(x.nick) }));
 }
 
 /* =====================================================================
@@ -733,7 +784,7 @@ function registraPunteggio(profitto){
 const params = new URLSearchParams(location.search);
 const SEED = parseInt(params.get('seed')) || CONFIG.seed;
 const S = {
-  nick:'', prog:null, tutorialFatto:false, tentativi:0, best:null,
+  nick:'', gruppo:'', online:false, prog:null, tutorialFatto:false, tentativi:0, best:null,
   mode:'game',                 // 'tutorial' | 'game'
   tut:{ giorno:0, stato:null, giorni:giorniTutorial() },
   giorniSfida: generaGiorni(SEED),
@@ -753,6 +804,8 @@ function show(name){
 function aggiornaTopbar(){
   $('#tb-nick').classList.toggle('hidden', !S.nick);
   $('#tb-nick').textContent = '👤 ' + S.nick;
+  $('#tb-group').classList.toggle('hidden', !S.gruppo);
+  $('#tb-group').textContent = '👥 ' + S.gruppo + (S.gruppo && !S.online && ONLINE_CONF() ? ' (offline)' : '');
   $('#tb-att').classList.toggle('hidden', !S.nick || S.mode==='tutorial');
   $('#tb-att').textContent = 'Tentativi: ' + S.tentativi;
 }
@@ -775,9 +828,31 @@ function toast(html, ms){
 /* =====================================================================
    SCHERMATA BENVENUTO
    ===================================================================== */
-function entra(saltaTutorial){
+function scuoti(id, msg){
+  const el = $('#'+id); el.classList.add('shake'); el.focus(); setTimeout(()=>el.classList.remove('shake'),400);
+  messaggioBenvenuto(msg);
+}
+function messaggioBenvenuto(msg, info){ const m = $('#welcome-msg'); m.textContent = msg || ''; m.classList.toggle('info', !!info); }
+let entrando = false;
+async function entra(saltaTutorial){
+  if(entrando) return;
   const nick = $('#nick').value.trim().replace(/\s+/g,' ');
-  if(!nick){ $('#nick').classList.add('shake'); $('#nick').focus(); setTimeout(()=>$('#nick').classList.remove('shake'),400); return; }
+  const gruppo = $('#gruppo').value.trim().replace(/\s+/g,' ');
+  if(!nick) return scuoti('nick', '✏️ Scrivi il tuo nickname.');
+  if(!gruppo) return scuoti('gruppo', '✏️ Scrivi il codice del gruppo che ti ha dato il prof.');
+  S.online = false; S.gruppo = gruppo;
+  if(ONLINE_CONF()){
+    entrando = true; $('#btn-play').disabled = true; messaggioBenvenuto('🔎 Controllo il gruppo…', true);
+    try{
+      const r = await api({ azione:'gruppo', codice:gruppo });
+      if(!r.ok){ entrando = false; $('#btn-play').disabled = false; return scuoti('gruppo', `🙈 Il gruppo «${gruppo}» non esiste: controlla il codice o chiedi al prof.`); }
+      S.gruppo = r.codice; S.online = true;
+    }catch(e){
+      await modal(`<div class="ic">📶❌</div><h3>Niente internet</h3><p>Puoi giocare lo stesso! La classifica sarà solo su questo computer e i punteggi verranno inviati appena torna la connessione.</p>`, [{t:'Gioca ▶'}]);
+    }
+    entrando = false; $('#btn-play').disabled = false; messaggioBenvenuto('');
+  }
+  save(KEY_ULTIMO, { gruppo:S.gruppo });
   S.nick = nick;
   const d = datiGiocatore(nick);
   S.prog = d ? d.prog : progBase();
@@ -1179,8 +1254,10 @@ function mostraRisultati(sim, recordPrima, pos){
   pv.className = 'val ' + (T.profitto >= 0 ? 'pos' : 'neg');
   let rec = `Tentativo ${S.tentativi} · Record: ${eurS(S.best)}`;
   if(recordPrima !== null && T.profitto > recordPrima) rec = `🎉 Nuovo record! (prima: ${eurS(recordPrima)})`;
-  rec += `<br>🏆 Sei ${pos.pos}° su ${pos.tot}`;
   $('#r-record').innerHTML = rec;
+  $('#r-rank').textContent = `🏆 Sei ${pos.pos}° su ${pos.tot} nel gruppo ${S.gruppo}`;
+  $('#r-online').textContent = '';
+  if(S.online || ONLINE_CONF()) aggiornaOnline(T.profitto);
   $('#r-accounts').innerHTML = `
     <tr><td>💶 Ricavi <span class="tag">${T.venduti} coni</span></td><td class="pos">+${eur(T.ricavi)}</td></tr>
     <tr><td>🍦 Ingredienti <span class="tag">variabile</span></td><td class="neg">−${eur(T.cIngredienti)}</td></tr>
@@ -1197,6 +1274,19 @@ function mostraRisultati(sim, recordPrima, pos){
   $('#r-diary').classList.add('hidden');
   $('#r-diary').innerHTML = diarioHTML(sim.giorni);
   show('results');
+}
+async function aggiornaOnline(profitto){
+  const box = $('#r-online');
+  box.textContent = '☁️ Invio il punteggio…';
+  const ok = await inviaPunteggio(profitto);
+  if(!ok){ box.textContent = '📶 Niente internet: il punteggio verrà inviato più tardi.'; return; }
+  try{
+    const lista = await classificaOnline(S.gruppo);
+    const k = norm(S.gruppo) + '|' + norm(S.nick);
+    const pos = lista.findIndex(x => x.k === k) + 1;
+    if(pos) $('#r-rank').textContent = `🏆 Sei ${pos}° su ${lista.length} nel gruppo ${S.gruppo}`;
+    box.textContent = '☁️ Salvato nella classifica online del gruppo.';
+  }catch(e){ box.textContent = '☁️ Salvato online.'; }
 }
 function graficoSVG(G){
   const W=720, H=250, pl=50, pr=10, pt=18, pb=46;
@@ -1229,9 +1319,19 @@ $('#btn-fix').onclick = ()=> vaiAlGioco();
 $('#btn-diary').onclick = ()=> $('#r-diary').classList.toggle('hidden');
 $('#btn-toboard').onclick = ()=> mostraClassifica();
 
-function mostraClassifica(){
-  const b = load(KEY_BOARD, []);
-  const me = S.nick.toLowerCase();
+async function mostraClassifica(){
+  const gruppo = S.gruppo || (load(KEY_ULTIMO, {}).gruppo || '');
+  const sub = $('#board-sub');
+  let b = classificaLocale(gruppo), fonte = 'su questo computer';
+  show('board');
+  sub.textContent = gruppo ? `👥 Gruppo ${gruppo}` : 'Inserisci un gruppo per vedere la sua classifica';
+  if(ONLINE_CONF() && gruppo){
+    $('#board-list').innerHTML = '<li><span class="nm">☁️ Carico la classifica…</span></li>';
+    try{ b = await classificaOnline(gruppo); fonte = 'online'; }
+    catch(e){ fonte = 'su questo computer (niente internet)'; }
+  }
+  if(gruppo) sub.textContent = `👥 Gruppo ${gruppo} · classifica ${fonte}`;
+  const me = norm(gruppo) + '|' + norm(S.nick);
   const medal = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'°';
   let html = b.slice(0,10).map((e,i)=>`<li class="${e.k===me?'me':''}"><span class="pos">${medal(i)}</span><span class="nm">${esc(e.nick)}</span>
      <span class="${e.best>=0?'pos':'neg'}">${eurS(e.best)}</span></li>`).join('');
@@ -1240,7 +1340,6 @@ function mostraClassifica(){
   $('#board-list').innerHTML = html || '<li><span class="nm">Ancora nessun punteggio: gioca per primo!</span></li>';
   $('#btn-board-back').textContent = S.nick ? '🔧 Prova ancora' : '◀ Indietro';
   $('#btn-board-reset').classList.toggle('hidden', !params.has('admin'));
-  show('board');
 }
 $('#btn-board-back').onclick = ()=>{
   if(!S.nick) return show('welcome');
@@ -1248,13 +1347,15 @@ $('#btn-board-back').onclick = ()=>{
   vaiAlGioco();
 };
 $('#btn-board-reset').onclick = async ()=>{
-  const r = await modal('<div class="ic">🗑️</div><h3>Azzerare la classifica?</h3><p>Verranno cancellati tutti i punteggi e i programmi salvati su questo computer.</p>',
+  const r = await modal('<div class="ic">🗑️</div><h3>Azzerare la classifica?</h3><p>Verranno cancellati tutti i punteggi e i programmi salvati su questo computer. La classifica online si gestisce dal Foglio Google.</p>',
     [{t:'Sì, azzera', cls:'pink'},{t:'Annulla', cls:''}]);
   if(r===0){ save(KEY_BOARD, []); save(KEY_PLAYERS, {}); mostraClassifica(); }
 };
 
 // esposto per i test
 window.GELATERIA = { CONFIG, simula, generaGiorni, statoIniziale, analizza, giorniTutorial };
+$('#gruppo').value = load(KEY_ULTIMO, {}).gruppo || params.get('gruppo') || '';
+$('#gruppo').addEventListener('keydown', e => { if(e.key==='Enter') entra(false); });
 show('welcome');
 </script>
 </body>
