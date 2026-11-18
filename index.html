@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Gelateria Automatica</title>
+<style>
+/* =====================================================================
+   STILE — tutti i colori sono variabili qui sotto, così si può
+   cambiare l'aspetto grafico senza toccare la logica del gioco.
+   ===================================================================== */
+:root{
+  --bg:#fff4dc; --bg2:#ffe6b8; --ink:#2b2140; --ink-soft:#6b5f80;
+  --card:#ffffff; --line:#2b2140;
+  --pink:#ff6fa5; --pink-d:#d94a82;
+  --mint:#2fc6a2; --mint-d:#1f9a7d;
+  --yellow:#ffd23f; --yellow-d:#e0ae10;
+  --sky:#5ab0ff; --sky-d:#2f86d6;
+  --orange:#ff9f43; --red:#ff4d5e; --green:#1fae6f;
+  --cond:#ffd23f; --act:#7cc4ff;
+  --radius:18px; --shadow:0 5px 0 rgba(43,33,64,.18);
+  --font:"Trebuchet MS","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);
+  background-image:radial-gradient(circle at 10% 20%,#ffe9f2 0 60px,transparent 61px),
+                   radial-gradient(circle at 90% 80%,#e3f6ff 0 90px,transparent 91px);
+  min-height:100vh;font-size:16px;line-height:1.35}
+button{font-family:inherit;cursor:pointer}
+select,input{font-family:inherit}
+.hidden{display:none!important}
+
+/* ---------- barra in alto ---------- */
+.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--pink);color:#fff;
+  box-shadow:var(--shadow);position:sticky;top:0;z-index:20}
+.topbar .logo{font-weight:900;font-size:20px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.topbar .chip{max-width:40vw;overflow:hidden;text-overflow:ellipsis}
+.topbar .sp{flex:1}
+.topbar .chip{background:rgba(255,255,255,.25);border-radius:99px;padding:4px 12px;font-weight:700;white-space:nowrap}
+.topbar button{background:#fff;color:var(--pink-d);border:0;border-radius:99px;padding:6px 14px;font-weight:800;font-size:15px}
+
+/* ---------- elementi comuni ---------- */
+.screen{padding:14px 16px 24px;max-width:1340px;margin:0 auto}
+.card{background:var(--card);border:3px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px}
+.card h2{margin:0 0 8px;font-size:19px}
+.btn{border:3px solid var(--line);border-radius:16px;padding:10px 18px;font-size:18px;font-weight:900;
+  box-shadow:0 5px 0 var(--line);background:#fff;color:var(--ink);transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--line)}
+.btn.big{font-size:24px;padding:14px 26px}
+.btn.pink{background:var(--pink);color:#fff}
+.btn.mint{background:var(--mint);color:#fff}
+.btn.yellow{background:var(--yellow)}
+.btn.sky{background:var(--sky);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.pulse{animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 5px 0 var(--line),0 0 0 0 rgba(255,111,165,.7)}50%{box-shadow:0 5px 0 var(--line),0 0 0 10px rgba(255,111,165,0)}}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.muted{color:var(--ink-soft)}
+.pos{color:var(--green)} .neg{color:var(--red)}
+
+/* ---------- benvenuto ---------- */
+#scr-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 60px);text-align:center;gap:14px}
+.hero-ico{font-size:84px;line-height:1;animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-10px) rotate(-4deg)}}
+#scr-welcome h1{font-size:44px;margin:0;line-height:1.05}
+#scr-welcome h1 span{color:var(--pink)}
+#scr-welcome p.sub{font-size:20px;margin:0;max-width:560px}
+.nick-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.nick-row input{font-size:22px;padding:12px 16px;border:3px solid var(--line);border-radius:16px;width:260px;max-width:80vw;text-align:center;font-weight:700}
+.links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.links button{background:none;border:0;color:var(--ink-soft);font-size:16px;text-decoration:underline;font-weight:700}
+
+/* ---------- schermata programma ---------- */
+.prog-grid{display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:12px}
+.stepper{display:flex;align-items:center;gap:8px;margin:6px 0 10px}
+.stepper .lbl{flex:1;font-weight:800;font-size:17px}
+.stepper button{width:42px;height:42px;border-radius:12px;border:3px solid var(--line);background:var(--yellow);font-size:24px;font-weight:900;line-height:1;box-shadow:0 3px 0 var(--line)}
+.stepper button:active{transform:translateY(3px);box-shadow:none}
+.stepper .val{min-width:92px;text-align:center;font-size:22px;font-weight:900;background:#fff7e6;border:3px dashed var(--line);border-radius:12px;padding:4px 6px}
+.info-chips{display:flex;flex-wrap:wrap;gap:6px}
+.info-chips span{background:#f3ecff;border-radius:10px;padding:3px 8px;font-size:14px;font-weight:700}
+.forecast{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.fday{border:2px solid var(--line);border-radius:10px;text-align:center;padding:3px 0;background:#eef8ff;font-size:12px;font-weight:800;position:relative}
+.fday .ic{font-size:20px;display:block;line-height:1.2}
+.fday.unk{background:#e9e4f0;color:var(--ink-soft)}
+.fday.now{outline:3px solid var(--pink);outline-offset:1px}
+.fday.pop{animation:popin .4s}
+@keyframes popin{0%{transform:scale(.5)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.station-note{font-size:13px;margin-top:6px;font-weight:700;color:var(--ink-soft)}
+.fact{background:#e8fff7;border-color:var(--mint-d)}
+.fact h2{color:var(--mint-d)}
+.fact p{margin:0;font-size:15px}
+.prog-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.prog-head h2{margin:0;flex:1}
+.hint{font-size:13px;color:var(--ink-soft);font-weight:700}
+.rules{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.rule{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#faf7ff;border:2px solid #d9d0ea;border-radius:14px;padding:6px}
+.rule .num{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none}
+.blk{display:flex;align-items:center;gap:5px;border:3px solid var(--line);border-radius:12px;padding:5px 8px;flex-wrap:wrap}
+.blk b{font-size:16px;letter-spacing:.5px}
+.blk.cond{background:var(--cond);border-radius:12px 22px 22px 12px}
+.blk.act{background:var(--act)}
+.blk select{font-size:16px;font-weight:700;padding:5px 4px;border:2px solid var(--line);border-radius:9px;background:#fff;max-width:100%}
+.rule .tools{display:flex;gap:4px;margin-left:auto}
+.rule .tools button{width:36px;height:36px;border-radius:10px;border:2px solid var(--line);background:#fff;font-size:16px}
+.rule.fired{background:#fff0a8;border-color:var(--orange);animation:popin .35s}
+.empty-rules{padding:16px;text-align:center;border:3px dashed #cbbfe0;border-radius:14px;color:var(--ink-soft);font-weight:700}
+.run-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.start-chips{display:flex;gap:8px;flex-wrap:wrap}
+.start-chips span{background:#fff;border:2px solid var(--line);border-radius:99px;padding:4px 10px;font-weight:800}
+
+/* ---------- tutor (tutorial) ---------- */
+.coach{display:flex;gap:12px;align-items:flex-start;background:#fff;border:3px solid var(--pink);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 14px;margin-bottom:12px}
+.coach .mascot{font-size:52px;line-height:1;animation:bob 2s ease-in-out infinite}
+.coach .body{flex:1}
+.coach .say{font-size:18px;font-weight:700;margin:0 0 6px}
+.coach .target{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;font-weight:800;font-size:15px;margin:2px 0 6px}
+.coach .target .blk{padding:3px 8px}
+.coach .err{color:var(--red);font-weight:800;margin:4px 0 0}
+.coach .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.tomorrow{display:flex;align-items:center;gap:12px;font-size:20px;font-weight:900}
+.tomorrow .ic{font-size:54px}
+
+/* ---------- simulazione ---------- */
+.sim-grid{display:grid;grid-template-columns:1fr 330px;gap:14px;align-items:start}
+.sim-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.sim-top .pill{background:#fff;border:3px solid var(--line);border-radius:14px;padding:5px 12px;font-weight:900;font-size:20px;box-shadow:var(--shadow)}
+.sim-top .cash{margin-left:auto;background:var(--yellow)}
+.scene{position:relative;height:clamp(330px,calc(100vh - 220px),470px);border:3px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);
+  background:linear-gradient(#bfe6ff 0 46%,#c9ef9f 46% 70%,#8d8a99 70% 86%,#b9ab95 86%)}
+.scene.nuvoloso{background:linear-gradient(#cfd8e3 0 46%,#b8dc96 46% 70%,#8d8a99 70% 86%,#b9ab95 86%)}
+.scene.pioggia{background:linear-gradient(#8ea1b8 0 46%,#9fc487 46% 70%,#7a7786 70% 86%,#a89a85 86%)}
+.scene .rain{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background-image:repeating-linear-gradient(105deg,transparent 0 14px,rgba(255,255,255,.55) 14px 16px);background-size:100% 40px;animation:rain .35s linear infinite}
+.scene.pioggia .rain{opacity:.7}
+@keyframes rain{to{background-position:0 40px}}
+.scene .night{position:absolute;inset:0;background:#1b1240;opacity:0;pointer-events:none;transition:opacity .15s;z-index:9}
+.sky-weather{position:absolute;left:14px;top:10px;font-size:52px;line-height:1;display:flex;align-items:center;gap:8px}
+.sky-weather span{font-size:28px;font-weight:900;background:rgba(255,255,255,.8);border-radius:12px;padding:2px 10px}
+.shop{position:absolute;right:12px;top:22px;width:190px;height:230px}
+.shop .awning{height:38px;border:3px solid var(--line);border-radius:10px 10px 4px 4px;
+  background:repeating-linear-gradient(90deg,var(--pink) 0 22px,#fff 22px 44px)}
+.shop .sign{position:absolute;top:44px;left:10px;right:10px;background:#fff;border:3px solid var(--line);border-radius:10px;text-align:center;font-weight:900;font-size:15px;padding:2px}
+.shop .wall{position:absolute;top:38px;left:6px;right:6px;bottom:0;background:#fff3d6;border:3px solid var(--line);border-top:0;z-index:-1}
+.shop .counter{position:absolute;bottom:18px;left:6px;right:6px;height:86px;background:var(--sky);border:3px solid var(--line);border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900}
+.shop .counter .n{font-size:34px;line-height:1}
+.shop .soldout{position:absolute;top:80px;left:10px;right:10px;background:var(--red);color:#fff;border:3px solid var(--line);border-radius:10px;
+  text-align:center;font-weight:900;font-size:16px;transform:rotate(-6deg);padding:2px}
+.street{position:absolute;left:0;right:210px;top:46%;height:24%}
+.cust{position:absolute;bottom:2px;left:0;font-size:34px;line-height:1;will-change:transform}
+.cust i{font-style:normal;font-size:22px;position:absolute;top:-16px;right:-10px}
+.road{position:absolute;left:0;right:0;top:70%;height:16%;border-top:3px dashed rgba(255,255,255,.7)}
+.truck{position:absolute;bottom:calc(14% + 4px);left:2%;z-index:3;width:118px;height:62px;transition:left .25s linear}
+.truck svg{width:118px;height:56px;animation:bump .26s ease-in-out infinite alternate;overflow:visible}
+@keyframes bump{to{transform:translateY(-4px) rotate(-1deg)}}
+.truck .smoke{position:absolute;left:-2px;bottom:12px;width:14px;height:14px;border-radius:50%;background:#9c98a8;opacity:0;animation:smoke 1s ease-out infinite}
+.truck .smoke:nth-of-type(2){animation-delay:.33s}
+.truck .smoke:nth-of-type(3){animation-delay:.66s}
+@keyframes smoke{0%{transform:translate(0,0) scale(.5);opacity:.85}100%{transform:translate(-34px,-26px) scale(2.2);opacity:0}}
+.truck .tlabel{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;border:3px solid var(--line);border-radius:12px;
+  padding:2px 8px;font-weight:900;font-size:14px}
+.stockbar{position:absolute;left:12px;right:12px;bottom:8px;height:30px;background:#fff;border:3px solid var(--line);border-radius:10px;overflow:hidden}
+.stockbar .fill{height:100%;background:var(--orange);transition:width .3s}
+.stockbar .fill.low{background:var(--red)}
+.stockbar .txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px}
+.floater{position:absolute;font-weight:900;font-size:26px;pointer-events:none;z-index:8;text-shadow:0 2px 0 #fff,0 -2px 0 #fff,2px 0 0 #fff,-2px 0 0 #fff;animation:floatup 1.2s ease-out forwards}
+@keyframes floatup{0%{transform:translateY(10px);opacity:0}15%{opacity:1}100%{transform:translateY(-50px);opacity:0}}
+.decision{display:flex;flex-direction:column;gap:5px}
+.decision div{display:flex;justify-content:space-between;font-weight:800;font-size:17px;background:#f6f2ff;border-radius:10px;padding:4px 10px}
+.decision .warn{background:#ffe1e4;color:var(--red)}
+.mini-rules{display:flex;flex-direction:column;gap:5px;margin:0;padding:0;list-style:none}
+.mini-rules li{font-size:14px;font-weight:700;border:2px solid #d9d0ea;border-radius:10px;padding:4px 8px;background:#faf7ff}
+.mini-rules li.fired{background:#fff0a8;border-color:var(--orange);animation:popin .35s}
+.mini-rules li.fired::after{content:" ✅"}
+.speed-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:50;background:#fff;border:4px solid var(--line);border-radius:24px;
+  box-shadow:0 8px 0 rgba(43,33,64,.25);padding:18px 26px;text-align:center;font-weight:900;font-size:24px;max-width:92vw}
+.toast .big{font-size:64px;display:block;animation:shake .5s 2}
+
+/* ---------- modale ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(43,33,64,.55);z-index:40;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border:4px solid var(--line);border-radius:24px;box-shadow:0 8px 0 rgba(43,33,64,.25);max-width:560px;width:100%;padding:20px 22px;text-align:center;max-height:92vh;overflow:auto}
+.modal .ic{font-size:64px;line-height:1}
+.modal h3{font-size:26px;margin:6px 0}
+.modal p{font-size:18px;margin:8px 0}
+.modal .stats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.modal .stats span{background:#f6f2ff;border-radius:12px;padding:6px 12px;font-weight:900;font-size:18px}
+.modal .fact{text-align:left;margin-top:10px}
+
+/* ---------- risultati ---------- */
+.res-grid{display:grid;grid-template-columns:330px 1fr;gap:14px;align-items:start}
+.profit-hero{text-align:center}
+.profit-hero .lbl{font-weight:800;font-size:18px}
+.profit-hero .val{font-size:52px;font-weight:900;line-height:1.1}
+.profit-hero .rec{font-weight:800;margin-top:4px}
+.accounts{width:100%;border-collapse:collapse;font-size:17px}
+.accounts td{padding:5px 4px;border-bottom:2px dotted #ddd;font-weight:700}
+.accounts td:last-child{text-align:right;font-weight:900}
+.accounts tr.tot td{border-top:3px solid var(--line);border-bottom:0;font-size:20px}
+.accounts .tag{font-size:11px;background:#eee;border-radius:6px;padding:1px 5px;margin-left:4px;color:var(--ink-soft)}
+.chart svg{width:100%;height:auto;display:block}
+.debug-list{display:flex;flex-direction:column;gap:8px}
+.debug-item{display:flex;gap:10px;align-items:flex-start;background:#fff6f0;border:2px solid #ffc9a3;border-radius:14px;padding:8px 10px}
+.debug-item.good{background:#eafff4;border-color:#9fe3c2}
+.debug-item .ic{font-size:30px;line-height:1}
+.debug-item b{font-size:17px}
+.debug-item .fix{font-size:14px;margin-top:3px;color:var(--ink-soft);font-weight:700}
+.res-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.diary{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+.diary th,.diary td{padding:4px;text-align:center;border-bottom:1px solid #eee}
+.diary th{background:#f6f2ff}
+
+/* ---------- classifica ---------- */
+.board{max-width:620px;margin:0 auto}
+.board ol{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.board li{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;background:#faf7ff;border:2px solid #d9d0ea;border-radius:14px;padding:8px 12px}
+.board li .pos{width:44px;text-align:center;font-size:24px;color:var(--ink)}
+.board li .nm{flex:1}
+.board li.me{background:#fff0a8;border-color:var(--orange)}
+.board .small{font-size:13px;color:var(--ink-soft);font-weight:700}
+
+/* ---------- schermi stretti / telefono ---------- */
+@media (max-width:980px){
+  .prog-grid,.sim-grid,.res-grid{grid-template-columns:1fr}
+  .sim-side{order:2}
+  .prog-grid > .col:first-child{display:contents}
+  #card-base{order:1} .prog-grid > .col:last-child{order:2} #card-forecast{order:3} #card-fact{order:4}
+}
+@media (max-width:600px){
+  .topbar{gap:6px;padding:8px 10px}
+  .topbar .logo{font-size:15px}
+  .topbar .sp{display:none}
+  .topbar .chip.att{display:none}
+  .screen{padding:10px 10px 20px}
+  #scr-welcome h1{font-size:32px}
+  .btn.big{font-size:20px;padding:12px 18px}
+  .rule .tools{margin-left:0}
+  .blk select{font-size:15px}
+  .scene{height:330px}
+  .shop{width:130px;right:6px;height:170px}
+  .shop .counter{height:66px}
+  .shop .counter .n{font-size:26px}
+  .street{right:140px}
+  .sky-weather{font-size:40px}
+  .sky-weather span{font-size:20px}
+  .sim-top .pill{font-size:16px;padding:4px 8px}
+  .profit-hero .val{font-size:42px}
+  .coach .mascot{font-size:38px}
+  .coach .say{font-size:16px}
+}
+@media (max-height:800px) and (min-width:981px){
+  .scene{height:330px}
+  .shop{height:210px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">🍦🤖 Gelateria Automatica</div>
+  <div class="sp"></div>
+  <span class="chip hidden" id="tb-nick"></span>
+  <span class="chip att hidden" id="tb-att"></span>
+  <button id="tb-board">🏆</button>
+</header>
+
+<!-- ============ BENVENUTO ============ -->
+<section id="scr-welcome" class="screen">
+  <div class="hero-ico">🍦🤖</div>
+  <h1>La Gelateria <span>Automatica</span></h1>
+  <p class="sub">Non vendi tu il gelato: scrivi il <b>programma</b> che gestisce la gelateria al posto tuo!</p>
+  <div class="nick-row">
+    <input id="nick" maxlength="14" placeholder="Il tuo nickname" autocomplete="off">
+    <button class="btn big pink" id="btn-play">GIOCA ▶</button>
+  </div>
+  <div class="links">
+    <button id="lnk-skip">Salta il tutorial</button>
+    <button id="lnk-board">🏆 Classifica</button>
+  </div>
+</section>
+
+<!-- ============ PROGRAMMA ============ -->
+<section id="scr-program" class="screen hidden">
+  <div id="coach" class="coach hidden"></div>
+  <div class="prog-grid">
+    <div class="col">
+      <div class="card" id="card-base">
+        <h2>⚙️ Valori di base</h2>
+        <div class="hint">Ogni giorno la gelateria parte da qui.</div>
+        <div class="stepper"><span class="lbl">💶 Prezzo cono</span>
+          <button data-step="prezzo" data-d="-1">−</button><span class="val" id="v-prezzo"></span><button data-step="prezzo" data-d="1">+</button></div>
+        <div class="stepper"><span class="lbl">🍦 Coni al giorno</span>
+          <button data-step="produzione" data-d="-1">−</button><span class="val" id="v-produzione"></span><button data-step="produzione" data-d="1">+</button></div>
+        <div class="info-chips" id="info-chips"></div>
+      </div>
+      <div class="card" id="card-forecast">
+        <h2 id="forecast-title">📡 Previsioni meteo</h2>
+        <div id="forecast-box"></div>
+      </div>
+      <div class="card fact" id="card-fact"><h2>💡 Lo sapevi che…</h2><p id="fact-text"></p></div>
+    </div>
+    <div class="col">
+      <div class="card" id="card-rules">
+        <div class="prog-head">
+          <h2>🧠 Il tuo programma</h2>
+          <span class="hint">Le regole si leggono dall'alto in basso. Se due regole cambiano la stessa cosa, vince l'ultima.</span>
+        </div>
+        <div class="rules" id="rules"></div>
+        <button class="btn yellow" id="btn-add">➕ Aggiungi regola</button>
+      </div>
+      <div class="run-row">
+        <div class="start-chips" id="start-chips"></div>
+        <button class="btn big mint" id="btn-run">▶ AVVIA</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SIMULAZIONE ============ -->
+<section id="scr-sim" class="screen hidden">
+  <div class="sim-top">
+    <span class="pill" id="s-day">Giorno 1</span>
+    <span class="pill" id="s-clock">🕗 08:00</span>
+    <span class="pill cash" id="s-cash">💰 500 €</span>
+  </div>
+  <div class="sim-grid">
+    <div>
+      <div class="scene" id="scene">
+        <div class="rain"></div>
+        <div class="sky-weather" id="s-weather">☀️<span>30 °C</span></div>
+        <div class="street" id="street"></div>
+        <div class="shop">
+          <div class="awning"></div>
+          <div class="wall"></div>
+          <div class="sign">GELATERIA 🤖</div>
+          <div class="soldout hidden" id="s-soldout">GELATO FINITO!</div>
+          <div class="counter"><span class="n" id="s-cones">🍦 0</span><span>coni pronti</span></div>
+        </div>
+        <div class="road"></div>
+        <div class="truck hidden" id="truck">
+          <span class="tlabel" id="truck-label">🚚 60 kg · tra 24 h</span>
+          <span class="smoke"></span><span class="smoke"></span><span class="smoke"></span>
+          <svg viewBox="0 0 118 56" aria-hidden="true">
+            <rect x="8" y="6" width="66" height="36" rx="5" fill="#ff6fa5" stroke="#2b2140" stroke-width="3"/>
+            <text x="41" y="30" font-size="13" font-weight="900" text-anchor="middle" fill="#fff" font-family="Trebuchet MS,sans-serif">GELATO</text>
+            <path d="M74 16 h22 l14 14 v12 h-36 z" fill="#5ab0ff" stroke="#2b2140" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M80 20 h13 l9 9 h-22 z" fill="#e3f6ff" stroke="#2b2140" stroke-width="2"/>
+            <rect x="0" y="38" width="10" height="5" rx="2" fill="#555" stroke="#2b2140" stroke-width="2"/>
+            <circle cx="28" cy="45" r="8" fill="#444" stroke="#2b2140" stroke-width="3"/><circle cx="28" cy="45" r="3" fill="#ddd"/>
+            <circle cx="92" cy="45" r="8" fill="#444" stroke="#2b2140" stroke-width="3"/><circle cx="92" cy="45" r="3" fill="#ddd"/>
+          </svg>
+        </div>
+        <div class="stockbar"><div class="fill" id="s-stockfill"></div><div class="txt" id="s-stocktxt">📦 Magazzino 40 kg</div></div>
+        <div class="night" id="night"></div>
+      </div>
+      <div class="speed-row">
+        <button class="btn sky" id="btn-speed">⏩ Più veloce</button>
+      </div>
+    </div>
+    <div class="col sim-side">
+      <div class="card"><h2>🤖 Oggi il programma decide</h2><div class="decision" id="s-decision"></div></div>
+      <div class="card"><h2>🧠 Regole usate oggi</h2><ul class="mini-rules" id="s-rules"></ul></div>
+      <div class="card"><h2>📡 Meteo</h2><div id="s-forecast"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RISULTATI ============ -->
+<section id="scr-results" class="screen hidden">
+  <div class="res-grid">
+    <div class="col">
+      <div class="card profit-hero">
+        <div class="lbl">Profitto in 14 giorni</div>
+        <div class="val" id="r-profit">0 €</div>
+        <div class="rec" id="r-record"></div>
+      </div>
+      <div class="card">
+        <h2>🧾 I conti</h2>
+        <table class="accounts" id="r-accounts"></table>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card chart"><h2>📊 Guadagno giorno per giorno</h2><div id="r-chart"></div></div>
+      <div class="card"><h2>🐞 Debug: cosa è successo?</h2><div class="debug-list" id="r-debug"></div></div>
+      <div class="card fact"><h2>💡 Lo sapevi che…</h2><p id="r-fact"></p></div>
+      <div class="res-actions">
+        <button class="btn big pink" id="btn-fix">🔧 Correggi il programma</button>
+        <button class="btn big yellow" id="btn-toboard">🏆 Classifica</button>
+        <button class="btn" id="btn-diary">📒 Diario dei giorni</button>
+      </div>
+      <div class="card hidden" id="r-diary"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLASSIFICA ============ -->
+<section id="scr-board" class="screen hidden">
+  <div class="board card">
+    <h2 style="font-size:28px;text-align:center">🏆 Classifica</h2>
+    <p class="small" style="text-align:center">Il miglior profitto di ogni giocatore su questo computer</p>
+    <ol id="board-list"></ol>
+    <div class="res-actions" style="margin-top:14px">
+      <button class="btn big pink" id="btn-board-back">🔧 Prova ancora</button>
+      <button class="btn hidden" id="btn-board-reset">🗑️ Azzera classifica (insegnante)</button>
+    </div>
+  </div>
+</section>
+
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURAZIONE — tutti i numeri del gioco sono qui.
+   Modificali per bilanciare la partita.
+   ===================================================================== */
+const CONFIG = {
+  seed: 2026,               // meteo della sfida (uguale per tutti). Si può cambiare con ?seed=123 nell'indirizzo
+  giorni: 14,               // durata della sfida
+  giorniPrevisione: 3,      // giorni con meteo visibile prima che la stazione si rompa
+  cassaIniziale: 500,       // € in cassa all'inizio
+  magazzinoIniziale: 40,    // kg di ingredienti all'inizio
+  magazzinoMax: 100,        // kg massimi nel congelatore (l'eccesso viene buttato)
+  coniPerKg: 10,            // 1 kg di ingredienti = 10 coni
+  costoKg: 8,               // € per kg di ingredienti  (=> 0,80 € a cono)
+  costoConsegna: 10,        // € fissi per ogni riordino (il camion)
+  affittoGiorno: 60,        // € al giorno: affitto + bollette (costo fisso)
+  maxRegole: 6,
+
+  // valori di base iniziali e limiti
+  prezzoBase: 2.5, prezzoMin: 1.5, prezzoMax: 5, prezzoPasso: 0.5,
+  produzioneBase: 60, produzioneMin: 0, produzioneMax: 200, produzionePasso: 10,
+
+  // probabilità e temperature del meteo
+  meteoProb: { sole: 0.5, nuvoloso: 0.3, pioggia: 0.2 },
+  temperature: { sole: [26, 36], nuvoloso: [21, 29], pioggia: [17, 23] },
+
+  // curva della domanda
+  domanda: {
+    base: 40,            // clienti a 20 °C, col sole, prezzo di riferimento
+    perGrado: 6,         // clienti in più per ogni grado sopra i 20 °C
+    tempRif: 20,
+    minimo: 5,
+    meteo: { sole: 1.0, nuvoloso: 0.8, pioggia: 0.45 },
+    weekend: 1.3,        // sabato e domenica +30%
+    casualeMin: 0.85, casualeMax: 1.15,
+    prezzoRif: 2.5,      // prezzo "normale"
+    sensibilitaPrezzo: 0.4, // ogni 1 € sopra il prezzo normale perdi il 40% dei clienti
+    effettoPrezzoMax: 1.5
+  },
+
+  sogliaSpreco: 10,         // "ieri ho buttato gelato" = almeno 10 coni avanzati
+  durataGiornoMs: 1250,     // animazione di un giorno (più la notte)
+  durataNotteMs: 250,
+  durataGiornoTutorialMs: 3200,
+
+  // tutorial: 3 giorni con meteo noto
+  tutorial: {
+    magazzino: 25, cassa: 500,
+    giorni: [
+      { meteo: 'sole',     temp: 31, caso: 0.92, dow: 0 },
+      { meteo: 'pioggia',  temp: 19, caso: 1.0,  dow: 1 },
+      { meteo: 'nuvoloso', temp: 25, caso: 1.0,  dow: 2 }
+    ]
+  }
+};
+
+/* =====================================================================
+   TESTI "LO SAPEVI CHE…"
+   ===================================================================== */
+const FATTI = {
+  programmazione: "Le regole SE… ALLORA… si chiamano <b>istruzioni condizionali</b>. Nel corso SIA, in Informatica, impari a scriverle in veri linguaggi di programmazione!",
+  variabili: "Prezzo e coni al giorno sono <b>variabili</b>: valori che il programma può cambiare. Ogni app che usi ne è piena!",
+  scorte: "Decidere quando riordinare si chiama <b>gestione delle scorte</b>. In Economia aziendale impari a non restare mai senza merce… e a non riempire troppo il magazzino.",
+  spreco: "Il gelato buttato è un <b>costo senza ricavo</b>. Le aziende usano i dati delle vendite per produrre il giusto: è proprio il lavoro di un Sistema Informativo Aziendale!",
+  costiFissi: "L'affitto si paga anche quando piove: è un <b>costo fisso</b>. Gli ingredienti invece sono <b>costi variabili</b>: più produci, più spendi. Lo studierai in Economia aziendale.",
+  prezzo: "Prezzo troppo alto = pochi clienti. Troppo basso = poco guadagno su ogni cono. Scegliere il <b>prezzo giusto</b> è una delle decisioni più importanti di un'azienda.",
+  debug: "Correggere un programma che sbaglia si chiama <b>debug</b> (dall'inglese “bug”, insetto). Anche i programmatori più bravi lo fanno ogni giorno!",
+  dati: "Il grafico dei tuoi giorni è un'<b>analisi dei dati</b>. In SIA impari a farla con il foglio di calcolo, come nelle aziende vere.",
+  database: "La classifica è salvata in un piccolo <b>database</b>. In SIA impari a progettare database veri, quelli che usano banche e negozi online.",
+  automazione: "I supermercati riordinano la merce <b>in automatico</b>, proprio come la tua gelateria: lo fa il gestionale aziendale, un programma come il tuo!",
+  ricavi: "<b>Ricavi − Costi = Profitto</b>. È la formula più importante dell'Economia aziendale… e ora la conosci già!"
+};
+const FATTI_PROGRAMMA = ['programmazione','variabili','automazione','costiFissi','scorte','prezzo','debug'];
+
+/* =====================================================================
+   BLOCCHI DEL PROGRAMMA
+   ===================================================================== */
+function range(a, b, s){ const r=[]; for(let x=a; x<=b+1e-9; x+=s) r.push(Math.round(x*100)/100); return r; }
+const METEO = { sole:{ic:'☀️',nome:'sole'}, nuvoloso:{ic:'⛅',nome:'nuvoloso'}, pioggia:{ic:'🌧️',nome:'pioggia'} };
+const GIORNI_SETT = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+
+const COND = {
+  temp:      { label:'🌡️ temperatura', ops:['>','<'], values:range(15,40,1), fmt:v=>v+' °C', def:{op:'>',cv:30} },
+  meteo:     { label:'☁️ meteo è', values:['sole','nuvoloso','pioggia'], fmt:v=>METEO[v].ic+' '+METEO[v].nome, def:{cv:'pioggia'} },
+  magazzino: { label:'📦 magazzino', ops:['<','>'], values:range(0,100,5), fmt:v=>v+' kg', def:{op:'<',cv:30} },
+  giorno:    { label:'📅 oggi è', values:['weekend','feriale'], fmt:v=>v==='weekend'?'weekend':'giorno feriale', def:{cv:'weekend'} },
+  ieri:      { label:'🍨 ieri', values:['finito','buttato'], fmt:v=>v==='finito'?'ho finito il gelato':'ho buttato gelato', def:{cv:'finito'} }
+};
+const AZIONI = {
+  produci:  { label:'🍦 produci', values:range(0,200,10), fmt:v=>v+' coni', def:100 },
+  piu:      { label:'➕ produci in più', values:range(10,100,10), fmt:v=>v+' coni', def:20 },
+  meno:     { label:'➖ produci in meno', values:range(10,100,10), fmt:v=>v+' coni', def:20 },
+  prezzo:   { label:'💶 metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>eur(v,2), def:3 },
+  riordina: { label:'🚚 riordina', values:range(10,100,10), fmt:v=>v+' kg', def:60 }
+};
+function nuovaRegola(){ return { c:'temp', op:'>', cv:30, a:'produci', av:100 }; }
+function testoRegola(r){
+  const C = COND[r.c], A = AZIONI[r.a];
+  return `SE ${C.label} ${C.ops ? r.op+' ' : ''}${C.fmt(r.cv)} ALLORA ${A.label} ${A.fmt(r.av)}`;
+}
+
+/* =====================================================================
+   UTILITÀ
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+const round1 = x => Math.round(x*10)/10;
+function eur(x, dec=0){
+  const s = Math.abs(x).toLocaleString('it-IT',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  return (x < -0.004 ? '−' : '') + s + ' €';
+}
+function eurS(x){ return (x > 0.004 ? '+' : '') + eur(x); }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =====================================================================
+   MOTORE DELLA SIMULAZIONE (nessuna grafica qui)
+   ===================================================================== */
+function generaGiorni(seed){
+  const rng = mulberry32(seed), P = CONFIG.meteoProb, D = CONFIG.domanda, out = [];
+  for(let i=0;i<CONFIG.giorni;i++){
+    const r = rng();
+    const meteo = r < P.sole ? 'sole' : r < P.sole+P.nuvoloso ? 'nuvoloso' : 'pioggia';
+    const [tmin,tmax] = CONFIG.temperature[meteo];
+    const temp = tmin + Math.floor(rng()*(tmax-tmin+1));
+    const caso = D.casualeMin + rng()*(D.casualeMax-D.casualeMin);
+    const dow = i % 7;
+    out.push({ n:i+1, meteo, temp, caso, dow, weekend: dow>=5 });
+  }
+  return out;
+}
+function giorniTutorial(){
+  return CONFIG.tutorial.giorni.map((g,i)=>({ n:i+1, meteo:g.meteo, temp:g.temp, caso:g.caso, dow:g.dow, weekend:g.dow>=5 }));
+}
+
+function condVera(r, ctx){
+  switch(r.c){
+    case 'temp':      return r.op==='>' ? ctx.temp > r.cv : ctx.temp < r.cv;
+    case 'meteo':     return ctx.meteo === r.cv;
+    case 'magazzino': return r.op==='<' ? ctx.stock < r.cv : ctx.stock > r.cv;
+    case 'giorno':    return r.cv==='weekend' ? ctx.weekend : !ctx.weekend;
+    case 'ieri':      return r.cv==='finito' ? ctx.ieri.persi > 0 : ctx.ieri.avanzati >= CONFIG.sogliaSpreco;
+  }
+  return false;
+}
+function eseguiProgramma(prog, ctx){
+  let produzione = prog.produzione, prezzo = prog.prezzo, riordina = 0; const fired = [];
+  prog.regole.forEach((r,i)=>{
+    if(!condVera(r, ctx)) return;
+    fired.push(i);
+    if(r.a==='produci') produzione = r.av;
+    else if(r.a==='piu') produzione += r.av;
+    else if(r.a==='meno') produzione = Math.max(0, produzione - r.av);
+    else if(r.a==='prezzo') prezzo = r.av;
+    else if(r.a==='riordina') riordina = r.av;
+  });
+  return { produzione, prezzo, riordina, fired };
+}
+function clientiDelGiorno(g, prezzo){
+  const D = CONFIG.domanda;
+  let pot = Math.max(D.minimo, D.base + D.perGrado*(g.temp - D.tempRif));
+  pot *= D.meteo[g.meteo];
+  if(g.weekend) pot *= D.weekend;
+  pot *= g.caso;
+  const effPrezzo = clamp(1 - D.sensibilitaPrezzo*(prezzo - D.prezzoRif), 0, D.effettoPrezzoMax);
+  return Math.round(pot * effPrezzo);
+}
+function statoIniziale(opz={}){
+  return { stock: opz.magazzino ?? CONFIG.magazzinoIniziale, cassa: opz.cassa ?? CONFIG.cassaIniziale,
+           ordini: [], ieri: { persi:0, avanzati:0 } };
+}
+// Simula una lista di giorni. Restituisce i risultati giorno per giorno e lo stato finale.
+function simula(prog, giorni, stato0){
+  const C = CONFIG, costoCono = C.costoKg / C.coniPerKg;
+  const st = JSON.parse(JSON.stringify(stato0 || statoIniziale()));
+  const res = [];
+  for(const g of giorni){
+    // 1. arrivano i camion ordinati ieri
+    let arrivo = 0;
+    st.ordini = st.ordini.filter(o => { if(o.arriva <= g.n){ arrivo += o.kg; return false; } return true; });
+    const stockPrimaArrivo = st.stock;
+    st.stock += arrivo;
+    let eccesso = 0;
+    if(st.stock > C.magazzinoMax){ eccesso = st.stock - C.magazzinoMax; st.stock = C.magazzinoMax; }
+    const stockInizio = st.stock;
+    // 2. il programma decide
+    const ctx = { temp:g.temp, meteo:g.meteo, stock:st.stock, weekend:g.weekend, ieri:st.ieri };
+    const dec = eseguiProgramma(prog, ctx);
+    // 3. produzione (limitata dal magazzino)
+    const maxConi = Math.floor(st.stock*C.coniPerKg + 1e-6);
+    const prodotti = Math.min(dec.produzione, maxConi);
+    const limitato = prodotti < dec.produzione;
+    st.stock = round1(st.stock - prodotti/C.coniPerKg);
+    // 4. clienti e vendite
+    const clienti = clientiDelGiorno(g, dec.prezzo);
+    const venduti = Math.min(clienti, prodotti);
+    const persi = clienti - venduti;
+    const avanzati = prodotti - venduti;
+    // 5. riordino: arriva domani mattina
+    const ordine = dec.riordina;
+    if(ordine > 0) st.ordini.push({ kg:ordine, arriva:g.n+1 });
+    // 6. conti
+    const ricavi = venduti * dec.prezzo;
+    const cIngredienti = venduti * costoCono;
+    const cSpreco = avanzati * costoCono + eccesso * C.costoKg;
+    const cConsegna = ordine > 0 ? C.costoConsegna : 0;
+    const cAffitto = C.affittoGiorno;
+    const costi = cIngredienti + cSpreco + cConsegna + cAffitto;
+    const profitto = ricavi - costi;
+    const cassaInizio = st.cassa;
+    st.cassa += profitto;
+    res.push({ ...g, prezzo:dec.prezzo, obiettivo:dec.produzione, fired:dec.fired, prodotti, limitato,
+      clienti, venduti, persi, avanzati, arrivo, eccesso, ordine, stockPrimaArrivo, stockInizio, stockFine:st.stock,
+      ricavi, cIngredienti, cSpreco, cConsegna, cAffitto, costi, profitto, cassaInizio, cassaFine:st.cassa });
+    st.ieri = { persi, avanzati };
+  }
+  const tot = { ricavi:0, cIngredienti:0, cSpreco:0, cConsegna:0, cAffitto:0, profitto:0, venduti:0, persi:0, avanzati:0, eccesso:0, ordini:0 };
+  for(const d of res){
+    tot.ricavi+=d.ricavi; tot.cIngredienti+=d.cIngredienti; tot.cSpreco+=d.cSpreco; tot.cConsegna+=d.cConsegna;
+    tot.cAffitto+=d.cAffitto; tot.profitto+=d.profitto; tot.venduti+=d.venduti; tot.persi+=d.persi;
+    tot.avanzati+=d.avanzati; tot.eccesso+=d.eccesso; if(d.ordine>0) tot.ordini++;
+  }
+  return { giorni:res, tot, stato:st };
+}
+
+/* ---------- analisi per i messaggi di "debug" ---------- */
+function analizza(sim){
+  const G = sim.giorni, T = sim.tot, costoCono = CONFIG.costoKg/CONFIG.coniPerKg, out = [];
+  const oraFinito = d => Math.floor(9 + 11*d.venduti/Math.max(1,d.clienti));
+  // magazzino vuoto
+  const vuoti = G.filter(d => d.limitato);
+  if(vuoti.length){
+    const d = vuoti[0], persi = vuoti.reduce((s,x)=>s+x.persi,0);
+    out.push({ peso: persi*(d.prezzo-costoCono) + 1000, ic:'📦', tema:'scorte',
+      t:`Giorno ${d.n}: ingredienti finiti! Hai potuto fare solo ${d.prodotti} coni.`,
+      x:`Con il magazzino vuoto hai perso ${persi} clienti in ${vuoti.length} ${vuoti.length===1?'giorno':'giorni'}.`,
+      fix:'🔧 Prova: SE 📦 magazzino < 30 kg ALLORA 🚚 riordina 60 kg (il camion arriva il giorno dopo!)' });
+  }
+  // gelato finito (non per colpa del magazzino)
+  const esauriti = G.filter(d => d.persi > 0 && !d.limitato);
+  if(esauriti.length){
+    const d = esauriti.reduce((a,b)=> b.persi > a.persi ? b : a);
+    const persi = esauriti.reduce((s,x)=>s+x.persi,0);
+    let fix = '🔧 Prova ad aumentare i coni al giorno.';
+    if(d.temp >= 29) fix = `🔧 Quel giorno c'erano ${d.temp} °C: prova SE 🌡️ temperatura > ${Math.min(d.temp-1,30)} °C ALLORA 🍦 produci di più.`;
+    else if(d.weekend) fix = '🔧 Nel weekend arrivano più clienti: prova SE 📅 oggi è weekend ALLORA ➕ produci in più.';
+    out.push({ peso: persi*(d.prezzo-costoCono), ic:'🍦', tema:'programmazione',
+      t:`Giorno ${d.n}: gelato finito alle ${oraFinito(d)}:00, persi ${d.persi} clienti!`,
+      x:`In tutto ${persi} clienti sono andati via senza gelato.`, fix });
+  }
+  // spreco
+  if(T.avanzati >= 25){
+    const d = G.reduce((a,b)=> b.avanzati > a.avanzati ? b : a);
+    let fix = '🔧 Prova a produrre meno quando fa fresco.';
+    if(d.meteo==='pioggia') fix = '🔧 Con la pioggia arrivano pochi clienti: prova SE ☁️ meteo è 🌧️ pioggia ALLORA 🍦 produci meno coni.';
+    else if(d.temp < 25) fix = `🔧 Quel giorno c'erano solo ${d.temp} °C: prova SE 🌡️ temperatura < 25 °C ALLORA ➖ produci in meno.`;
+    out.push({ peso: T.avanzati*costoCono, ic:'🗑️', tema:'spreco',
+      t:`Hai buttato ${T.avanzati} coni invenduti = ${eur(T.avanzati*costoCono)} nel cestino!`,
+      x:`Il giorno peggiore è stato il ${d.n} (${METEO[d.meteo].ic} ${d.temp} °C): ${d.avanzati} coni avanzati.`, fix });
+  }
+  // congelatore pieno
+  if(T.eccesso > 0){
+    out.push({ peso: T.eccesso*CONFIG.costoKg, ic:'🧊', tema:'scorte',
+      t:`Il congelatore era pieno: hai buttato ${round1(T.eccesso)} kg di ingredienti!`,
+      x:`Il magazzino contiene al massimo ${CONFIG.magazzinoMax} kg.`, fix:'🔧 Riordina meno kg, o solo quando il magazzino è quasi vuoto.' });
+  }
+  // prezzo
+  const prezzoMedio = G.reduce((s,d)=>s+d.prezzo,0)/G.length;
+  if(prezzoMedio >= 3.75){
+    out.push({ peso: 120, ic:'💸', tema:'prezzo', t:`Prezzo alto (in media ${eur(prezzoMedio,2)}): molti clienti sono andati dalla concorrenza.`,
+      x:'Guadagni tanto su ogni cono, ma ne vendi pochi.', fix:'🔧 Prova un prezzo un po\' più basso.' });
+  } else if(prezzoMedio <= 2.25){
+    out.push({ peso: 100, ic:'🪙', tema:'prezzo', t:`Prezzo basso (in media ${eur(prezzoMedio,2)}): vendi tanto ma guadagni poco su ogni cono.`,
+      x:`Ogni cono ti costa ${eur(costoCono,2)} di ingredienti.`, fix:'🔧 Prova ad alzare un po\' il prezzo.' });
+  }
+  // troppe consegne
+  if(T.ordini >= 7){
+    out.push({ peso: T.cConsegna, ic:'🚚', tema:'scorte', t:`Hai chiamato il camion ${T.ordini} volte: ${eur(T.cConsegna)} di consegne!`,
+      x:`Ogni consegna costa ${eur(CONFIG.costoConsegna)}, anche se ordini poco.`, fix:'🔧 Meglio ordinare più kg meno spesso.' });
+  }
+  out.sort((a,b)=>b.peso-a.peso);
+  const top = out.slice(0,3);
+  if(!top.length || sim.tot.profitto > 0 && top.every(m=>m.peso<40)){
+    top.unshift({ good:true, ic:'🏆', tema:'automazione', t:'Ottimo programma! La tua gelateria funziona quasi da sola.',
+      x:'Riesci a fare ancora meglio? Prova a cambiare il prezzo o le regole del weekend.', fix:'' });
+  }
+  return top.slice(0,3);
+}
+
+/* =====================================================================
+   SALVATAGGI NEL BROWSER (localStorage)
+   ===================================================================== */
+const KEY_PLAYERS = 'gelateria.giocatori.v1', KEY_BOARD = 'gelateria.classifica.v1';
+function load(k, def){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; }catch(e){ return def; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function datiGiocatore(nick){ const all = load(KEY_PLAYERS, {}); return all[nick.toLowerCase()] || null; }
+function salvaGiocatore(){
+  if(!S.nick) return;
+  const all = load(KEY_PLAYERS, {});
+  all[S.nick.toLowerCase()] = { nick:S.nick, prog:S.prog, tutorialFatto:S.tutorialFatto, tentativi:S.tentativi, best:S.best };
+  save(KEY_PLAYERS, all);
+}
+function registraPunteggio(profitto){
+  const b = load(KEY_BOARD, []);
+  const k = S.nick.toLowerCase();
+  let e = b.find(x => x.k === k);
+  if(!e){ e = { k, nick:S.nick, best:profitto, tentativi:0 }; b.push(e); }
+  e.tentativi++;
+  if(profitto > e.best) e.best = profitto;
+  b.sort((x,y)=>y.best-x.best);
+  save(KEY_BOARD, b);
+  return { pos: b.findIndex(x=>x.k===k)+1, tot: b.length };
+}
+
+/* =====================================================================
+   STATO DEL GIOCO
+   ===================================================================== */
+const params = new URLSearchParams(location.search);
+const SEED = parseInt(params.get('seed')) || CONFIG.seed;
+const S = {
+  nick:'', prog:null, tutorialFatto:false, tentativi:0, best:null,
+  mode:'game',                 // 'tutorial' | 'game'
+  tut:{ giorno:0, stato:null, giorni:giorniTutorial() },
+  giorniSfida: generaGiorni(SEED),
+  ultimaSim:null, factIdx:0
+};
+function progBase(){ return { prezzo:CONFIG.prezzoBase, produzione:CONFIG.produzioneBase, regole:[] }; }
+
+/* =====================================================================
+   NAVIGAZIONE
+   ===================================================================== */
+const SCREENS = ['welcome','program','sim','results','board'];
+function show(name){
+  SCREENS.forEach(s => $('#scr-'+s).classList.toggle('hidden', s!==name));
+  window.scrollTo(0,0);
+  aggiornaTopbar();
+}
+function aggiornaTopbar(){
+  $('#tb-nick').classList.toggle('hidden', !S.nick);
+  $('#tb-nick').textContent = '👤 ' + S.nick;
+  $('#tb-att').classList.toggle('hidden', !S.nick || S.mode==='tutorial');
+  $('#tb-att').textContent = 'Tentativi: ' + S.tentativi;
+}
+
+/* ---------- modale e toast ---------- */
+function modal(html, buttons){
+  return new Promise(res=>{
+    const root = $('#modal-root');
+    root.innerHTML = `<div class="modal-bg"><div class="modal">${html}<div class="res-actions" style="margin-top:14px">${
+      buttons.map((b,i)=>`<button class="btn big ${b.cls||'pink'}" data-i="${i}">${b.t}</button>`).join('')}</div></div></div>`;
+    root.querySelectorAll('button[data-i]').forEach(btn => btn.onclick = () => { root.innerHTML=''; res(+btn.dataset.i); });
+  });
+}
+function toast(html, ms){
+  const root = $('#toast-root');
+  root.innerHTML = `<div class="toast">${html}</div>`;
+  return sleep(ms).then(()=>{ root.innerHTML=''; });
+}
+
+/* =====================================================================
+   SCHERMATA BENVENUTO
+   ===================================================================== */
+function entra(saltaTutorial){
+  const nick = $('#nick').value.trim().replace(/\s+/g,' ');
+  if(!nick){ $('#nick').classList.add('shake'); $('#nick').focus(); setTimeout(()=>$('#nick').classList.remove('shake'),400); return; }
+  S.nick = nick;
+  const d = datiGiocatore(nick);
+  S.prog = d ? d.prog : progBase();
+  S.tutorialFatto = d ? d.tutorialFatto : false;
+  S.tentativi = d ? d.tentativi : 0;
+  S.best = d ? d.best : null;
+  if(saltaTutorial || S.tutorialFatto){ S.tutorialFatto = true; salvaGiocatore(); vaiAlGioco(); }
+  else iniziaTutorial();
+}
+$('#btn-play').onclick = () => entra(false);
+$('#nick').addEventListener('keydown', e => { if(e.key==='Enter') entra(false); });
+$('#lnk-skip').onclick = () => entra(true);
+$('#lnk-board').onclick = () => mostraClassifica();
+$('#tb-board').onclick = () => mostraClassifica();
+
+/* =====================================================================
+   EDITOR DEL PROGRAMMA
+   ===================================================================== */
+function opts(values, sel, fmt){
+  return values.map(v => `<option value="${v}" ${String(v)===String(sel)?'selected':''}>${fmt?fmt(v):v}</option>`).join('');
+}
+function renderValoriBase(){
+  $('#v-prezzo').textContent = eur(S.prog.prezzo,2);
+  $('#v-produzione').textContent = S.prog.produzione + ' 🍦';
+}
+function renderRegole(){
+  const box = $('#rules'), R = S.prog.regole;
+  if(!R.length){
+    box.innerHTML = `<div class="empty-rules">Nessuna regola: la gelateria usa sempre i valori di base.<br>Premi <b>➕ Aggiungi regola</b>!</div>`;
+  } else box.innerHTML = R.map((r,i)=>{
+    const C = COND[r.c], A = AZIONI[r.a];
+    return `<div class="rule" data-i="${i}">
+      <span class="num">${i+1}</span>
+      <div class="blk cond"><b>SE</b>
+        <select data-k="c">${opts(Object.keys(COND), r.c, k=>COND[k].label)}</select>
+        ${C.ops ? `<select data-k="op">${opts(C.ops, r.op)}</select>` : ''}
+        <select data-k="cv">${opts(C.values, r.cv, C.fmt)}</select>
+      </div>
+      <div class="blk act"><b>ALLORA</b>
+        <select data-k="a">${opts(Object.keys(AZIONI), r.a, k=>AZIONI[k].label)}</select>
+        <select data-k="av">${opts(A.values, r.av, A.fmt)}</select>
+      </div>
+      <div class="tools">
+        <button data-t="up" title="Sposta su" ${i===0?'disabled':''}>⬆️</button>
+        <button data-t="down" title="Sposta giù" ${i===R.length-1?'disabled':''}>⬇️</button>
+        <button data-t="del" title="Elimina">🗑️</button>
+      </div></div>`;
+  }).join('');
+  $('#btn-add').disabled = R.length >= CONFIG.maxRegole;
+  $('#btn-add').textContent = R.length >= CONFIG.maxRegole ? `Massimo ${CONFIG.maxRegole} regole` : '➕ Aggiungi regola';
+}
+$('#rules').addEventListener('change', e=>{
+  const sel = e.target.closest('select'); if(!sel) return;
+  const i = +sel.closest('.rule').dataset.i, r = S.prog.regole[i], k = sel.dataset.k;
+  let v = sel.value;
+  if(k==='cv' || k==='av'){ const n = parseFloat(v); if(!isNaN(n) && String(n)===v || !isNaN(n) && /^[\d.]+$/.test(v)) v = n; }
+  r[k] = v;
+  if(k==='c'){ const d = COND[v].def; r.op = d.op; r.cv = d.cv; }
+  if(k==='a'){ r.av = AZIONI[v].def; }
+  renderRegole(); salvaGiocatore(); pulisciErroreCoach();
+});
+$('#rules').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-t]'); if(!b) return;
+  const i = +b.closest('.rule').dataset.i, R = S.prog.regole;
+  if(b.dataset.t==='del') R.splice(i,1);
+  if(b.dataset.t==='up' && i>0) [R[i-1],R[i]] = [R[i],R[i-1]];
+  if(b.dataset.t==='down' && i<R.length-1) [R[i+1],R[i]] = [R[i],R[i+1]];
+  renderRegole(); salvaGiocatore(); pulisciErroreCoach();
+});
+$('#btn-add').onclick = ()=>{
+  if(S.prog.regole.length >= CONFIG.maxRegole) return;
+  S.prog.regole.push(nuovaRegola());
+  $('#btn-add').classList.remove('pulse');
+  renderRegole(); salvaGiocatore(); pulisciErroreCoach();
+};
+document.querySelectorAll('[data-step]').forEach(b => b.onclick = ()=>{
+  const k = b.dataset.step, d = +b.dataset.d, C = CONFIG;
+  if(k==='prezzo') S.prog.prezzo = Math.round(clamp(S.prog.prezzo + d*C.prezzoPasso, C.prezzoMin, C.prezzoMax)*100)/100;
+  else S.prog.produzione = clamp(S.prog.produzione + d*C.produzionePasso, C.produzioneMin, C.produzioneMax);
+  renderValoriBase(); salvaGiocatore(); pulisciErroreCoach();
+});
+function renderInfo(){
+  const C = CONFIG;
+  $('#info-chips').innerHTML = [
+    `1 kg = ${C.coniPerKg} coni`, `🍦 1 cono costa ${eur(C.costoKg/C.coniPerKg,2)}`,
+    `🏠 affitto ${eur(C.affittoGiorno)}/giorno`, `🚚 consegna ${eur(C.costoConsegna)}`,
+    `🚚 arriva il giorno dopo`, `📦 max ${C.magazzinoMax} kg`
+  ].map(t=>`<span>${t}</span>`).join('');
+}
+function renderPrevisioni(box, giorni, visibili, attuale){
+  let html = '<div class="forecast">';
+  giorni.forEach((g,i)=>{
+    const vis = i < visibili;
+    html += `<div class="fday ${vis?'':'unk'} ${attuale===i?'now':''}" data-d="${i}">${GIORNI_SETT[g.dow]} ${g.n}
+      <span class="ic">${vis ? METEO[g.meteo].ic : '❓'}</span>${vis ? g.temp+'°' : '—'}</div>`;
+  });
+  html += '</div>';
+  box.innerHTML = html;
+}
+function nuovoFatto(){
+  const k = FATTI_PROGRAMMA[S.factIdx++ % FATTI_PROGRAMMA.length];
+  $('#fact-text').innerHTML = FATTI[k];
+}
+
+/* =====================================================================
+   SCHERMATA PROGRAMMA (gioco vero)
+   ===================================================================== */
+function vaiAlGioco(){
+  S.mode = 'game';
+  $('#coach').classList.add('hidden');
+  $('#card-fact').classList.remove('hidden');
+  $('#forecast-title').textContent = '📡 Previsioni meteo';
+  renderPrevisioni($('#forecast-box'), S.giorniSfida, CONFIG.giorniPrevisione);
+  $('#forecast-box').insertAdjacentHTML('beforeend',
+    `<div class="station-note">📡💥 Dopo il giorno ${CONFIG.giorniPrevisione} la stazione meteo si rompe: il tuo programma dovrà cavarsela con qualsiasi tempo!</div>`);
+  $('#start-chips').innerHTML = `<span>📦 ${CONFIG.magazzinoIniziale} kg</span><span>💰 ${eur(CONFIG.cassaIniziale)}</span><span>📅 ${CONFIG.giorni} giorni</span>`;
+  $('#btn-run').textContent = `▶ AVVIA ${CONFIG.giorni} GIORNI`;
+  $('#btn-add').classList.remove('pulse');
+  renderValoriBase(); renderRegole(); renderInfo(); nuovoFatto();
+  show('program');
+}
+$('#btn-run').onclick = ()=>{
+  if(S.mode==='tutorial') return avviaGiornoTutorial();
+  avviaSfida();
+};
+
+/* =====================================================================
+   TUTORIAL (3 giorni con meteo noto)
+   ===================================================================== */
+const TUT = [
+  { target:{ c:'temp', op:'>', cv:30, a:'produci', av:100 },
+    say:`Domani ☀️ <b>31 °C</b>: arriveranno <b>tantissimi</b> clienti! Con 60 coni il gelato finisce subito.`,
+    task:'Aggiungi questa regola:',
+    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='temp');
+      if(!ok) return 'Manca la regola con 🌡️ temperatura. Premi ➕ Aggiungi regola (o 🪄 Aiutami).';
+      if(d.persi > 5) return 'La regola c\'è, ma i coni sono ancora pochi: arriveranno circa 100 clienti!';
+      return null; } },
+  { target:{ c:'meteo', cv:'pioggia', a:'produci', av:20 },
+    say:`Domani 🌧️ <b>piove</b> e fa fresco (19 °C): verranno <b>pochi</b> clienti. Se produci 60 coni, ne butterai tanti!`,
+    task:'Aggiungi questa regola:',
+    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo');
+      if(!ok) return 'Manca la regola con ☁️ meteo è 🌧️ pioggia.';
+      if(d.avanzati > 15) return 'La regola c\'è, ma produci ancora troppo: con la pioggia arrivano circa 15 clienti.';
+      return null; } },
+  { target:{ c:'magazzino', op:'<', cv:30, a:'riordina', av:60 },
+    say:`Domani ⛅ 25 °C. Attenzione: nel 📦 magazzino restano solo <b>13 kg</b>! Il camion impiega <b>un giorno</b> ad arrivare: meglio ordinare prima di restare senza.`,
+    task:'Aggiungi questa regola:',
+    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].a==='riordina');
+      if(!ok) return 'Manca la regola che fa 🚚 riordina quando il 📦 magazzino è basso.';
+      return null; } }
+];
+function bloccoTarget(r){
+  const C = COND[r.c], A = AZIONI[r.a];
+  return `<span class="blk cond"><b>SE</b> ${C.label} ${C.ops?r.op:''} ${C.fmt(r.cv)}</span><span class="blk act"><b>ALLORA</b> ${A.label} ${A.fmt(r.av)}</span>`;
+}
+async function iniziaTutorial(){
+  S.mode = 'tutorial';
+  S.prog = progBase();
+  S.tut.giorno = 0;
+  S.tut.stato = statoIniziale({ magazzino:CONFIG.tutorial.magazzino, cassa:CONFIG.tutorial.cassa });
+  renderInfo();
+  show('program');
+  renderTutorial();
+  await modal(`<div class="ic">🍦🤖</div><h3>Ciao ${esc(S.nick)}!</h3>
+    <p>La tua gelateria è <b>automatica</b>: non vendi tu il gelato, scrivi il <b>programma</b> che decide ogni mattina cosa fare.</p>
+    <p>Facciamo una prova di <b>3 giorni</b> insieme!</p>`, [{t:'Iniziamo! ▶'}]);
+  await modal(`<div class="ic">⚙️</div><h3>Le variabili</h3>
+    <p>Il <b>prezzo</b> del cono e i <b>coni al giorno</b> sono i valori di base: ogni giorno la gelateria parte da qui.</p>
+    <p>Con le <b>regole</b> SE… ALLORA… il programma li cambia quando serve.</p>`, [{t:'Ho capito! ▶'}]);
+}
+function renderTutorial(){
+  const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k];
+  $('#card-fact').classList.add('hidden');
+  $('#forecast-title').textContent = `📡 Domani (giorno ${k+1} di 3)`;
+  $('#forecast-box').innerHTML = `<div class="tomorrow"><span class="ic">${METEO[g.meteo].ic}</span><div>${METEO[g.meteo].nome}<br>${g.temp} °C</div></div>
+     <div class="info-chips" style="margin-top:8px"><span>📦 magazzino: ${round1(S.tut.stato.stock)} kg</span></div>`;
+  const coach = $('#coach');
+  coach.classList.remove('hidden');
+  coach.innerHTML = `<div class="mascot">🍦</div><div class="body">
+     <p class="say">${T.say}</p>
+     <div>${T.task}</div><div class="target">${bloccoTarget(T.target)}</div>
+     <div class="btns"><button class="btn yellow" id="btn-help">🪄 Aiutami</button></div>
+     <p class="err hidden" id="coach-err"></p></div>`;
+  $('#btn-help').onclick = ()=>{
+    const t = T.target;
+    const idx = S.prog.regole.findIndex(r => r.c===t.c);
+    if(idx >= 0) S.prog.regole[idx] = { ...t, op:t.op||'>' };
+    else S.prog.regole.push({ ...t, op:t.op||'>' });
+    renderRegole(); salvaGiocatore(); pulisciErroreCoach();
+  };
+  $('#start-chips').innerHTML = `<span>💰 ${eur(S.tut.stato.cassa)}</span>`;
+  $('#btn-run').textContent = `▶ AVVIA GIORNO ${k+1}`;
+  $('#btn-add').classList.toggle('pulse', true);
+  renderValoriBase(); renderRegole();
+}
+function pulisciErroreCoach(){ const e = $('#coach-err'); if(e) e.classList.add('hidden'); }
+async function avviaGiornoTutorial(){
+  const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k];
+  const prova = simula(S.prog, [g], S.tut.stato);
+  const err = T.check(prova.giorni[0], S.prog);
+  if(err){
+    const e = $('#coach-err'); e.textContent = '🙈 ' + err; e.classList.remove('hidden');
+    $('#coach').classList.remove('shake'); void $('#coach').offsetWidth; $('#coach').classList.add('shake');
+    return;
+  }
+  // cosa sarebbe successo senza la nuova regola?
+  const senza = { ...S.prog, regole: S.prog.regole.filter(r => !(r.c===T.target.c || (k===2 && r.a==='riordina'))) };
+  const d0 = simula(senza, [g], S.tut.stato).giorni[0];
+  const d = prova.giorni[0];
+  await animaSimulazione(prova, { tutorial:true, giorniVisibili:S.tut.giorni.length, tuttiGiorni:S.tut.giorni });
+  S.tut.stato = prova.stato;
+  let html;
+  if(k===0) html = `<div class="ic">😋</div><h3>Giorno 1: fatto!</h3>
+     <div class="stats"><span>👥 ${d.clienti} clienti</span><span>🍦 ${d.venduti} venduti</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
+     <p>Senza la regola avresti perso <b>${d0.persi} clienti</b>!</p><div class="card fact"><p>${FATTI.programmazione}</p></div>`;
+  else if(k===1) html = `<div class="ic">🌧️</div><h3>Giorno 2: fatto!</h3>
+     <div class="stats"><span>🍦 ${d.venduti} venduti</span><span>🗑️ ${d.avanzati} buttati</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
+     <p>Senza la regola avresti buttato <b>${d0.avanzati} coni</b> (${eur(d0.avanzati*CONFIG.costoKg/CONFIG.coniPerKg)})!</p>
+     <p>Oggi sei in perdita lo stesso: l'affitto di ${eur(CONFIG.affittoGiorno)} si paga anche quando piove.</p>
+     <div class="card fact"><p>${FATTI.costiFissi}</p></div>`;
+  else html = `<div class="ic">🚚💨</div><h3>Giorno 3: fatto!</h3>
+     <div class="stats"><span>🍦 ${d.venduti} venduti</span><span>🚚 ordinati ${d.ordine} kg</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
+     <p>Il camion è partito: arriverà <b>domattina</b>. Così il magazzino non resta mai vuoto!</p>
+     <div class="card fact"><p>${FATTI.automazione}</p></div>`;
+  show('program');
+  await modal(html, [{t: k<2 ? 'Avanti ▶' : 'Avanti ▶'}]);
+  if(k < 2){ S.tut.giorno++; renderTutorial(); return; }
+  // fine tutorial
+  S.tutorialFatto = true; salvaGiocatore();
+  await modal(`<div class="ic">🏁</div><h3>Ora tocca a te!</h3>
+    <p>La sfida vera dura <b>${CONFIG.giorni} giorni</b>. Le tue 3 regole sono già nel programma: migliorale!</p>
+    <p>Vedrai il meteo dei primi <b>${CONFIG.giorniPrevisione} giorni</b>… poi 📡💥 la stazione meteo si rompe!</p>
+    <p>Il tuo programma dovrà funzionare con <b>qualsiasi</b> tempo.</p>`, [{t:'Alla sfida! 🚀', cls:'mint'}]);
+  vaiAlGioco();
+}
+
+/* =====================================================================
+   ANIMAZIONE DELLA SIMULAZIONE
+   ===================================================================== */
+let speed = 1;
+function sleep(ms){ return new Promise(r => setTimeout(r, ms/speed)); }
+function tween(ms, fn){
+  return new Promise(res=>{
+    let last = performance.now(), t = 0;
+    function f(now){ t += (now-last)*speed; last = now; const p = Math.min(1, t/ms); fn(p); if(p<1) requestAnimationFrame(f); else res(); }
+    requestAnimationFrame(f);
+  });
+}
+$('#btn-speed').onclick = ()=>{
+  speed = speed===1 ? 2 : speed===2 ? 4 : 1;
+  $('#btn-speed').textContent = speed===1 ? '⏩ Più veloce' : speed===2 ? '⏩⏩ Ancora più veloce' : '🐢 Velocità normale';
+};
+const CLIENTI_EMOJI = ['🧒','👧','👦','🧑','👩','👨','👵','👴','🧔','👱'];
+
+function floater(text, xPct, yPct, color){
+  const el = document.createElement('div');
+  el.className = 'floater'; el.textContent = text;
+  el.style.left = xPct+'%'; el.style.top = yPct+'%'; if(color) el.style.color = color;
+  $('#scene').appendChild(el);
+  setTimeout(()=>el.remove(), 1300);
+}
+function setStock(kg){
+  const p = clamp(kg/CONFIG.magazzinoMax*100, 0, 100);
+  $('#s-stockfill').style.width = p+'%';
+  $('#s-stockfill').classList.toggle('low', kg < 15);
+  $('#s-stocktxt').textContent = `📦 Magazzino ${round1(kg).toLocaleString('it-IT')} kg`;
+}
+function setCash(x){ $('#s-cash').textContent = '💰 ' + eur(x); }
+function setClock(h){ const hh = Math.floor(h)%24; $('#s-clock').textContent = '🕗 ' + String(hh).padStart(2,'0') + ':00'; }
+// camion: ore trascorse dall'ordine (0 → 24)
+const truck = { attivo:false, kg:0 };
+function setTruck(oreTrascorse){
+  const el = $('#truck');
+  if(!truck.attivo){ el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const left = 2 + 62*clamp(oreTrascorse/24, 0, 1);
+  el.style.left = `calc(${left}% - 0px)`;
+  const mancano = Math.max(0, Math.ceil(24 - oreTrascorse));
+  $('#truck-label').textContent = mancano > 0 ? `🚚 ${truck.kg} kg · arriva tra ${mancano} h` : `🚚 ${truck.kg} kg · arrivato!`;
+}
+function spawnCliente(servito, durata){
+  const el = document.createElement('div');
+  el.className = 'cust';
+  el.innerHTML = CLIENTI_EMOJI[Math.floor(Math.random()*CLIENTI_EMOJI.length)];
+  $('#street').appendChild(el);
+  const w = $('#street').clientWidth;
+  const anim = el.animate([
+    { transform:'translateX(-40px)' },
+    { transform:`translateX(${w-40}px)`, offset:.6 },
+    { transform:`translateX(${w-40}px)`, offset:.75 },
+    { transform: servito ? `translateX(${w+40}px)` : 'translateX(-60px)' }
+  ], { duration: durata, easing:'linear' });
+  setTimeout(()=>{ el.insertAdjacentHTML('beforeend', servito ? '<i>🍦</i>' : '<i>😞</i>'); }, durata*0.62);
+  anim.onfinish = () => el.remove();
+}
+function renderDecisione(d){
+  const rows = [
+    `<div><span>🍦 Produzione</span><span>${d.obiettivo} coni</span></div>`,
+    `<div><span>💶 Prezzo</span><span>${eur(d.prezzo,2)}</span></div>`,
+    `<div><span>🚚 Riordino</span><span>${d.ordine ? d.ordine+' kg' : '—'}</span></div>`
+  ];
+  if(d.limitato) rows.push(`<div class="warn"><span>⚠️ Ingredienti finiti!</span><span>solo ${d.prodotti}</span></div>`);
+  if(d.eccesso > 0) rows.push(`<div class="warn"><span>🧊 Congelatore pieno</span><span>−${round1(d.eccesso)} kg</span></div>`);
+  $('#s-decision').innerHTML = rows.join('');
+}
+function renderMiniRegole(fired){
+  const R = S.prog.regole;
+  $('#s-rules').innerHTML = R.length ? R.map((r,i)=>`<li class="${fired.includes(i)?'fired':''}">${i+1}. ${testoRegola(r)}</li>`).join('')
+    : '<li>Nessuna regola: solo valori di base.</li>';
+}
+async function animaGiorno(d, opz){
+  const durata = opz.tutorial ? CONFIG.durataGiornoTutorialMs : CONFIG.durataGiornoMs;
+  const scene = $('#scene');
+  $('#s-day').textContent = `📅 Giorno ${d.n}${opz.tutorial?'':'/'+opz.tuttiGiorni.length} · ${GIORNI_SETT[d.dow]}`;
+  scene.classList.remove('sole','nuvoloso','pioggia'); scene.classList.add(d.meteo);
+  $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${d.temp} °C</span>`;
+  $('#s-soldout').classList.add('hidden');
+  renderPrevisioni($('#s-forecast'), opz.tuttiGiorni, Math.max(opz.giorniVisibili, d.n), d.n-1);
+  if(d.n > opz.giorniVisibili){ const c = $('#s-forecast').querySelector(`[data-d="${d.n-1}"]`); if(c) c.classList.add('pop'); }
+  setClock(8); setCash(d.cassaInizio);
+  // mattina: arriva il camion?
+  setStock(d.stockPrimaArrivo);
+  if(d.arrivo > 0 && truck.attivo){
+    setTruck(24);
+    await sleep(durata*0.08);
+    truck.attivo = false; setTruck(0);
+    floater(`+${d.arrivo} kg 📦`, 40, 72, '#1fae6f');
+  }
+  setStock(d.stockInizio);
+  // il programma decide
+  renderMiniRegole(d.fired); renderDecisione(d);
+  await sleep(durata*0.08);
+  setStock(d.stockFine);
+  $('#s-cones').textContent = '🍦 ' + d.prodotti;
+  if(d.ordine > 0){ truck.attivo = true; truck.kg = d.ordine; setTruck(0); }
+  // apertura: clienti dalle 9 alle 20
+  const nVis = clamp(Math.round(d.clienti/7), d.clienti>0?2:0, 14);
+  const soglie = Array.from({length:nVis}, (_,k)=>(k+0.5)/nVis);
+  let spawned = 0;
+  const durApertura = durata*0.76;
+  await tween(durApertura, p=>{
+    const ora = 9 + 11*p; setClock(ora);
+    const arrivati = d.clienti*p;
+    const serviti = Math.min(arrivati, d.prodotti);
+    $('#s-cones').textContent = '🍦 ' + Math.max(0, Math.round(d.prodotti - serviti));
+    if(arrivati > d.prodotti && d.persi > 0) $('#s-soldout').classList.remove('hidden');
+    setCash(d.cassaInizio + Math.round(serviti)*d.prezzo);
+    if(truck.attivo) setTruck(ora - 8);
+    while(spawned < nVis && p >= soglie[spawned]){
+      const servito = soglie[spawned]*d.clienti <= d.prodotti;
+      spawnCliente(servito, Math.min(1400, durApertura*0.5)/speed);
+      spawned++;
+    }
+  });
+  // sera: costi e risultato
+  setClock(20);
+  if(d.avanzati > 0) floater(`🗑️ −${d.avanzati} coni`, 62, 30, '#ff4d5e');
+  floater(eurS(d.profitto), 20, 30, d.profitto >= 0 ? '#1fae6f' : '#ff4d5e');
+  setCash(d.cassaFine);
+  await sleep(durata*0.08);
+  // notte
+  $('#night').style.opacity = .55;
+  await tween(CONFIG.durataNotteMs * (opz.tutorial?2:1), p=>{ setClock(20 + 12*p); if(truck.attivo) setTruck(12 + 12*p); });
+  $('#night').style.opacity = 0;
+}
+async function animaSimulazione(sim, opz){
+  truck.attivo = false; setTruck(0);
+  $('#street').innerHTML = '';
+  show('sim');
+  for(const d of sim.giorni){
+    if(!opz.tutorial && d.n === CONFIG.giorniPrevisione+1){
+      await toast(`<span class="big">📡💥</span>La stazione meteo si è rotta!<br><span style="font-size:18px">Da ora il tuo programma deve cavarsela da solo.</span>`, 1600);
+    }
+    await animaGiorno(d, opz);
+  }
+  await sleep(300);
+}
+
+/* =====================================================================
+   SFIDA, RISULTATI, CLASSIFICA
+   ===================================================================== */
+async function avviaSfida(){
+  $('#btn-run').disabled = true;
+  const sim = simula(S.prog, S.giorniSfida, statoIniziale());
+  S.ultimaSim = sim;
+  await animaSimulazione(sim, { tutorial:false, giorniVisibili:CONFIG.giorniPrevisione, tuttiGiorni:S.giorniSfida });
+  $('#btn-run').disabled = false;
+  S.tentativi++;
+  const prima = S.best;
+  if(S.best === null || sim.tot.profitto > S.best) S.best = sim.tot.profitto;
+  salvaGiocatore();
+  const pos = registraPunteggio(sim.tot.profitto);
+  mostraRisultati(sim, prima, pos);
+}
+function mostraRisultati(sim, recordPrima, pos){
+  const T = sim.tot;
+  const pv = $('#r-profit');
+  pv.textContent = eurS(T.profitto);
+  pv.className = 'val ' + (T.profitto >= 0 ? 'pos' : 'neg');
+  let rec = `Tentativo ${S.tentativi} · Record: ${eurS(S.best)}`;
+  if(recordPrima !== null && T.profitto > recordPrima) rec = `🎉 Nuovo record! (prima: ${eurS(recordPrima)})`;
+  rec += `<br>🏆 Sei ${pos.pos}° su ${pos.tot}`;
+  $('#r-record').innerHTML = rec;
+  $('#r-accounts').innerHTML = `
+    <tr><td>💶 Ricavi <span class="tag">${T.venduti} coni</span></td><td class="pos">+${eur(T.ricavi)}</td></tr>
+    <tr><td>🍦 Ingredienti <span class="tag">variabile</span></td><td class="neg">−${eur(T.cIngredienti)}</td></tr>
+    <tr><td>🗑️ Spreco <span class="tag">variabile</span></td><td class="neg">−${eur(T.cSpreco)}</td></tr>
+    <tr><td>🚚 Consegne <span class="tag">${T.ordini}×</span></td><td class="neg">−${eur(T.cConsegna)}</td></tr>
+    <tr><td>🏠 Affitto <span class="tag">fisso</span></td><td class="neg">−${eur(T.cAffitto)}</td></tr>
+    <tr class="tot"><td>= Profitto</td><td class="${T.profitto>=0?'pos':'neg'}">${eurS(T.profitto)}</td></tr>`;
+  $('#r-chart').innerHTML = graficoSVG(sim.giorni);
+  const msgs = analizza(sim);
+  $('#r-debug').innerHTML = msgs.map(m=>`<div class="debug-item ${m.good?'good':''}"><span class="ic">${m.ic}</span>
+     <div><b>${m.t}</b><div>${m.x}</div>${m.fix?`<div class="fix">${m.fix}</div>`:''}</div></div>`).join('');
+  const tema = msgs.length && !msgs[0].good ? msgs[0].tema : (S.tentativi%2 ? 'dati' : 'database');
+  $('#r-fact').innerHTML = FATTI[S.tentativi===1 && msgs[0] && !msgs[0].good ? tema : (S.tentativi===2 ? 'debug' : tema)] || FATTI.ricavi;
+  $('#r-diary').classList.add('hidden');
+  $('#r-diary').innerHTML = diarioHTML(sim.giorni);
+  show('results');
+}
+function graficoSVG(G){
+  const W=720, H=250, pl=50, pr=10, pt=18, pb=46;
+  const vals = G.map(d=>d.profitto);
+  const max = Math.max(50, ...vals), min = Math.min(-50, ...vals);
+  const y = v => pt + (max - v)/(max - min)*(H-pt-pb);
+  const bw = (W-pl-pr)/G.length;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Profitto per giorno">`;
+  [max, 0, min].forEach(v=>{
+    s += `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#2b2140':'#ddd'}" stroke-width="${v===0?2:1}" ${v===0?'':'stroke-dasharray="4 4"'}/>`;
+    s += `<text x="${pl-6}" y="${y(v)+4}" font-size="12" text-anchor="end" fill="#6b5f80" font-weight="700">${Math.round(v)} €</text>`;
+  });
+  G.forEach((d,i)=>{
+    const x = pl + i*bw + bw*0.15, w = bw*0.7, y0 = y(0), y1 = y(d.profitto);
+    const col = d.profitto >= 0 ? '#2fc6a2' : '#ff4d5e';
+    s += `<rect x="${x}" y="${Math.min(y0,y1)}" width="${w}" height="${Math.max(2,Math.abs(y1-y0))}" rx="4" fill="${col}" stroke="#2b2140" stroke-width="2"><title>Giorno ${d.n}: ${eurS(d.profitto)}</title></rect>`;
+    if(d.persi > 0) s += `<text x="${x+w/2}" y="${Math.min(y0,y1)-4}" font-size="13" text-anchor="middle">😞</text>`;
+    s += `<text x="${x+w/2}" y="${H-26}" font-size="16" text-anchor="middle">${METEO[d.meteo].ic}</text>`;
+    s += `<text x="${x+w/2}" y="${H-8}" font-size="12" text-anchor="middle" fill="#6b5f80" font-weight="700">${d.n}</text>`;
+  });
+  return s + '</svg>';
+}
+function diarioHTML(G){
+  return `<h2>📒 Diario dei giorni</h2><div style="overflow-x:auto"><table class="diary"><tr><th>Giorno</th><th>Meteo</th><th>Prodotti</th><th>Clienti</th><th>Venduti</th><th>😞 Persi</th><th>🗑️ Buttati</th><th>🚚</th><th>Profitto</th></tr>` +
+    G.map(d=>`<tr><td>${GIORNI_SETT[d.dow]} ${d.n}</td><td>${METEO[d.meteo].ic} ${d.temp}°</td><td>${d.prodotti}${d.limitato?' ⚠️':''}</td><td>${d.clienti}</td><td>${d.venduti}</td>
+      <td>${d.persi||''}</td><td>${d.avanzati||''}</td><td>${d.ordine?d.ordine+' kg':''}</td><td class="${d.profitto>=0?'pos':'neg'}"><b>${eurS(d.profitto)}</b></td></tr>`).join('') +
+    `</table></div>`;
+}
+$('#btn-fix').onclick = ()=> vaiAlGioco();
+$('#btn-diary').onclick = ()=> $('#r-diary').classList.toggle('hidden');
+$('#btn-toboard').onclick = ()=> mostraClassifica();
+
+function mostraClassifica(){
+  const b = load(KEY_BOARD, []);
+  const me = S.nick.toLowerCase();
+  const medal = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'°';
+  let html = b.slice(0,10).map((e,i)=>`<li class="${e.k===me?'me':''}"><span class="pos">${medal(i)}</span><span class="nm">${esc(e.nick)}</span>
+     <span class="${e.best>=0?'pos':'neg'}">${eurS(e.best)}</span></li>`).join('');
+  const myIdx = b.findIndex(e=>e.k===me);
+  if(myIdx >= 10) html += `<li class="me"><span class="pos">${myIdx+1}°</span><span class="nm">${esc(b[myIdx].nick)}</span><span>${eurS(b[myIdx].best)}</span></li>`;
+  $('#board-list').innerHTML = html || '<li><span class="nm">Ancora nessun punteggio: gioca per primo!</span></li>';
+  $('#btn-board-back').textContent = S.nick ? '🔧 Prova ancora' : '◀ Indietro';
+  $('#btn-board-reset').classList.toggle('hidden', !params.has('admin'));
+  show('board');
+}
+$('#btn-board-back').onclick = ()=>{
+  if(!S.nick) return show('welcome');
+  if(S.mode==='tutorial'){ show('program'); return; }
+  vaiAlGioco();
+};
+$('#btn-board-reset').onclick = async ()=>{
+  const r = await modal('<div class="ic">🗑️</div><h3>Azzerare la classifica?</h3><p>Verranno cancellati tutti i punteggi e i programmi salvati su questo computer.</p>',
+    [{t:'Sì, azzera', cls:'pink'},{t:'Annulla', cls:''}]);
+  if(r===0){ save(KEY_BOARD, []); save(KEY_PLAYERS, {}); mostraClassifica(); }
+};
+
+// esposto per i test
+window.GELATERIA = { CONFIG, simula, generaGiorni, statoIniziale, analizza, giorniTutorial };
+show('welcome');
+</script>
+</body>
+</html>
