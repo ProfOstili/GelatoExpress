@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prova Diorama Gelateria</title>
+<!--
+  PROVA DI FATTIBILITÀ in stile diorama isometrico per "La Gelateria Automatica".
+  Sorgente: impacchettato in prova-iso.html da strumenti/build.py (font e loghi incorporati, funziona offline).
+  Tutto è disegnato con forme geometriche su canvas 2D: nessuna libreria esterna.
+-->
+<style>
+@font-face{font-family:"Nunito";src:url("@DATA:assets/fonts/Nunito.woff2@") format("woff2");font-weight:200 1000;font-display:block}
+:root{
+  --bg:#EEF2F8; --card:#FFFFFF; --ink:#2E3350; --soft:#6B7290; --line:#DCE2EE;
+  --pink:#F28CA8; --mint:#5CC4A8; --sky:#6EB8F0; --yellow:#F5C04A;
+  --font:"Nunito","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.4}
+.wrap{max-width:1240px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;gap:14px}
+header img{width:64px;height:64px;border-radius:50%;object-fit:cover;box-shadow:0 4px 14px rgba(46,51,80,.15);flex:none}
+header .t{flex:1;text-align:center;min-width:0}
+header h1{font-weight:900;font-size:clamp(22px,3.4vw,34px);margin:0;letter-spacing:-.5px;line-height:1.1}
+header h1 span{color:var(--pink)}
+header p{margin:2px 0 0;color:var(--soft);font-weight:700}
+.stage{position:relative;border-radius:22px;overflow:hidden;background:#dfe9f5;box-shadow:0 10px 30px rgba(46,51,80,.12)}
+.stage canvas{display:block;width:100%;height:auto}
+.hud{position:absolute;top:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.hud span{background:rgba(255,255,255,.88);backdrop-filter:blur(4px);border-radius:99px;padding:4px 12px;font-weight:800;font-size:16px;box-shadow:0 2px 8px rgba(46,51,80,.12)}
+.labels{display:grid;grid-template-columns:repeat(6,1fr);text-align:center;color:var(--soft);font-weight:800}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--font);font-weight:900;font-size:16px;border:0;border-radius:14px;padding:10px 18px;background:var(--card);color:var(--ink);cursor:pointer;
+  box-shadow:0 2px 0 var(--line),0 4px 12px rgba(46,51,80,.08)}
+.btn.on{background:var(--ink);color:#fff}
+.btn:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.perf{margin-left:auto;color:var(--soft);font-weight:700;text-align:right;font-size:15px}
+.perf b{color:var(--ink)}
+.note{background:var(--card);border-radius:16px;padding:12px 16px;box-shadow:0 2px 10px rgba(46,51,80,.06)}
+.note h2{font-size:17px;margin:0 0 4px;font-weight:900}
+.note ul{margin:4px 0;padding-left:22px}
+@media (max-width:640px){
+  header img{width:44px;height:44px}
+  .hud span{font-size:13px;padding:2px 8px}
+  .perf{margin-left:0;text-align:left;width:100%}
+  .labels{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="@DATA:assets/logo-istituto.jpg@" alt="Logo Liceo Tecnologico e Professionale Ciuffelli-Einaudi, Todi">
+    <div class="t"><h1>La Gelateria <span>Automatica</span></h1><p>Prova diorama isometrico · corso SIA</p></div>
+    <img src="@DATA:assets/logo-einaudi.jpg@" alt="Logo Liceo Tecnologico Luigi Einaudi, Todi">
+  </header>
+  <div class="stage"><canvas id="tela"></canvas><div class="hud" id="hud"></div></div>
+  <div class="labels" id="labels" hidden><span>felice</span><span>preoccupato</span><span>triste</span><span>sorpreso</span><span>fiero</span><span>pensieroso</span></div>
+  <div class="bar">
+    <button class="btn on" id="b-scene">🏪 Scena</button>
+    <button class="btn" id="b-sheet">🍦 Mascotte</button>
+    <button class="btn" id="b-speed">🐢 Rallentato</button>
+    <div class="perf" id="perf">avvio…</div>
+  </div>
+  <div class="note">
+    <h2>Cosa guardare</h2>
+    <ul>
+      <li>La gelateria è un plastico sospeso, visto dall'alto in diagonale (prospettiva isometrica): niente punto di fuga, linee parallele, tre toni per ogni volume.</li>
+      <li>I giorni si alternano: ☀️ il gelato finisce, 🌧️ avanzano coni, ⛅ tutto ok. Il camion parte il primo giorno e arriva la mattina dopo. La luce cambia dall'alba alla sera, e di sera si accendono lampione e vetrina.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   PROIEZIONE ISOMETRICA
+   x verso destra-basso, y verso sinistra-basso, z verso l'alto
+   ===================================================================== */
+const LW = 1280, LH = 720;               // dimensioni logiche
+const S = 46, A = S*Math.cos(Math.PI/6), B = S*.5;
+const OX = 640, OY = 372;
+const iso = (x, y, z=0) => [OX + (x - y - 1.5)*A, OY + (x + y - 10.5)*B - z*S];
+const DX = 12, DY = 9;                   // il plastico è 12 x 9
+
+const tela = document.getElementById('tela');
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+tela.width = LW*DPR; tela.height = LH*DPR;
+const g = tela.getContext('2d'); g.scale(DPR, DPR);
+
+const clamp = (x,a=0,b=1) => Math.max(a, Math.min(b, x));
+const lerp = (a,b,x) => a + (b-a)*x;
+const ease = x => { x = clamp(x); return x*x*(3-2*x); };
+const frac = x => x - Math.floor(x);
+const seg = (t,a,b) => clamp((t-a)/(b-a));
+const hash = i => { const x = Math.sin(i*127.1 + 311.7)*43758.5453; return x - Math.floor(x); };
+function tono(hex, k){                   // k > 0 schiarisce, k < 0 scurisce
+  const n = parseInt(hex.slice(1), 16); let r = n>>16, gg = (n>>8)&255, b = n&255;
+  const f = c => Math.round(k >= 0 ? c + (255-c)*k : c*(1+k));
+  return `rgb(${f(r)},${f(gg)},${f(b)})`;
+}
+function poli(pts, fill, stroke){
+  g.beginPath(); pts.forEach(([x,y],i) => i ? g.lineTo(x,y) : g.moveTo(x,y)); g.closePath();
+  if(fill){ g.fillStyle = fill; g.fill(); }
+  if(stroke){ g.strokeStyle = stroke; g.lineWidth = 1; g.stroke(); }
+}
+const P = (...pts) => pts.map(p => iso(...p));
+// un parallelepipedo: sopra chiaro, fianco sinistro medio, fianco destro scuro
+function scatola(x, y, z, w, d, h, col, o={}){
+  const top = o.top || tono(col, .18), sx = o.left || col, dx = o.right || tono(col, -.16);
+  poli(P([x,y+d,z],[x+w,y+d,z],[x+w,y+d,z+h],[x,y+d,z+h]), sx);
+  poli(P([x+w,y,z],[x+w,y+d,z],[x+w,y+d,z+h],[x+w,y,z+h]), dx);
+  poli(P([x,y,z+h],[x+w,y,z+h],[x+w,y+d,z+h],[x,y+d,z+h]), top);
+}
+const piano = (x, y, z, w, d, col) => poli(P([x,y,z],[x+w,y,z],[x+w,y+d,z],[x,y+d,z]), col);
+const facciaY = (y, x0, x1, z0, z1, col) => poli(P([x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]), col);   // faccia rivolta verso sinistra-basso
+function ombra(x, y, rx, ry, a=.16){ const [sx, sy] = iso(x, y, 0); g.fillStyle = `rgba(46,51,80,${a})`; g.beginPath(); g.ellipse(sx, sy, rx, ry, 0, 0, Math.PI*2); g.fill(); }
+function cerchioY(y, cx, cz, r, col){    // cerchio "in piedi" su una faccia y (ruote)
+  g.beginPath(); for(let i=0; i<=24; i++){ const a = i/24*Math.PI*2; const [sx, sy] = iso(cx + Math.cos(a)*r, y, cz + Math.sin(a)*r); i ? g.lineTo(sx, sy) : g.moveTo(sx, sy); }
+  g.fillStyle = col; g.fill();
+}
+function sfera(sx, sy, r, col, luce=.35){
+  const gr = g.createRadialGradient(sx - r*.35, sy - r*.4, r*.1, sx, sy, r);
+  gr.addColorStop(0, tono(col, luce)); gr.addColorStop(.7, col); gr.addColorStop(1, tono(col, -.12));
+  g.fillStyle = gr; g.beginPath(); g.arc(sx, sy, r, 0, Math.PI*2); g.fill();
+}
+
+/* =====================================================================
+   COLORI
+   ===================================================================== */
+const COL = {
+  erba:'#9BD77E', erbaLato:'#7CC36A', terra:'#C8946A', terraScura:'#A9754F', roccia:'#8E6D5A',
+  strada:'#8A93A6', marciapiede:'#E3E7EF', muro:'#FFF4E2', tetto:'#F28CA8', tenda:'#F7A8BE',
+  banco:'#6FC7B5', porta:'#B07A54', vetro:'#BFE7F7', albero:'#6CC08A', tronco:'#9A6B4B',
+  cono:'#F2B866', conoGriglia:'#D9963F', pallina:'#F7A1BC', ciliegia:'#E2465E', ink:'#3A3355',
+  cassone:'#FFFFFF', cabina:'#6EB8F0', ruota:'#3A3F55'
+};
+const COL_CLIENTI = ['#6C8CF5', '#F28C6E', '#9B7BE0', '#5CC4A8', '#F5C04A', '#E86A8F'];
+
+/* =====================================================================
+   ELEMENTI DEL PLASTICO
+   ===================================================================== */
+function cielo(meteo, p){
+  const sera = seg(p, .72, .9), notte = seg(p, .9, 1);
+  const base = meteo === 'sole' ? ['#BFE3FA','#F4F7FB'] : meteo === 'nuvoloso' ? ['#C9D4E2','#EEF1F6'] : ['#9EAABD','#D7DDE6'];
+  const gr = g.createLinearGradient(0, 0, 0, LH);
+  gr.addColorStop(0, base[0]); gr.addColorStop(1, base[1]);
+  g.fillStyle = gr; g.fillRect(0, 0, LW, LH);
+  if(sera > 0){ const gs = g.createLinearGradient(0, 0, 0, LH); gs.addColorStop(0, `rgba(155,123,224,${.45*sera})`); gs.addColorStop(1, `rgba(255,180,140,${.55*sera})`); g.fillStyle = gs; g.fillRect(0, 0, LW, LH); }
+  if(notte > 0){ g.fillStyle = `rgba(36,40,82,${.75*notte})`; g.fillRect(0, 0, LW, LH);
+    for(let i=0; i<40; i++){ g.fillStyle = `rgba(255,255,255,${notte*(.4 + .6*hash(i))})`; g.beginPath(); g.arc(hash(i)*LW, hash(i+9)*LH*.45, 1 + hash(i+3)*1.4, 0, 7); g.fill(); } }
+  if(meteo === 'sole' || meteo === 'nuvoloso'){                     // sole (si abbassa verso sera)
+    const sx = 190 + p*120, sy = 120 + Math.pow(p, 2)*260, k = meteo === 'sole' ? 1 : .55;
+    const gl = g.createRadialGradient(sx, sy, 10, sx, sy, 140); gl.addColorStop(0, `rgba(255,224,140,${.55*k})`); gl.addColorStop(1, 'rgba(255,224,140,0)');
+    g.fillStyle = gl; g.fillRect(sx-140, sy-140, 280, 280);
+    g.fillStyle = sera > .3 ? '#FFB27A' : '#FFD66B'; g.globalAlpha = k*(1 - notte); g.beginPath(); g.arc(sx, sy, 38, 0, 7); g.fill(); g.globalAlpha = 1;
+  }
+}
+function plastico(){
+  // blocco di terra sotto al prato, a strati
+  const z0 = -1.3;
+  poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,0],[0,DY,0]), COL.terra);
+  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,0],[DX,0,0]), COL.terraScura);
+  poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,z0+.35],[0,DY,z0+.35]), tono(COL.roccia, .1));
+  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,z0+.35],[DX,0,z0+.35]), COL.roccia);
+  for(let i=0; i<9; i++){ const xx = .6 + i*1.3; poli(P([xx,DY,-.55-hash(i)*.4],[xx+.5,DY,-.55-hash(i)*.4],[xx+.5,DY,-.35-hash(i)*.4],[xx,DY,-.35-hash(i)*.4]), tono(COL.terra, -.1)); }
+  poli(P([0,DY,-.18],[DX,DY,-.18],[DX,DY,0],[0,DY,0]), COL.erbaLato);
+  poli(P([DX,0,-.18],[DX,DY,-.18],[DX,DY,0],[DX,0,0]), tono(COL.erbaLato, -.12));
+  piano(0, 0, 0, DX, DY, COL.erba);
+  // vialetto di ghiaia e aiuole
+  piano(2.1, 1.2, .005, .7, 3.7, '#EADFC8');
+  for(const [x, y, c] of [[.6,2.6,'#F28CA8'],[1.1,2.9,'#F5C04A'],[.7,3.3,'#9B7BE0'],[11.2,3.2,'#F28CA8'],[11.5,2.7,'#F5C04A']]){ const [sx, sy] = iso(x, y, .05); g.fillStyle = c; g.beginPath(); g.arc(sx, sy, 3.2, 0, 7); g.fill(); }
+  // marciapiede e strada
+  scatola(0, 4.9, 0, DX, 1.0, .1, COL.marciapiede, { left:'#C9CFDB', right:'#B9C0CC' });
+  for(let x=0; x<DX; x+=1) poli(P([x,4.9,.101],[x,5.9,.101]), null, 'rgba(46,51,80,.08)');
+  piano(0, 6.05, .004, DX, 2.1, COL.strada);
+  for(let x=.3; x<DX; x+=1.6) piano(x, 7.04, .006, .8, .12, '#FFFFFF');
+  poli(P([0,DY,0],[DX,DY,0],[DX,DY,-.05],[0,DY,-.05]), COL.erbaLato);
+}
+function albero(x, y, s=1, col=COL.albero){
+  ombra(x+.25, y+.25, 26*s, 12*s, .12);
+  scatola(x-.07, y-.07, 0, .14, .14, .7*s, COL.tronco);
+  const [sx, sy] = iso(x, y, .7*s + .45*s);
+  sfera(sx, sy, 26*s, col, .3);
+  g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.ellipse(sx - 8*s, sy - 10*s, 10*s, 7*s, -.5, 0, 7); g.fill();
+}
+function tempio(){                       // il Tempio della Consolazione di Todi, in miniatura
+  scatola(.9, .7, 0, 1.6, 1.6, 1.0, '#F3E6CF');
+  facciaY(2.3, 1.45, 1.95, 0, .7, '#C9A27E');
+  const [sx, sy] = iso(1.7, 1.5, 1.0);
+  g.fillStyle = '#B9C3D3'; g.beginPath(); g.ellipse(sx, sy, 34, 17, 0, Math.PI, 0); g.fill();
+  const gr = g.createRadialGradient(sx-10, sy-28, 4, sx, sy-10, 40); gr.addColorStop(0, '#E4EAF3'); gr.addColorStop(1, '#9FAAC0');
+  g.fillStyle = gr; g.beginPath(); g.ellipse(sx, sy, 34, 30, 0, Math.PI, 0); g.fill();
+  g.fillStyle = '#F3E6CF'; g.fillRect(sx-5, sy-40, 10, 12); g.fillStyle = '#9FAAC0'; g.beginPath(); g.arc(sx, sy-41, 6, Math.PI, 0); g.fill();
+}
+function panchina(){ scatola(3.3, 4.35, .3, 1.3, .35, .08, '#C98B5E'); scatola(3.35, 4.4, 0, .08, .25, .3, '#7D6A62'); scatola(4.5, 4.4, 0, .08, .25, .3, '#7D6A62'); scatola(3.3, 4.32, .38, 1.3, .07, .35, '#C98B5E'); }
+function lampione(notte){
+  scatola(5.9, 4.55, 0, .1, .1, 2.0, '#4B5270');
+  const [sx, sy] = iso(5.95, 4.6, 2.05);
+  if(notte > 0){ const gl = g.createRadialGradient(sx, sy, 2, sx, sy, 90); gl.addColorStop(0, `rgba(255,222,140,${.6*notte})`); gl.addColorStop(1, 'rgba(255,222,140,0)'); g.fillStyle = gl; g.fillRect(sx-90, sy-90, 180, 180); }
+  g.fillStyle = notte > .2 ? '#FFE08A' : '#F4F1E6'; g.beginPath(); g.arc(sx, sy, 7, 0, 7); g.fill();
+}
+function negozio(coni, maxConi, notte){
+  ombra(9.2, 3.2, 120, 50, .1);
+  // muri
+  scatola(6.5, 1, 0, 4, 2.9, 2.6, COL.muro, { left:'#FFF0D9', right:'#F1DFC2', top:'#FFF8EC' });
+  facciaY(3.9, 9.3, 10.2, 0, 1.75, COL.porta);
+  facciaY(3.9, 9.95, 10.05, .8, .9, '#F5C04A');
+  facciaY(3.9, 6.85, 9.0, .95, 2.05, notte > .2 ? '#FFE7A6' : COL.vetro);
+  if(notte <= .2) poli(P([7.1,3.9,1.9],[7.6,3.9,1.9],[7.3,3.9,1.05],[6.95,3.9,1.05]), '#E8F7FD');
+  // tetto
+  scatola(6.35, .85, 2.6, 4.3, 3.2, .25, COL.tetto);
+  // insegna: un grande cono sul tetto che dondola
+  const [sx, sy] = iso(8.5, 2.4, 2.85);
+  coneIcona(sx, sy - 6 + Math.sin(performance.now()/500)*3, 1.25);
+}
+function tenda(){
+  const n = 12;
+  for(let i=0; i<n; i++){
+    const x0 = 6.5 + i*4/n, x1 = x0 + 4/n, col = i % 2 ? '#FFFFFF' : COL.tenda;
+    poli(P([x0,3.9,2.5],[x1,3.9,2.5],[x1,4.45,2.2],[x0,4.45,2.2]), col);
+    poli(P([x0,4.45,2.2],[x1,4.45,2.2],[x1,4.45,2.04],[x0,4.45,2.04]), i % 2 ? '#EDEFF5' : tono(COL.tenda, -.12));
+  }
+}
+function bancone(coni, maxConi){
+  scatola(6.8, 4.25, 0, 2.3, .55, .95, COL.banco, { top:'#BDEBDD' });
+  [COL.pallina, '#B8E07A', '#9C6B4E', '#9FE3F0'].forEach((c, i) => { const [sx, sy] = iso(7.05 + i*.5, 4.52, .95); g.fillStyle = c; g.beginPath(); g.ellipse(sx, sy, 11, 6, 0, 0, 7); g.fill(); });
+  const n = Math.ceil(6 * coni / Math.max(1, maxConi));
+  for(let i=0; i<n; i++){ const [sx, sy] = iso(6.95 + i*.35, 4.8, .55); g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx-6, sy-8); g.lineTo(sx+6, sy-8); g.lineTo(sx, sy+8); g.fill(); }
+}
+function coneIcona(sx, sy, s){
+  g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx - 16*s, sy - 6*s); g.lineTo(sx + 16*s, sy - 6*s); g.lineTo(sx, sy + 34*s); g.fill();
+  g.strokeStyle = COL.conoGriglia; g.lineWidth = 1.5*s;
+  for(let k=1; k<4; k++){ g.beginPath(); g.moveTo(sx - 16*s + k*8*s, sy - 6*s); g.lineTo(sx - 16*s + k*8*s + 8*s*(1-k/4), sy + 34*s*(k/4)); g.stroke(); }
+  sfera(sx, sy - 14*s, 18*s, '#9FE3F0');
+}
+
+/* =====================================================================
+   LA MASCOTTE: un cono gelato alla fragola (forme pulite)
+   ===================================================================== */
+function mascotte(sx, sy, s, emo, t){
+  // sy = punta del cono
+  const ink = COL.ink, hy = sy - 62*s;
+  // braccia
+  g.strokeStyle = ink; g.lineWidth = 3.2*s; g.lineCap = 'round';
+  const su = emo==='sorpreso' ? -1 : emo==='triste' ? .7 : emo==='preoccupato' ? -.4 : 0;
+  const saluto = (emo==='felice' || emo==='fiero') ? Math.sin(t*8)*.6 : 0;
+  g.beginPath(); g.moveTo(sx - 14*s, sy - 38*s); g.quadraticCurveTo(sx - 26*s, sy - (34 - su*16)*s, sx - 32*s, sy - (36 - su*28)*s); g.stroke();
+  g.beginPath(); g.moveTo(sx + 14*s, sy - 38*s); g.quadraticCurveTo(sx + 26*s, sy - (34 - su*16 + saluto*10)*s, sx + 32*s, sy - (36 - su*28 + saluto*22)*s); g.stroke();
+  // cono
+  g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx - 20*s, sy - 44*s); g.lineTo(sx + 20*s, sy - 44*s); g.lineTo(sx, sy); g.closePath(); g.fill();
+  g.save(); g.clip(); g.strokeStyle = COL.conoGriglia; g.lineWidth = 1.6*s;
+  for(let k=-4; k<5; k++){ g.beginPath(); g.moveTo(sx + k*9*s, sy - 46*s); g.lineTo(sx + k*9*s + 30*s, sy); g.stroke(); g.beginPath(); g.moveTo(sx + k*9*s, sy - 46*s); g.lineTo(sx + k*9*s - 30*s, sy); g.stroke(); }
+  g.restore();
+  g.fillStyle = 'rgba(0,0,0,.08)'; g.beginPath(); g.moveTo(sx + 4*s, sy - 44*s); g.lineTo(sx + 20*s, sy - 44*s); g.lineTo(sx, sy); g.closePath(); g.fill();
+  // pallina (testa) con le gocce
+  sfera(sx, hy, 26*s, COL.pallina, .45);
+  g.fillStyle = COL.pallina;
+  for(const [dx, h] of [[-14, 9], [3, 6], [15, 11]]){ g.beginPath(); g.ellipse(sx + dx*s, hy + 20*s + h*s*.5, 4.2*s, h*s*.6, 0, 0, 7); g.fill(); }
+  // ciliegina
+  g.strokeStyle = '#4FA372'; g.lineWidth = 2*s; g.beginPath(); g.moveTo(sx + 1*s, hy - 30*s); g.quadraticCurveTo(sx + 4*s, hy - 40*s, sx + 11*s, hy - 42*s); g.stroke();
+  sfera(sx, hy - 28*s, 6.5*s, COL.ciliegia, .5);
+  // faccia
+  g.fillStyle = ink;
+  const occhio = x => {
+    if(emo==='fiero'){ g.lineWidth = 2.4*s; g.strokeStyle = ink; g.beginPath(); g.arc(x, hy + 1*s, 4*s, Math.PI*1.1, Math.PI*1.9); g.stroke(); return; }
+    const k = emo==='sorpreso' ? 1.3 : 1, blink = frac(t*.3) < .03;
+    if(blink){ g.fillRect(x - 4*s, hy - 1*s, 8*s, 2*s); return; }
+    g.beginPath(); g.ellipse(x, hy - 2*s, 3.4*s*k, 4.8*s*k, 0, 0, 7); g.fill();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(x - 1.2*s, hy - 4*s, 1.3*s, 0, 7); g.fill(); g.fillStyle = ink;
+  };
+  occhio(sx - 9*s); occhio(sx + 9*s);
+  g.fillStyle = 'rgba(242,108,140,.45)'; g.beginPath(); g.ellipse(sx - 16*s, hy + 6*s, 4.5*s, 2.6*s, 0, 0, 7); g.ellipse(sx + 16*s, hy + 6*s, 4.5*s, 2.6*s, 0, 0, 7); g.fill();
+  g.strokeStyle = ink; g.lineWidth = 2.2*s; g.fillStyle = '#9B3651';
+  const my = hy + 9*s;
+  if(emo==='felice' || emo==='fiero'){ g.beginPath(); g.moveTo(sx - 6*s, my - 1*s); g.quadraticCurveTo(sx, my + 8*s, sx + 6*s, my - 1*s); g.closePath(); g.fill(); }
+  else if(emo==='triste'){ g.beginPath(); g.arc(sx, my + 6*s, 5*s, Math.PI*1.15, Math.PI*1.85); g.stroke(); }
+  else if(emo==='sorpreso'){ g.beginPath(); g.ellipse(sx, my + 2*s, 3.4*s, 4.2*s, 0, 0, 7); g.fill(); }
+  else if(emo==='preoccupato'){ g.beginPath(); g.moveTo(sx - 6*s, my + 2*s); g.quadraticCurveTo(sx - 3*s, my - 1*s, sx, my + 2*s); g.quadraticCurveTo(sx + 3*s, my + 5*s, sx + 6*s, my + 2*s); g.stroke(); }
+  else { g.beginPath(); g.moveTo(sx - 4*s, my + 2*s); g.lineTo(sx + 4*s, my + 1*s); g.stroke(); }
+  if(emo==='preoccupato' || emo==='triste'){ g.lineWidth = 2*s; g.beginPath(); g.moveTo(sx - 13*s, hy - 11*s); g.lineTo(sx - 6*s, hy - 13*s); g.moveTo(sx + 6*s, hy - 13*s); g.lineTo(sx + 13*s, hy - 11*s); g.stroke(); }
+  // segni sopra la testa
+  const ex = sx + 26*s, ey = hy - 26*s;
+  if(emo==='preoccupato' || emo==='triste'){ const d = frac(t*1.2)*8*s; g.fillStyle = '#7EC8F5'; g.beginPath(); g.moveTo(ex, ey - 7*s + d); g.quadraticCurveTo(ex + 6*s, ey + 2*s + d, ex, ey + 4*s + d); g.quadraticCurveTo(ex - 6*s, ey + 2*s + d, ex, ey - 7*s + d); g.fill(); }
+  if(emo==='triste'){ const cy = hy - 54*s; g.fillStyle = '#AEB7C8'; [[-10,0,9],[0,-4,11],[11,0,9]].forEach(([dx,dy,r]) => { g.beginPath(); g.arc(sx + dx*s, cy + dy*s, r*s, 0, 7); g.fill(); });
+    g.strokeStyle = '#7EC8F5'; g.lineWidth = 2*s; for(let i=0; i<3; i++){ const yy = frac(t*2 + i/3)*14*s; g.beginPath(); g.moveTo(sx + (i-1)*9*s, cy + 9*s + yy); g.lineTo(sx + (i-1)*9*s - 2*s, cy + 14*s + yy); g.stroke(); } }
+  if(emo==='sorpreso'){ g.fillStyle = '#F5A623'; g.beginPath(); g.roundRect(ex - 3*s, ey - 16*s, 6*s, 16*s, 3*s); g.fill(); g.beginPath(); g.arc(ex, ey + 6*s, 3.4*s, 0, 7); g.fill(); }
+  if(emo==='fiero' || emo==='felice'){ const k = .8 + .2*Math.sin(t*9); stella(ex, ey, 9*s*k, '#FFD66B'); stella(ex + 12*s, ey + 14*s, 5*s*k, '#FFFFFF'); }
+  if(emo==='pensieroso') for(let i=0; i<3; i++){ g.fillStyle = ink; g.beginPath(); g.arc(ex - 6*s + i*8*s, ey + (i === Math.floor(t*3) % 3 ? -3*s : 0), 2.4*s, 0, 7); g.fill(); }
+}
+function stella(x, y, r, col){ g.fillStyle = col; g.beginPath(); for(let i=0; i<8; i++){ const a = -Math.PI/2 + i*Math.PI/4, q = i%2 ? r*.35 : r; i ? g.lineTo(x + Math.cos(a)*q, y + Math.sin(a)*q) : g.moveTo(x + Math.cos(a)*q, y + Math.sin(a)*q); } g.closePath(); g.fill(); }
+
+/* =====================================================================
+   CLIENTI E CAMION
+   ===================================================================== */
+function cliente(x, y, ci, passo, verso, umore, cono){
+  const [sx, sy0] = iso(x, y, .1), col = COL_CLIENTI[ci], s = .9 + hash(ci)*.2;
+  const salto = -Math.abs(Math.sin(passo*Math.PI))*4;
+  const sy = sy0 + salto;
+  ombra(x, y, 14, 6, .18);
+  g.save(); g.translate(sx, sy); g.scale(verso, 1);
+  g.strokeStyle = COL.ink; g.lineWidth = 3; g.lineCap = 'round';
+  const gamba = Math.sin(passo*Math.PI*2)*5;
+  g.beginPath(); g.moveTo(-5, -10); g.lineTo(-5 + gamba, 0 - salto); g.moveTo(5, -10); g.lineTo(5 - gamba, 0 - salto); g.stroke();
+  sfera(0, -26*s, 16*s, col, .3);
+  g.fillStyle = COL.ink;
+  g.beginPath(); g.ellipse(4*s, -30*s, 2*s, 3*s, 0, 0, 7); g.ellipse(11*s, -30*s, 2*s, 3*s, 0, 0, 7); g.fill();
+  g.lineWidth = 2; g.beginPath();
+  if(umore > 0) g.arc(7.5*s, -25*s, 3.5*s, .2, Math.PI - .2);
+  else if(umore < 0) g.arc(7.5*s, -19*s, 3.5*s, Math.PI + .3, -.3);
+  else { g.moveTo(5*s, -23*s); g.lineTo(10*s, -23*s); }
+  g.stroke();
+  if(cono){ g.fillStyle = COL.cono; g.beginPath(); g.moveTo(14*s, -24*s); g.lineTo(22*s, -24*s); g.lineTo(18*s, -12*s); g.fill(); sfera(18*s, -27*s, 5*s, ['#9FE3F0', COL.pallina, '#B8E07A'][ci % 3]); }
+  if(umore < 0){ g.fillStyle = '#7EC8F5'; g.beginPath(); g.ellipse(-13*s, -40*s + frac(passo)*3, 2.5*s, 3.6*s, 0, 0, 7); g.fill(); }
+  g.restore();
+}
+function camion(x, t){
+  const y = 6.5, b = Math.abs(Math.sin(t*16))*.03;
+  ombra(x + 1.4, y + .55, 70, 22, .18);
+  // fumo
+  for(let i=0; i<5; i++){ const a = frac(t*1.3 + i/5); const [sx, sy] = iso(x - .2 - a*.9, y + .6, .35 + a*1.1);
+    g.fillStyle = `rgba(214,219,230,${.85*(1-a)})`; g.beginPath(); g.arc(sx, sy, 5 + a*16, 0, 7); g.fill(); }
+  scatola(x + .1, y + .1, .25 + b, 2.0, .95, 1.15, COL.cassone, { left:'#F6F7FB', right:'#E2E5EE', top:'#FFFFFF' });
+  facciaY(y + 1.05, x + .1, x + 2.1, .55 + b, .75 + b, COL.tenda);
+  // un cono disegnato sul fianco
+  const [cx, cy] = iso(x + 1.1, y + 1.05, .95 + b); coneIcona(cx, cy - 4, .55);
+  scatola(x + 2.15, y + .15, .25 + b, .85, .85, .8, COL.cabina);
+  facciaY(y + 1.0, x + 2.3, x + 2.85, .62 + b, .95 + b, '#E8F7FD');
+  for(const wx of [x + .55, x + 2.45]){ cerchioY(y + 1.06, wx, .22, .22, COL.ruota); cerchioY(y + 1.07, wx, .22, .09, '#C5CBD8'); }
+}
+
+/* =====================================================================
+   NUVOLE E PIOGGIA
+   ===================================================================== */
+function nuvola(x, y, z, s, col, conOmbra){
+  if(conOmbra) ombra(x, y, 60*s, 24*s, .07);
+  const [sx, sy] = iso(x, y, z);
+  [[-26,6,18],[-6,-6,24],[18,2,20],[0,10,18],[30,10,13]].forEach(([dx,dy,r]) => sfera(sx + dx*s, sy + dy*s, r*s, col, .25));
+}
+function pioggia(t){
+  g.strokeStyle = 'rgba(126,200,245,.75)'; g.lineWidth = 1.6;
+  for(let i=0; i<90; i++){
+    const x = hash(i)*DX, y = hash(i+30)*DY, ph = frac(hash(i+60) + t*1.6), z = 6 - ph*6;
+    const [sx, sy] = iso(x, y, z);
+    g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 3, sy + 12); g.stroke();
+    if(ph > .92){ const [px, py] = iso(x, y, 0); g.beginPath(); g.ellipse(px, py, 6*(ph-.92)/.08 + 2, 2, 0, 0, 7); g.stroke(); }
+  }
+}
+
+/* =====================================================================
+   DEMO: tre giorni (sole, pioggia, nuvoloso)
+   ===================================================================== */
+const GIORNI = [
+  { meteo:'sole',     clienti:9, coni:6 },
+  { meteo:'pioggia',  clienti:3, coni:6 },
+  { meteo:'nuvoloso', clienti:6, coni:6 }
+];
+let durataGiorno = 8, modo = 'scena';
+function scena(t){
+  const n = Math.floor(t / durataGiorno), p = frac(t / durataGiorno), G = GIORNI[n % 3];
+  const notte = seg(p, .86, 1);
+  cielo(G.meteo, p);
+  plastico();
+  // fondo del plastico: alberi e tempio
+  albero(.8, 1.0, 1.1); tempio(); albero(4.2, .9, 1.25, '#5FB57F'); albero(5.3, 2.4, .9); albero(11.2, 1.1, 1.15, '#5FB57F'); albero(11.3, 4.2, .85);
+  if(G.meteo !== 'sole'){ const c = G.meteo === 'pioggia' ? '#C3CAD8' : '#FFFFFF';
+    nuvola(2 + frac(t*.015)*3, 3, 6.4, 1.1, c, true); nuvola(8 - frac(t*.01)*3, 1, 6.9, 1.3, c, true); nuvola(10, 6, 6.2, .9, c, true); }
+  else nuvola(3 + frac(t*.012)*4, .5, 7.2, .8, '#FFFFFF', true);
+  // gelateria con la mascotte dietro al bancone
+  const banco = 7.3, inizio = -.6, walkT = .24;
+  let serviti = 0, persi = 0, ultimoServito = -9;
+  const visti = [];
+  for(let i=0; i<G.clienti; i++){
+    const pi = .1 + .64*(i+.5)/G.clienti, q = (p - pi)/walkT, servito = i < G.coni;
+    if(q >= .5){ if(servito){ serviti++; ultimoServito = Math.max(ultimoServito, pi + walkT*.5); } else persi++; }
+    if(q < 0 || q > 1) continue;
+    let x, verso = 1, st = 0, cono = false, cammina = true;
+    if(q < .5) x = lerp(inizio, banco, ease(q/.5));
+    else if(q < .62){ x = banco; cammina = false; st = servito ? 1 : -1; cono = servito; }
+    else { x = lerp(banco, servito ? DX + .6 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
+    visti.push({ x, y: 5.45 + (i % 2)*.2, ci: (i + n*2) % 6, passo: cammina ? t*2.2 + i*.3 : 0, verso, st, cono });
+  }
+  const rimasti = G.coni - serviti;
+  negozio(rimasti, G.coni, notte);
+  let emo = 'felice';
+  if(n % 3 === 1 && p < .2) emo = 'sorpreso';
+  else if(rimasti === 0 && persi > 0) emo = 'triste';
+  else if(rimasti <= 1 && p > .1 && G.clienti > G.coni) emo = 'preoccupato';
+  else if(G.meteo === 'pioggia' && p > .5) emo = 'pensieroso';
+  else if(p > .84 && rimasti <= 1) emo = 'fiero';
+  const salto = Math.max(0, Math.sin(clamp(((p - ultimoServito)*durataGiorno)/.3)*Math.PI))*10;
+  bancone(rimasti, G.coni);
+  tenda();
+  // la mascotte accoglie i clienti accanto al bancone
+  ombra(9.65, 4.62, 22, 9, .2);
+  const [mx, my] = iso(9.65, 4.62, .1);
+  mascotte(mx, my - salto + Math.sin(t*3)*1.5, 1.1, emo, t);
+  panchina(); lampione(notte);
+  // clienti (prima i più lontani)
+  visti.sort((a, b) => a.y - b.y).forEach(v => {
+    const bordo = clamp(Math.min(v.x + .6, DX + .6 - v.x)*1.5);       // compaiono e spariscono sul bordo del plastico
+    g.globalAlpha = bordo; cliente(v.x, v.y, v.ci, v.passo, v.verso, v.st, v.cono); g.globalAlpha = 1;
+  });
+  // camion: ordinato la mattina del giorno di sole, arriva la mattina dopo
+  let cx = null;
+  if(n % 3 === 0 && p > .12) cx = lerp(-3.5, 4.2, ease(seg(p, .12, 1)));
+  if(n % 3 === 1 && p < .2) cx = lerp(4.2, 6.4, ease(seg(p, 0, .12)));
+  if(cx !== null){ g.globalAlpha = clamp((cx + 3.2)*1.2); camion(cx, t); g.globalAlpha = 1; }
+  // davanti: un cespuglio
+  albero(.5, 8.6, .6, '#5FB57F');
+  if(G.meteo === 'pioggia') pioggia(t);
+  // luce della sera
+  const sera = seg(p, .72, .9);
+  if(sera > 0){ g.globalCompositeOperation = 'multiply'; g.fillStyle = `rgba(255,196,170,${.35*sera})`; g.fillRect(0, 0, LW, LH);
+    g.fillStyle = `rgba(110,120,200,${.45*notte})`; g.fillRect(0, 0, LW, LH); g.globalCompositeOperation = 'source-over'; }
+  if(notte > .2){ const [vx, vy] = iso(7.9, 3.9, 1.5); const gl = g.createRadialGradient(vx, vy, 5, vx, vy, 120); gl.addColorStop(0, `rgba(255,226,150,${.35*notte})`); gl.addColorStop(1, 'rgba(255,226,150,0)'); g.fillStyle = gl; g.fillRect(vx-120, vy-120, 240, 240); }
+  return { giorno:n+1, meteo:G.meteo, ora:8 + 12*p, rimasti, persi, camion:(n%3===0 && p>.12) ? Math.max(0, Math.ceil(24 - 12*p)) : null };
+}
+function schedaMascotte(t){
+  const gr = g.createLinearGradient(0, 0, 0, LH); gr.addColorStop(0, '#DCEBFA'); gr.addColorStop(1, '#F6F2FA'); g.fillStyle = gr; g.fillRect(0, 0, LW, LH);
+  ['felice','preoccupato','triste','sorpreso','fiero','pensieroso'].forEach((e, i) => {
+    const x = 120 + i*208, y = 520;
+    g.fillStyle = 'rgba(46,51,80,.12)'; g.beginPath(); g.ellipse(x, y + 4, 46, 12, 0, 0, 7); g.fill();
+    mascotte(x, y + Math.sin(t*3 + i)*3, 2.2, e, t + i*.7);
+  });
+}
+
+/* =====================================================================
+   CICLO
+   ===================================================================== */
+let t0 = performance.now(), T = 0, info = null, tempi = [], scatti = [], ultimo = 0, nF = 0;
+const meteoIc = { sole:'☀️', pioggia:'🌧️', nuvoloso:'⛅' };
+function ciclo(now){
+  const ini = performance.now();
+  T = Math.max(0, (ini - t0)/1000);
+  info = modo === 'scena' ? scena(T) : (schedaMascotte(T), null);
+  tempi.push(performance.now() - ini); if(tempi.length > 30) tempi.shift();
+  if(ultimo){ scatti.push(now - ultimo); if(scatti.length > 30) scatti.shift(); } ultimo = now;
+  const hud = document.getElementById('hud');
+  hud.innerHTML = info ? `<span>📅 Giorno ${info.giorno} ${meteoIc[info.meteo]}</span><span>🕗 ${String(Math.floor(info.ora)).padStart(2,'0')}:00</span><span>🍦 ${info.rimasti}</span>` +
+    (info.persi ? `<span>😞 ${info.persi}</span>` : '') + (info.camion !== null ? `<span>🚚 tra ${info.camion} h</span>` : '') : '';
+  if(++nF % 15 === 0) document.getElementById('perf').innerHTML = `<b>${(1000/media(scatti)).toFixed(0)}</b> immagini/s · ${media(tempi).toFixed(1)} ms per immagine`;
+  requestAnimationFrame(ciclo);
+}
+const media = a => a.reduce((s,x)=>s+x,0)/Math.max(1,a.length);
+const $ = s => document.querySelector(s);
+$('#b-scene').onclick = () => { modo = 'scena'; $('#b-scene').classList.add('on'); $('#b-sheet').classList.remove('on'); $('#labels').hidden = true; };
+$('#b-sheet').onclick = () => { modo = 'scheda'; $('#b-sheet').classList.add('on'); $('#b-scene').classList.remove('on'); $('#labels').hidden = false; };
+$('#b-speed').onclick = () => {
+  const pos = T / durataGiorno; durataGiorno = durataGiorno === 8 ? 1.5 : 8;
+  t0 = performance.now() - pos*durataGiorno*1000;
+  $('#b-speed').textContent = durataGiorno === 8 ? '🐢 Rallentato' : '⚡ Ritmo del gioco'; $('#b-speed').classList.toggle('on', durataGiorno !== 8);
+};
+window.addEventListener('error', e => { $('#perf').textContent = '⚠️ Errore: ' + e.message; });
+window.PROVA = { get info(){ return info; }, get fps(){ return 1000/media(scatti); }, get ms(){ return media(tempi); }, set t(v){ t0 = performance.now() - v*1000; } };
+document.fonts.ready.then(() => requestAnimationFrame(ciclo));
+</script>
+</body>
+</html>
