@@ -71,32 +71,35 @@ header p{margin:0;color:var(--soft);font-weight:700;font-size:15px}
   <div class="note">
     <h2>Cosa guardare</h2>
     <ul>
-      <li>In basso la via con la gelateria tra le case umbre; sulla terrazza la piazza di Todi con il Duomo e il Palazzo dei Priori; nell'angolo il Tempio della Consolazione.</li>
-      <li>Il sole fa un arco da est a ovest: giallo acceso al mattino, arancione scuro al tramonto. Le ombre si spostano con lui.</li>
-      <li>Il primo giorno (☀️) il gelato finisce; verso sera arriva il camion con i rifornimenti. Poi 🌧️ pioggia e ⛅ nuvoloso.</li>
+      <li>Todi su tre livelli: in basso la via con la scuola, la scalinata e la gelateria; al secondo livello il Tempio della Consolazione e le mura con la porta; in alto il Duomo e il Palazzo dei Priori.</li>
+      <li>☀️ Sole: uccellini, farfalle, fiori che sbocciano. 🌧️ Pioggia: pozzanghere, colline cupe, temporale all'orizzonte. ⛅ Nuvoloso: banchi di nebbia sulla città alta.</li>
+      <li>La sera del primo giorno arriva il camion dalla curva a sinistra, lascia i pacchi e riparte a destra; la mattina dopo i pacchi entrano in negozio. Di notte il gelataio chiude e la città si accende.</li>
     </ul>
   </div>
 </div>
 
 <script>
 /* =====================================================================
-   PROIEZIONE ISOMETRICA — x verso destra-basso, y verso sinistra-basso, z in alto
+   MOTORE ISOMETRICO
+   x verso destra-basso, y verso sinistra-basso, z verso l'alto.
+   Chi guarda sta "davanti" (verso +x+y): si vedono le facce +x, +y e quelle in alto.
    ===================================================================== */
-const LW = 1280, LH = 840;
-const S = 42, A = S*Math.cos(Math.PI/6), B = S*.5;
-const OX = 640, OY = 462;
-const DX = 20, DY = 10, ZT = 1.6;               // plastico 20 x 10; terrazza alta 1,6
-const iso = (x, y, z=0) => [OX + (x - y - 5)*A, OY + (x + y - 15)*B - z*S];
+const LW = 1280, LH = 820;
+const S = 40, A = S*Math.cos(Math.PI/6), B = S*.5;
+const OX = 640, OY = 420;
+const DX = 20, DY = 12;                       // plastico 20 x 12
+const Z2 = 1.4, Z3 = 2.8;                      // altezza del 2° e del 3° livello
+const iso = (x, y, z=0) => [OX + (x - y - 4)*A, OY + (x + y - 16)*B - z*S];
 
 const tela = document.getElementById('tela');
 const DPR = Math.min(2, window.devicePixelRatio || 1);
 tela.width = LW*DPR; tela.height = LH*DPR;
 const g = tela.getContext('2d'); g.scale(DPR, DPR);
-const logo = document.getElementById('logo-scuola');
 
 const clamp = (x,a=0,b=1) => Math.max(a, Math.min(b, x));
 const lerp = (a,b,x) => a + (b-a)*x;
 const ease = x => { x = clamp(x); return x*x*(3-2*x); };
+const easeOutQ = x => 1 - Math.pow(1 - clamp(x), 2), easeInQ = x => Math.pow(clamp(x), 2);
 const frac = x => x - Math.floor(x);
 const seg = (t,a,b) => clamp((t-a)/(b-a));
 const hash = i => { const x = Math.sin(i*127.1 + 311.7)*43758.5453; return x - Math.floor(x); };
@@ -112,7 +115,7 @@ function poli(pts, fill, stroke, lw=1){
 }
 const P = (...pts) => pts.map(p => iso(...p));
 function linea(a, b, col, lw=1){ const [x0,y0] = iso(...a), [x1,y1] = iso(...b); g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(x0,y0); g.lineTo(x1,y1); g.stroke(); }
-// parallelepipedo: sopra chiaro, fianco sinistro (faccia +y) medio, fianco destro (faccia +x) scuro
+// parallelepipedo: sopra chiaro, faccia +y (sinistra) media, faccia +x (destra) scura
 function scatola(x, y, z, w, d, h, col, o={}){
   const top = o.top || tono(col, .2), sx = o.left || col, dx = o.right || tono(col, -.15);
   poli(P([x,y+d,z],[x+w,y+d,z],[x+w,y+d,z+h],[x,y+d,z+h]), sx);
@@ -120,15 +123,16 @@ function scatola(x, y, z, w, d, h, col, o={}){
   if(!o.noTop) poli(P([x,y,z+h],[x+w,y,z+h],[x+w,y+d,z+h],[x,y+d,z+h]), top);
 }
 const piano = (x, y, z, w, d, col) => poli(P([x,y,z],[x+w,y,z],[x+w,y+d,z],[x,y+d,z]), col);
-const fy = (y, x0, x1, z0, z1, col) => poli(P([x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]), col);    // rettangolo su una faccia +y
-const fx = (x, y0, y1, z0, z1, col) => poli(P([x,y0,z0],[x,y1,z0],[x,y1,z1],[x,y0,z1]), col);    // rettangolo su una faccia +x
-function arcoY(y, cx, z0, w, h, col){   // apertura ad arco su una faccia +y
+const fy = (y, x0, x1, z0, z1, col) => poli(P([x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]), col);
+const fx = (x, y0, y1, z0, z1, col) => poli(P([x,y0,z0],[x,y1,z0],[x,y1,z1],[x,y0,z1]), col);
+function arcoY(y, cx, z0, w, h, col){
   const pts = [[cx - w/2, y, z0], [cx + w/2, y, z0], [cx + w/2, y, z0 + h - w/2]];
   for(let i=1; i<12; i++){ const a = i/12*Math.PI; pts.push([cx + Math.cos(a)*w/2, y, z0 + h - w/2 + Math.sin(a)*w/2]); }
   pts.push([cx - w/2, y, z0 + h - w/2]); poli(P(...pts), col);
 }
 function cerchioY(y, cx, cz, r, col){ const pts = []; for(let i=0;i<24;i++){ const a = i/24*Math.PI*2; pts.push([cx + Math.cos(a)*r, y, cz + Math.sin(a)*r]); } poli(P(...pts), col); }
-const RX = r => r*Math.SQRT2*A, RY = r => r*Math.SQRT2*B;     // un cerchio orizzontale di raggio r diventa un'ellisse
+const RX = r => r*Math.SQRT2*A, RY = r => r*Math.SQRT2*B;
+function ellisse(x, y, z, r, col, sq=1){ const [sx, sy] = iso(x, y, z); g.fillStyle = col; g.beginPath(); g.ellipse(sx, sy, RX(r), RY(r)*sq, 0, 0, Math.PI*2); g.fill(); }
 function cilindro(cx, cy, z, r, h, col, top){
   const [bx, by] = iso(cx, cy, z), [tx, ty] = iso(cx, cy, z + h), rx = RX(r), ry = RY(r);
   const gr = g.createLinearGradient(bx - rx, 0, bx + rx, 0); gr.addColorStop(0, tono(col, .12)); gr.addColorStop(.45, col); gr.addColorStop(1, tono(col, -.22));
@@ -147,220 +151,56 @@ function sfera(sx, sy, r, col, luce=.35){
   gr.addColorStop(0, tono(col, luce)); gr.addColorStop(.7, col); gr.addColorStop(1, tono(col, -.12));
   g.fillStyle = gr; g.beginPath(); g.arc(sx, sy, r, 0, Math.PI*2); g.fill();
 }
-let OMBRA_DX = 0;          // le ombre si spostano con il sole
+let OMBRA_DX = 0;
 function ombra(x, y, z, rx, ry, a=.16){ const [sx, sy] = iso(x, y, z); g.fillStyle = `rgba(46,51,80,${a})`; g.beginPath(); g.ellipse(sx + OMBRA_DX*rx*.6, sy, rx, ry, 0, 0, Math.PI*2); g.fill(); }
 
-/* =====================================================================
-   COLORI
-   ===================================================================== */
-const COL = {
-  erba:'#9BD77E', erbaLato:'#7CC36A', terra:'#C8946A', terraScura:'#A9754F', roccia:'#8E6D5A',
-  pietra:'#D9C4A0', travertino:'#EFE5D2', lastricato:'#E4D8C2', strada:'#8A93A6', marciapiede:'#E3E7EF',
-  coppi:'#C8663E', persiana:'#6E8B5B', persiana2:'#8A5A3C', vetroScuro:'#4F5A78',
-  muro:'#FFF4E2', tetto:'#F28CA8', tenda:'#F7A8BE', banco:'#6FC7B5', porta:'#9A6845', vetro:'#BFE7F7',
-  cipresso:'#3F8F5E', albero:'#6CC08A', tronco:'#9A6B4B',
-  cono:'#F2B866', conoGriglia:'#D9963F', pallina:'#F7A1BC', ciliegia:'#E2465E', ink:'#3A3355',
-  cabina:'#6EB8F0', ruota:'#3A3F55'
-};
-const COL_CLIENTI = ['#6C8CF5', '#F28C6E', '#9B7BE0', '#5CC4A8', '#F5C04A', '#E86A8F'];
-
-/* =====================================================================
-   CIELO, SOLE E COLLINE UMBRE
-   ===================================================================== */
-// il sole: arco di 180° da est (sinistra) a ovest (destra), dal giallo acceso all'arancione scuro
-const SOLE = [[0,'#FFF27A'],[.35,'#FFE14D'],[.6,'#FFC93C'],[.8,'#FF9A3C'],[1,'#D9531E']];
-function posSole(p){ const a = Math.PI*clamp(p); return [640 - 590*Math.cos(a), 640 - 560*Math.sin(a)]; }
-function cielo(meteo, p){
-  const cieloAlto = scala([[0,'#9CCBF0'],[.3,'#79B8EE'],[.7,'#86BDEB'],[.88,'#C59AD0'],[1,'#5F5A9E']], p);
-  const cieloBasso = scala([[0,'#FFE9C2'],[.25,'#E9F4FB'],[.7,'#F3EBD9'],[.88,'#FFB98A'],[1,'#F08A5D']], p);
-  const gr = g.createLinearGradient(0, 0, 0, LH); gr.addColorStop(0, cieloAlto); gr.addColorStop(1, cieloBasso);
-  g.fillStyle = gr; g.fillRect(0, 0, LW, LH);
-  if(meteo !== 'sole'){ g.fillStyle = meteo === 'pioggia' ? 'rgba(90,100,125,.55)' : 'rgba(200,208,222,.45)'; g.fillRect(0, 0, LW, LH); }
-  const [sx, sy] = posSole(p), col = scala(SOLE, p), vis = meteo === 'pioggia' ? .25 : meteo === 'nuvoloso' ? .7 : 1;
-  const gl = g.createRadialGradient(sx, sy, 10, sx, sy, 170); gl.addColorStop(0, col + 'aa'); gl.addColorStop(1, col + '00');
-  g.globalAlpha = vis; g.fillStyle = gl; g.fillRect(sx-170, sy-170, 340, 340);
-  g.fillStyle = col; g.beginPath(); g.arc(sx, sy, 36, 0, Math.PI*2); g.fill(); g.globalAlpha = 1;
-  // colline umbre sullo sfondo, a strati
-  const strati = [['#B9D3B4', 560, 40, .004], ['#9DC29A', 610, 34, .006], ['#86B386', 660, 28, .009]];
-  strati.forEach(([c, base, amp, f], i) => {
-    g.fillStyle = meteo === 'pioggia' ? mix(c, '#8A97A8', .45) : mix(c, cieloBasso, .15*(2-i));
-    g.beginPath(); g.moveTo(0, LH);
-    for(let x=0; x<=LW; x+=16) g.lineTo(x, base - amp*Math.sin(x*f + i*1.7) - amp*.5*Math.sin(x*f*2.3 + i));
-    g.lineTo(LW, LH); g.closePath(); g.fill();
-  });
-}
-
-/* =====================================================================
-   IL PLASTICO: blocco di terra, terrazza con muro di pietra, strada
-   ===================================================================== */
-function terreno(){
-  const z0 = -1.2;
-  poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,0],[0,DY,0]), COL.terra);
-  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,0],[DX,0,0]), COL.terraScura);
-  poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,z0+.3],[0,DY,z0+.3]), tono(COL.roccia, .1));
-  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,z0+.3],[DX,0,z0+.3]), COL.roccia);
-  for(let i=0; i<14; i++){ const xx = .5 + i*1.4, zz = -.5 - hash(i)*.4; fy(DY, xx, xx+.5, zz, zz+.18, tono(COL.terra, -.1)); }
-  poli(P([0,DY,-.15],[DX,DY,-.15],[DX,DY,0],[0,DY,0]), COL.erbaLato);
-  poli(P([DX,3.6,-.15],[DX,DY,-.15],[DX,DY,0],[DX,3.6,0]), tono(COL.erbaLato, -.12));
-  piano(0, 3.6, 0, DX, DY - 3.6, COL.erba);
-  // terrazza della piazza (muro di sostegno in pietra)
-  scatola(0, 0, 0, DX, 3.6, ZT, COL.pietra, { top:COL.lastricato, left:'#CDB690', right:'#B89F7B' });
-  for(let r=0; r<4; r++) for(let i=0; i<24; i++){                         // conci di pietra
-    const x0 = i*.85 + (r%2)*.42 + hash(i+r*30)*.1, z0 = .08 + r*.38;
-    if(x0 + .7 < DX) fy(3.6, x0, x0 + .7, z0, z0 + .3, hash(i*3+r) > .5 ? '#D4BD96' : '#C7AE86');
-  }
-  for(let i=0; i<6; i++) fx(DX, .2 + i*.58, .7 + i*.58, .3, .7, '#AC9471');
-  for(let x=1; x<DX; x+=1) linea([x,0,ZT],[x,3.6,ZT],'rgba(120,100,70,.12)');
-  for(let y=.9; y<3.6; y+=.9) linea([0,y,ZT],[DX,y,ZT],'rgba(120,100,70,.12)');
-  // parapetto della terrazza (con il varco della scalinata)
-  for(const [a, b] of [[0, 11.4], [13.0, DX]]) scatola(a, 3.45, ZT, b - a, .15, .25, '#E6D5B5');
-  // marciapiede e strada
-  scatola(0, 6.4, 0, DX, 1.3, .1, COL.marciapiede, { left:'#C9CFDB', right:'#B9C0CC' });
-  for(let x=0; x<DX; x+=1) linea([x,6.4,.1],[x,7.7,.1],'rgba(46,51,80,.07)');
-  piano(0, 7.8, .003, DX, 1.9, COL.strada);
-  for(let x=.4; x<DX; x+=1.8) piano(x, 8.7, .006, .9, .1, '#FFFFFF');
-}
-
-/* ---------- case umbre ---------- */
-function casa(x, y, w, d, piani, col, o={}){
-  const h = piani*.95 + .15, z = o.z || 0, rh = .7;
-  scatola(x, y, z, w, d, h, col);
-  if(o.pietra) for(let i=0; i<26; i++){ const xx = x + hash(i + x*7)*(w-.35), zz = z + hash(i*5 + x)*(h-.2); fy(y+d, xx, xx+.32, zz, zz+.14, tono(col, -.07)); }
-  // finestre con le persiane sulla facciata
-  const nf = Math.max(1, Math.floor(w/1.05)), pers = o.persiane || COL.persiana;
-  for(let f=0; f<piani; f++) for(let j=0; j<nf; j++){
-    const cx = x + (j + .5)*w/nf, z0 = z + .25 + f*.95;
-    if(f === 0 && j === Math.floor(nf/2) && !o.noPorta){ arcoY(y+d, cx, z, .5, .8, o.portaCol || COL.porta); continue; }
-    if(f === 0 && o.archi){ arcoY(y+d, cx, z, .55, .7, '#6B5A4E'); continue; }
-    fy(y+d, cx - .14, cx + .14, z0 + .1, z0 + .55, COL.vetroScuro);
-    fy(y+d, cx - .27, cx - .14, z0 + .1, z0 + .55, pers); fy(y+d, cx + .14, cx + .27, z0 + .1, z0 + .55, pers);
-    fy(y+d, cx - .18, cx + .18, z0 + .06, z0 + .1, '#F3EADB');
-  }
-  if(o.balcone){ const cx = x + w/2; scatola(cx - .45, y + d, z + 1.1, .9, .25, .06, '#F3EADB'); for(let k=0;k<6;k++) linea([cx - .42 + k*.17, y+d+.25, z+1.16],[cx - .42 + k*.17, y+d+.25, z+1.45], '#4B5270', 1.2); linea([cx-.45, y+d+.25, z+1.45],[cx+.45, y+d+.25, z+1.45], '#4B5270', 1.5); }
-  // finestrelle sul fianco
-  const nl = Math.max(1, Math.floor(d/1.2));
-  for(let f=0; f<piani; f++) for(let j=0; j<nl; j++){ const cy = y + (j + .5)*d/nl, z0 = z + .35 + f*.95; fx(x+w, cy - .12, cy + .12, z0, z0 + .4, '#3E4763'); }
-  // tetto a capanna in coppi
+// tetto a capanna (colmo lungo x): si vedono ENTRAMBE le falde, più il timpano sul lato +x
+function tettoCapanna(x, y, z, w, d, rh, col, muro){
   const e = .12;
-  poli(P([x-e, y+d+e, z+h], [x+w+e, y+d+e, z+h], [x+w+e, y+d/2, z+h+rh], [x-e, y+d/2, z+h+rh]), COL.coppi);
-  for(let k=1; k<5; k++){ const t = k/5; linea([x-e, y+d+e - t*(d/2+e), z+h + t*rh], [x+w+e, y+d+e - t*(d/2+e), z+h + t*rh], 'rgba(120,50,30,.35)'); }
-  poli(P([x+w, y+d, z+h], [x+w, y, z+h], [x+w, y+d/2, z+h+rh]), tono(col, -.2));
-  poli(P([x+w+e, y+d+e, z+h], [x+w+e, y+d/2, z+h+rh], [x+w+e, y-e, z+h], [x+w+e+.001, y-e, z+h-.05]), tono(COL.coppi, -.25));
-  if(o.camino) scatola(x + w*.7, y + d*.35, z + h + .2, .25, .25, .6, '#C9B08C');
+  poli(P([x-e, y-e, z], [x+w+e, y-e, z], [x+w+e, y+d/2, z+rh], [x-e, y+d/2, z+rh]), tono(col, .12));          // falda dietro
+  poli(P([x-e, y+d+e, z], [x+w+e, y+d+e, z], [x+w+e, y+d/2, z+rh], [x-e, y+d/2, z+rh]), col);                  // falda davanti
+  for(let k=1; k<5; k++){ const t = k/5; linea([x-e, y+d+e - t*(d/2+e), z + t*rh], [x+w+e, y+d+e - t*(d/2+e), z + t*rh], 'rgba(120,50,30,.3)'); }
+  poli(P([x+w, y+d, z], [x+w, y, z], [x+w, y+d/2, z+rh]), tono(muro, -.2));                                   // timpano
+  linea([x+w+e, y-e, z], [x+w+e, y+d/2, z+rh], tono(col, -.25), 2); linea([x+w+e, y+d/2, z+rh], [x+w+e, y+d+e, z], tono(col, -.25), 2);
+  linea([x-e, y+d/2, z+rh], [x+w+e, y+d/2, z+rh], tono(col, -.2), 2);                                          // colmo
 }
-
-/* ---------- piazza di Todi ---------- */
-function tempio(){                       // Tempio della Consolazione: pianta a croce greca, absidi, tamburo, cupola
-  const cx = 2.4, cy = 1.8, z = ZT, col = COL.travertino;
-  for(const [ax, ay] of [[cx - .9, cy], [cx, cy - .9]]){ cilindro(ax, ay, z, .72, 1.4, col); cupola(ax, ay, z + 1.4, .72, .45, '#A7B0C0'); }
-  scatola(1.5, .9, z, 1.8, 1.8, 1.8, col);
-  for(const [ax, ay] of [[cx + .9, cy], [cx, cy + .9]]){
-    cilindro(ax, ay, z, .72, 1.4, col); cupola(ax, ay, z + 1.4, .72, .45, '#A7B0C0');
-    for(const k of [-.35, .35]){ const [wx, wy] = iso(ax + (ay === cy ? .55 : k), ay + (ay === cy ? k : .55), z + .9); g.fillStyle = '#5A6582'; g.beginPath(); g.roundRect(wx - 3, wy - 7, 6, 12, 3); g.fill(); }
+// tetto a capanna con il colmo lungo y (facciata a capanna sul lato +y)
+function tettoCapannaY(x, y, z, w, d, rh, col, muro){
+  const e = .1;
+  poli(P([x-e, y-e, z], [x-e, y+d+e, z], [x+w/2, y+d+e, z+rh], [x+w/2, y-e, z+rh]), tono(col, .12));           // falda sinistra
+  poli(P([x+w+e, y-e, z], [x+w+e, y+d+e, z], [x+w/2, y+d+e, z+rh], [x+w/2, y-e, z+rh]), tono(col, -.08));      // falda destra
+  poli(P([x, y+d, z], [x+w, y+d, z], [x+w/2, y+d, z+rh]), muro);                                               // timpano in facciata
+}
+// tetto a padiglione (quattro falde)
+function tettoPadiglione(x, y, z, w, d, rh, col){
+  const r = Math.min(w, d)/2;
+  poli(P([x, y, z], [x+w, y, z], [x+w-r, y+d/2, z+rh], [x+r, y+d/2, z+rh]), tono(col, .14));
+  poli(P([x, y, z], [x+r, y+d/2, z+rh], [x, y+d, z]), tono(col, .05));
+  poli(P([x, y+d, z], [x+w, y+d, z], [x+w-r, y+d/2, z+rh], [x+r, y+d/2, z+rh]), col);
+  poli(P([x+w, y, z], [x+w, y+d, z], [x+w-r, y+d/2, z+rh]), tono(col, -.15));
+  linea([x+r, y+d/2, z+rh], [x+w-r, y+d/2, z+rh], tono(col, -.25), 2);
+}
+// disegno "appoggiato" su una parete: trasforma un quadrato 1x1 nella parete (per display, insegne)
+function suParete(asse, fisso, a0, zTop, L, H, disegno){
+  const o = asse === 'x' ? iso(fisso, a0, zTop) : iso(a0, fisso, zTop);
+  const u = asse === 'x' ? iso(fisso, a0 - 1, zTop) : iso(a0 + 1, fisso, zTop);   // sulle facce +x si legge verso y decrescente
+  const v = asse === 'x' ? iso(fisso, a0, zTop - 1) : iso(a0, fisso, zTop - 1);
+  g.save(); g.transform((u[0]-o[0])*L, (u[1]-o[1])*L, (v[0]-o[0])*H, (v[1]-o[1])*H, o[0], o[1]); disegno(L/H); g.restore();
+}
+// scatola ruotata di un angolo qualsiasi nel piano (per il camion in curva)
+function scatolaRuotata(cx, cy, z, L, W, h, ang, col, o={}){
+  const u = [Math.cos(ang), Math.sin(ang)], v = [-Math.sin(ang), Math.cos(ang)];
+  const c = (a, b) => [cx + u[0]*a + v[0]*b, cy + u[1]*a + v[1]*b];
+  const C = [c(-L/2,-W/2), c(L/2,-W/2), c(L/2,W/2), c(-L/2,W/2)];
+  const facce = [[0,1,[-v[0],-v[1]]], [1,2,u], [2,3,v], [3,0,[-u[0],-u[1]]]];
+  for(const [i, j, n] of facce){
+    if(n[0] + n[1] <= .001) continue;
+    poli(P([...C[i], z], [...C[j], z], [...C[j], z+h], [...C[i], z+h]), tono(col, -.17*Math.max(0, n[0]) + .02*Math.max(0, n[1])));
   }
-  fx(3.3, 1.1, 2.5, z + 1.75, z + 1.8, '#D8CCB6'); fy(2.7, 1.5, 3.3, z + 1.75, z + 1.8, '#D8CCB6');
-  cilindro(cx, cy, z + 1.8, .62, .5, col);
-  for(let k=0; k<5; k++){ const a = Math.PI*(.15 + k*.18); const [wx, wy] = iso(cx + Math.cos(a)*.62, cy + Math.sin(a)*.62, z + 2.05); g.fillStyle = '#5A6582'; g.fillRect(wx - 2, wy - 5, 4, 9); }
-  cupola(cx, cy, z + 2.3, .62, .78, '#9FA9BB');
-  cilindro(cx, cy, z + 2.3 + .76, .13, .28, col);
-  cupola(cx, cy, z + 2.3 + 1.04, .13, .12, '#9FA9BB');
-}
-function duomo(){                        // Duomo di Todi: facciata a capanna con rosone, scalinata davanti
-  const x = 7.3, y = .3, w = 3.1, d = 2.4, z = ZT, h = 3.0, col = '#F1E4D0';
-  scatola(x, y, z, w, d, h, col, { right:'#DCCCB3' });
-  poli(P([x, y+d, z+h], [x+w, y+d, z+h], [x+w/2, y+d, z+h+.9]), col);
-  poli(P([x+w, y+d, z+h], [x+w, y, z+h], [x+w/2, y, z+h+.9], [x+w/2, y+d, z+h+.9]), COL.coppi);
-  linea([x, y+d, z+h], [x+w/2, y+d, z+h+.9], '#D8C7AD', 2); linea([x+w/2, y+d, z+h+.9], [x+w, y+d, z+h], '#D8C7AD', 2);
-  for(let k=1;k<3;k++) fy(y+d, x, x+w, z + k*1.0, z + k*1.0 + .05, '#E2D2B8');
-  cerchioY(y+d, x+w/2, z+2.15, .5, '#D9C9AF'); cerchioY(y+d, x+w/2, z+2.15, .38, '#6A6F8E'); cerchioY(y+d, x+w/2, z+2.15, .12, '#E8C770');
-  cerchioY(y+d, x+.6, z+2.0, .22, '#6A6F8E'); cerchioY(y+d, x+w-.6, z+2.0, .22, '#6A6F8E');
-  arcoY(y+d, x+w/2, z, .7, 1.25, '#7E5A42'); arcoY(y+d, x+.6, z, .4, .85, '#7E5A42'); arcoY(y+d, x+w-.6, z, .4, .85, '#7E5A42');
-  for(let k=0; k<3; k++) scatola(x - .1 + k*.15, y + d + .35 - k*.12, z, w + .2 - k*.3, .12 + k*.12, .1 + k*.08, '#E9DCC4');   // scalinata del Duomo
-}
-function palazzoPriori(){                // Palazzo dei Priori: merli guelfi, bifore e torre
-  const x = 13.4, y = .35, w = 4.4, d = 2.2, z = ZT, h = 2.5, col = '#CDB38D';
-  scatola(x, y, z, w, d, h, col, { right:'#B89E79' });
-  for(let i=0; i<5; i++){ const cx = x + .5 + i*.88;
-    for(const k of [-.11, .11]){ const pts = [[cx+k-.07, y+d, z+1.25],[cx+k+.07, y+d, z+1.25],[cx+k+.07, y+d, z+1.65]]; for(let a=1;a<6;a++){ const t = a/6*Math.PI; pts.push([cx+k+Math.cos(t)*.07, y+d, z+1.65+Math.sin(t)*.07]); } pts.push([cx+k-.07, y+d, z+1.65]); poli(P(...pts), '#4F4A62'); }
-    fy(y+d, cx - .22, cx + .22, z + 1.18, z + 1.24, '#E8DCC6'); }
-  for(let i=0; i<3; i++) arcoY(y+d, x + .9 + i*1.3, z, .6, .85, '#6B5A4E');
-  for(let i=0; i<10; i++) scatola(x + .05 + i*.44, y + d - .2, z + h, .22, .2, .22, col);          // merli sulla facciata
-  for(let i=0; i<5; i++) scatola(x + w - .2, y + .05 + i*.44, z + h, .2, .22, .22, col);           // merli sul fianco
-  const tx = 16.8, ty = .45;                                                                         // la torre
-  scatola(tx, ty, z + h, .9, .9, 1.4, col, { right:'#B89E79' });
-  fy(ty + .9, tx + .3, tx + .6, z + h + .7, z + h + 1.1, '#4F4A62');
-  for(let i=0; i<3; i++){ scatola(tx + .02 + i*.33, ty + .7, z + h + 1.4, .2, .2, .2, col); scatola(tx + .7, ty + .02 + i*.33, z + h + 1.4, .2, .2, .2, col); }
-}
-function cipresso(x, y, z, h=1.8){
-  ombra(x, y, z, 14, 6, .14);
-  const [bx, by] = iso(x, y, z), top = by - h*S;
-  const gr = g.createLinearGradient(bx - 12, 0, bx + 12, 0); gr.addColorStop(0, '#55A673'); gr.addColorStop(1, '#2F7349');
-  g.fillStyle = gr; g.beginPath(); g.moveTo(bx, top); g.bezierCurveTo(bx + 16, top + h*S*.35, bx + 13, by - 6, bx, by - 2); g.bezierCurveTo(bx - 13, by - 6, bx - 16, top + h*S*.35, bx, top); g.fill();
-}
-function albero(x, y, z, s=1, col=COL.albero){
-  ombra(x, y, z, 24*s, 10*s, .12);
-  scatola(x-.06, y-.06, z, .12, .12, .6*s, COL.tronco);
-  const [sx, sy] = iso(x, y, z + .6*s + .4*s);
-  sfera(sx, sy, 22*s, col, .3);
-}
-function lampione(x, y, notte){
-  scatola(x - .05, y - .05, .1, .1, .1, 1.9, '#4B5270');
-  const [sx, sy] = iso(x, y, 2.05);
-  if(notte > 0){ const gl = g.createRadialGradient(sx, sy, 2, sx, sy, 80); gl.addColorStop(0, `rgba(255,222,140,${.6*notte})`); gl.addColorStop(1, 'rgba(255,222,140,0)'); g.fillStyle = gl; g.fillRect(sx-80, sy-80, 160, 160); }
-  g.fillStyle = notte > .2 ? '#FFE08A' : '#F4F1E6'; g.beginPath(); g.arc(sx, sy, 6, 0, 7); g.fill();
-}
-function panchina(x, y){ scatola(x, y, .35, 1.2, .3, .07, '#C98B5E'); scatola(x+.05, y+.05, .1, .07, .2, .25, '#7D6A62'); scatola(x+1.08, y+.05, .1, .07, .2, .25, '#7D6A62'); scatola(x, y-.03, .42, 1.2, .06, .32, '#C98B5E'); }
-function scalinata(){                    // scalinata accanto alla gelateria, verso la piazza
-  const n = 8, x = 11.4, w = 1.6;
-  for(let i=n-1; i>=0; i--){ const y1 = 6.4 - i*(2.8/n); scatola(x, y1 - 2.8/n, 0, w, 2.8/n, (i+1)*ZT/n, '#E3D3B3', { top:'#F0E4CC', left:'#D2BF9C', right:'#C0AB86' }); }
+  poli(P(...C.map(p => [...p, z+h])), o.top || tono(col, .2));
 }
 
-/* ---------- la gelateria ---------- */
-function gelateria(notte){
-  const x = 6.8, y = 3.8, w = 4.4, d = 2.6, h = 2.8;
-  scatola(x, y, 0, w, d, h, COL.muro, { left:'#FFF0D9', right:'#F1DFC2', top:'#FFF8EC' });
-  fy(y+d, x, x+w, 0, .3, '#E9D7B8'); fx(x+w, y, y+d, 0, .3, '#D9C6A6');                   // zoccolo in pietra
-  arcoY(y+d, 10.4, 0, .75, 1.85, COL.porta); fy(y+d, 10.62, 10.68, .85, .95, '#F5C04A');
-  fy(y+d, 7.1, 9.6, 1.0, 2.15, notte > .2 ? '#FFE7A6' : COL.vetro);
-  if(notte <= .2) poli(P([7.3,y+d,2.0],[7.85,y+d,2.0],[7.5,y+d,1.1],[7.2,y+d,1.1]), '#E8F7FD');
-  // il logo della scuola sul fianco, come un'insegna rotonda
-  insegnaLogo(x + w, y + .9, 2.45, 1.1);
-  scatola(x - .15, y - .15, h, w + .3, d + .3, .25, COL.tetto);
-  const [sx, sy] = iso(9.0, 5.1, h + .25);
-  coneIcona(sx, sy - 6 + Math.sin(performance.now()/500)*3, 1.3);
-}
-function insegnaLogo(xf, y0, zTop, L){
-  const o = iso(xf, y0, zTop), u = iso(xf, y0 + 1, zTop), v = iso(xf, y0, zTop - 1);
-  const ux = u[0]-o[0], uy = u[1]-o[1], vx = v[0]-o[0], vy = v[1]-o[1];
-  g.save(); g.transform(ux*L, uy*L, vx*L, vy*L, o[0], o[1]);              // da quadrato 1x1 alla parete
-  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(.5, .5, .52, 0, Math.PI*2); g.fill();
-  g.strokeStyle = COL.school || '#6E9F38'; g.lineWidth = .04; g.stroke();
-  g.beginPath(); g.arc(.5, .5, .47, 0, Math.PI*2); g.clip();
-  if(logo.complete && logo.naturalWidth) g.drawImage(logo, .03, .03, .94, .94);
-  g.restore();
-}
-function tenda(){
-  const n = 12;
-  for(let i=0; i<n; i++){ const x0 = 6.8 + i*4.4/n, x1 = x0 + 4.4/n, col = i % 2 ? '#FFFFFF' : COL.tenda;
-    poli(P([x0,6.4,2.6],[x1,6.4,2.6],[x1,6.95,2.3],[x0,6.95,2.3]), col);
-    poli(P([x0,6.95,2.3],[x1,6.95,2.3],[x1,6.95,2.14],[x0,6.95,2.14]), i % 2 ? '#EDEFF5' : tono(COL.tenda, -.12)); }
-}
-function bancone(coni, maxConi){
-  scatola(7.3, 6.5, .1, 2.4, .5, .9, COL.banco, { top:'#BDEBDD' });
-  [COL.pallina, '#B8E07A', '#9C6B4E', '#9FE3F0'].forEach((c, i) => { const [sx, sy] = iso(7.55 + i*.55, 6.75, 1.0); g.fillStyle = c; g.beginPath(); g.ellipse(sx, sy, 10, 5.5, 0, 0, 7); g.fill(); });
-  const n = Math.ceil(6 * coni / Math.max(1, maxConi));
-  for(let i=0; i<n; i++){ const [sx, sy] = iso(7.45 + i*.38, 7.0, .6); g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx-5, sy-7); g.lineTo(sx+5, sy-7); g.lineTo(sx, sy+7); g.fill(); }
-}
-function coneIcona(sx, sy, s){
-  g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx - 16*s, sy - 6*s); g.lineTo(sx + 16*s, sy - 6*s); g.lineTo(sx, sy + 34*s); g.fill();
-  g.strokeStyle = COL.conoGriglia; g.lineWidth = 1.5*s;
-  for(let k=1; k<4; k++){ g.beginPath(); g.moveTo(sx - 16*s + k*8*s, sy - 6*s); g.lineTo(sx - 16*s + k*8*s + 8*s*(1-k/4), sy + 34*s*(k/4)); g.stroke(); }
-  sfera(sx, sy - 14*s, 18*s, '#9FE3F0');
-}
-
-/* =====================================================================
-   MASCOTTE, CLIENTI, CAMION
-   ===================================================================== */
+/* Mascotte (cono gelato), clienti e icona del cono — disegno vettoriale pulito */
 function mascotte(sx, sy, s, emo, t){
   const ink = COL.ink, hy = sy - 62*s;
   g.strokeStyle = ink; g.lineWidth = 3.2*s; g.lineCap = 'round';
@@ -404,7 +244,9 @@ function mascotte(sx, sy, s, emo, t){
   if(emo==='fiero' || emo==='felice'){ const k = .8 + .2*Math.sin(t*9); stella(ex, ey, 9*s*k, '#FFD66B'); stella(ex + 12*s, ey + 14*s, 5*s*k, '#FFFFFF'); }
   if(emo==='pensieroso') for(let i=0; i<3; i++){ g.fillStyle = ink; g.beginPath(); g.arc(ex - 6*s + i*8*s, ey + (i === Math.floor(t*3) % 3 ? -3*s : 0), 2.4*s, 0, 7); g.fill(); }
 }
+
 function stella(x, y, r, col){ g.fillStyle = col; g.beginPath(); for(let i=0; i<8; i++){ const a = -Math.PI/2 + i*Math.PI/4, q = i%2 ? r*.35 : r; i ? g.lineTo(x + Math.cos(a)*q, y + Math.sin(a)*q) : g.moveTo(x + Math.cos(a)*q, y + Math.sin(a)*q); } g.closePath(); g.fill(); }
+
 function cliente(x, y, ci, passo, verso, umore, cono){
   const [sx, sy0] = iso(x, y, .1), col = COL_CLIENTI[ci], s = .85 + hash(ci)*.2;
   const salto = -Math.abs(Math.sin(passo*Math.PI))*4, sy = sy0 + salto;
@@ -424,138 +266,573 @@ function cliente(x, y, ci, passo, verso, umore, cono){
   if(umore < 0){ g.fillStyle = '#7EC8F5'; g.beginPath(); g.ellipse(-13*s, -40*s + frac(passo)*3, 2.5*s, 3.6*s, 0, 0, 7); g.fill(); }
   g.restore();
 }
-function camion(x, t, fermo){             // camion grande: 4,6 unità di lunghezza
-  const y = 7.95, b = fermo ? 0 : Math.abs(Math.sin(t*16))*.03;
-  ombra(x + 2.3, y + .75, .01, 110, 30, .2);
-  if(!fermo) for(let i=0; i<6; i++){ const a = frac(t*1.3 + i/6); const [sx, sy] = iso(x - .3 - a*1.2, y + 1.0, .45 + a*1.4);
-    g.fillStyle = `rgba(214,219,230,${.85*(1-a)})`; g.beginPath(); g.arc(sx, sy, 6 + a*20, 0, 7); g.fill(); }
-  scatola(x + .1, y + .1, .35 + b, 3.2, 1.35, 1.7, '#FFFFFF', { left:'#F6F7FB', right:'#E2E5EE', top:'#FFFFFF' });
-  fy(y + 1.45, x + .1, x + 3.3, .75 + b, 1.0 + b, COL.tenda);
-  const [cx, cy] = iso(x + 1.7, y + 1.45, 1.45 + b); coneIcona(cx, cy - 4, .8);
-  scatola(x + 3.35, y + .2, .35 + b, 1.25, 1.2, 1.15, COL.cabina);
-  poli(P([x+3.35, y+.2, 1.5+b], [x+4.6, y+.2, 1.5+b], [x+4.6, y+1.4, 1.5+b], [x+3.35, y+1.4, 1.5+b]), tono(COL.cabina, .25));
-  fy(y + 1.4, x + 3.55, x + 4.35, .85 + b, 1.35 + b, '#E8F7FD');
-  fx(x + 4.6, y + .35, y + 1.25, .85 + b, 1.3 + b, '#CDEFFB');
-  for(const wx of [x + .8, x + 3.9]){ cerchioY(y + 1.46, wx, .3, .3, COL.ruota); cerchioY(y + 1.47, wx, .3, .12, '#C5CBD8'); }
+
+function coneIcona(sx, sy, s){
+  g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx - 16*s, sy - 6*s); g.lineTo(sx + 16*s, sy - 6*s); g.lineTo(sx, sy + 34*s); g.fill();
+  g.strokeStyle = COL.conoGriglia; g.lineWidth = 1.5*s;
+  for(let k=1; k<4; k++){ g.beginPath(); g.moveTo(sx - 16*s + k*8*s, sy - 6*s); g.lineTo(sx - 16*s + k*8*s + 8*s*(1-k/4), sy + 34*s*(k/4)); g.stroke(); }
+  sfera(sx, sy - 14*s, 18*s, '#9FE3F0');
 }
-function cassa(x, y, z){ scatola(x - .18, y - .18, z, .36, .36, .3, '#C98B5E', { top:'#E0A979' }); linea([x-.18, y+.18, z+.15],[x+.18, y+.18, z+.15], '#9C6640'); }
+
+
 
 /* =====================================================================
-   NUVOLE E PIOGGIA
+   LA CITTÀ: Todi su tre livelli
+   Livello 1 (z=0): strada a U, giardino, scuola, scalinata, gelateria
+   Livello 2 (z=Z2): Tempio della Consolazione, mura medievali con la porta
+   Livello 3 (z=Z3): Duomo, Palazzo dei Priori, case
    ===================================================================== */
-function nuvola(x, y, z, s, col){
-  ombra(x, y, x < 0 ? 0 : (y < 3.6 ? ZT : 0), 60*s, 24*s, .06);
-  const [sx, sy] = iso(x, y, z);
-  [[-26,6,18],[-6,-6,24],[18,2,20],[0,10,18],[30,10,13]].forEach(([dx,dy,r]) => sfera(sx + dx*s, sy + dy*s, r*s, col, .25));
+const COL = {
+  erba:'#9BD77E', erbaLato:'#7CC36A', terra:'#C8946A', terraScura:'#A9754F', roccia:'#8E6D5A',
+  pietra:'#D9C4A0', mura:'#C9B48E', travertino:'#EFE5D2', lastricato:'#E4D8C2', strada:'#8A93A6', marciapiede:'#E3E7EF',
+  coppi:'#C8663E', persiana:'#6E8B5B', persiana2:'#8A5A3C', vetroScuro:'#4F5A78', mattoni:'#C98F6E',
+  muro:'#FFF4E2', tetto:'#F28CA8', tenda:'#F7A8BE', banco:'#6FC7B5', porta:'#9A6845', vetro:'#BFE7F7',
+  cipresso:'#3F8F5E', albero:'#6CC08A', tronco:'#9A6B4B',
+  cono:'#F2B866', conoGriglia:'#D9963F', pallina:'#F7A1BC', ciliegia:'#E2465E', ink:'#3A3355',
+  cabina:'#6EB8F0', ruota:'#3A3F55', scuola:'#EEDDB2', scuolaPietra:'#CDCCC4'
+};
+const COL_CLIENTI = ['#6C8CF5', '#F28C6E', '#9B7BE0', '#5CC4A8', '#F5C04A', '#E86A8F'];
+let NOTTE = 0;                 // 0 = giorno, 1 = notte piena
+let LUCI = [], LAMPIONI = [];  // finestre accese e lampioni, disegnati dopo il buio
+
+// finestra: di notte si accende (non tutte)
+function finestraY(y, x0, x1, z0, z1, id){
+  const acc = NOTTE > .25 && hash(id) > .3;
+  const pts = P([x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]);
+  poli(pts, COL.vetroScuro); if(acc) LUCI.push(pts);
 }
+function finestraX(x, y0, y1, z0, z1, id){
+  const acc = NOTTE > .25 && hash(id) > .45;
+  const pts = P([x,y0,z0],[x,y1,z0],[x,y1,z1],[x,y0,z1]);
+  poli(pts, '#3E4763'); if(acc) LUCI.push(pts);
+}
+// conci di pietra su una faccia
+function conci(asse, fisso, a0, a1, z0, z1, col, seme){
+  const righe = Math.max(1, Math.round((z1 - z0)/.32));
+  for(let r=0; r<righe; r++) for(let a=a0 + (r%2)*.35; a < a1 - .5; a += .75){
+    const zz = z0 + .05 + r*(z1 - z0)/righe, hh = (z1 - z0)/righe - .08, k = hash(a*13 + r*7 + seme) > .5 ? -.05 : -.11;
+    if(asse === 'y') fy(fisso, a, a + .65, zz, zz + hh, tono(col, k)); else fx(fisso, a, a + .65, zz, zz + hh, tono(col, k));
+  }
+}
+
+/* ---------- terreno e strada a U ---------- */
+const CL = { xS:1.2, xD:18.8, yF:10.35, cy:9.15, r:1.2, w:.95 };   // linea di mezzo della strada
+function settore(cx, cy, r0, r1, a0, a1, col, z=.004){
+  const pts = []; for(let i=0;i<=14;i++){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r1*Math.cos(a), cy + r1*Math.sin(a), z]); }
+  for(let i=14;i>=0;i--){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r0*Math.cos(a), cy + r0*Math.sin(a), z]); }
+  poli(P(...pts), col);
+}
+function terreno(){
+  const z0 = -1.2;
+  poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,0],[0,DY,0]), COL.terra);
+  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,0],[DX,0,0]), COL.terraScura);
+  poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,z0+.3],[0,DY,z0+.3]), tono(COL.roccia, .1));
+  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,z0+.3],[DX,0,z0+.3]), COL.roccia);
+  for(let i=0; i<14; i++){ const xx = .5 + i*1.4, zz = -.5 - hash(i)*.4; fy(DY, xx, xx+.5, zz, zz+.18, tono(COL.terra, -.1)); }
+  poli(P([0,DY,-.15],[DX,DY,-.15],[DX,DY,0],[0,DY,0]), COL.erbaLato);
+  poli(P([DX,0,-.15],[DX,DY,-.15],[DX,DY,0],[DX,0,0]), tono(COL.erbaLato, -.12));
+  piano(0, 0, 0, DX, DY, COL.erba);
+  // strada: gamba sinistra, curva, tratto davanti, curva, gamba destra
+  const { xS, xD, yF, cy, r, w } = CL, c = COL.strada;
+  piano(xS - w, 0, .004, 2*w, cy, c); piano(xD - w, 0, .004, 2*w, cy, c); piano(2.4, yF - w, .004, 15.2, 2*w, c);
+  settore(2.4, cy, r - w, r + w, Math.PI/2, Math.PI, c); settore(17.6, cy, r - w, r + w, 0, Math.PI/2, c);
+  for(let y=.3; y<8.8; y+=1.5){ piano(xS - .05, y, .006, .1, .7, '#FFFFFF'); piano(xD - .05, y, .006, .1, .7, '#FFFFFF'); }
+  for(let x=3; x<17; x+=1.6) piano(x, yF - .05, .006, .8, .1, '#FFFFFF');
+  for(const a of [.62, .88]){ settore(2.4, cy, r - .05, r + .05, Math.PI*(.5 + a*.5) - .12, Math.PI*(.5 + a*.5), '#FFFFFF', .006); settore(17.6, cy, r - .05, r + .05, Math.PI*a*.5 - .12, Math.PI*a*.5, '#FFFFFF', .006); }
+  // marciapiede davanti alle case
+  scatola(2.2, 8.0, 0, 15.6, 1.2, .1, COL.marciapiede, { left:'#C9CFDB', right:'#B9C0CC' });
+  for(let x=2.2; x<17.8; x+=1) linea([x,8.0,.1],[x,9.2,.1],'rgba(46,51,80,.07)');
+}
+
+/* ---------- livello 2 e livello 3 (con le mura medievali) ---------- */
+function livello2(){
+  scatola(2.2, 0, 0, 15.4, 5.4, Z2, COL.pietra, { top:COL.lastricato, left:'#CDB690', right:'#B89F7B' });
+  conci('y', 5.4, 2.2, 17.6, 0, Z2, '#CDB690', 1); conci('x', 17.6, 0, 5.4, 0, Z2, '#B89F7B', 2);
+  for(let x=3; x<17.6; x+=1) linea([x,0,Z2],[x,5.4,Z2],'rgba(120,100,70,.1)');
+  for(let y=1; y<5.4; y+=1) linea([2.2,y,Z2],[17.6,y,Z2],'rgba(120,100,70,.1)');
+  for(const [a, b] of [[2.2, 11.2], [12.8, 17.6]]) scatola(a, 5.25, Z2, b - a, .15, .22, '#E6D5B5');   // parapetto
+}
+function livello3(){
+  scatola(7, 0, Z2, 10.6, 2.6, Z3 - Z2, COL.mura, { top:COL.lastricato, left:'#C2AA82', right:'#AD956F' });
+  conci('y', 2.6, 7, 17.6, Z2, Z3, '#C2AA82', 3); conci('x', 17.6, 0, 2.6, Z2, Z3, '#AD956F', 4);
+  for(let x=8; x<17.6; x+=1) linea([x,0,Z3],[x,2.6,Z3],'rgba(120,100,70,.1)');
+  for(let y=.15; y<2.5; y+=.5) scatola(7, y, Z3, .18, .26, .3, COL.mura);                      // merli sul lato sinistro
+}
+function merliDavanti(){
+  for(let x=7.05; x<17.4; x+=.5){ if(x > 10.5 && x < 13.2) continue; scatola(x, 2.42, Z3, .26, .18, .3, COL.mura, { left:'#C2AA82' }); }
+  for(let y=.15; y<2.5; y+=.5) scatola(17.42, y, Z3, .18, .26, .3, COL.mura, { right:'#AD956F' });
+}
+function torreMura(){                     // torre delle mura all'angolo
+  scatola(7, 1.9, Z2, .9, .9, Z3 - Z2 + 1.0, COL.mura, { left:'#C2AA82', right:'#AD956F' });
+  fy(2.8, 7.35, 7.55, Z3 + .3, Z3 + .7, '#4F4A62');
+  for(let i=0; i<3; i++){ scatola(7.02 + i*.33, 2.62, Z3 + 1.0, .2, .18, .22, COL.mura); scatola(7.72, 1.92 + i*.33, Z3 + 1.0, .18, .2, .22, COL.mura); }
+}
+function portaCitta(){                   // la porta nelle mura (mattoni, arco bugnato in pietra, attico)
+  const x = 10.8, y = 2.2, w = 2.4, d = .8, z = Z2, h = Z3 - Z2 + 1.3;
+  scatola(x, y, z, w, d, h, COL.mattoni, { left:'#C98F6E', right:'#B07A5C', top:'#D8A586' });
+  for(let r=0; r<9; r++) linea([x, y+d, z + .2 + r*.28], [x + w, y+d, z + .2 + r*.28], 'rgba(120,60,40,.25)');
+  fy(y+d, x + .55, x + w - .55, z, z + 2.2, '#E5E1D6');                                            // cornice in pietra
+  for(let r=0; r<6; r++){ const zz = z + .1 + r*.33; fy(y+d, x + .5, x + .78, zz, zz + .25, '#D8D3C6'); fy(y+d, x + w - .78, x + w - .5, zz, zz + .25, '#D8D3C6'); }
+  arcoY(y+d, x + w/2, z + .7, 1.0, 1.4, '#E5E1D6');
+  arcoY(y+d, x + w/2, z + .7, .82, 1.3, '#3E3440');
+  for(let k=0; k<4; k++) fy(y+d, x + w/2 - .3, x + w/2 + .3, z + .9 + k*.16, z + .95 + k*.16, 'rgba(255,214,140,.45)');   // scale che salgono, dentro la porta
+  fy(y+d, x - .05, x + w + .05, z + h - .45, z + h, '#E5E1D6');                                    // attico
+  for(let i=0; i<3; i++) fy(y+d, x + .25 + i*.72, x + .75 + i*.72, z + h - .38, z + h - .08, '#D1CCBE');
+}
+function scalinata(x, w, y0, y1, za, zb, n){
+  const dd = (y0 - y1)/n;
+  for(let i=n-1; i>=0; i--) scatola(x, y0 - (i+1)*dd, za, w, dd, (i+1)*(zb - za)/n, '#E3D3B3', { top:'#F0E4CC', left:'#D2BF9C', right:'#C0AB86' });
+}
+
+/* ---------- edifici ---------- */
+function tempio(){                       // Tempio della Consolazione: croce greca, quattro absidi, tamburo, cupola, lanterna
+  const cx = 4.6, cy = 2.9, z = Z2, col = COL.travertino, cup = '#9FA9BB';
+  ombra(cx + .6, cy + .6, z, 120, 50, .1);
+  for(const [ax, ay] of [[cx - 1.0, cy], [cx, cy - 1.0]]){ cilindro(ax, ay, z, .8, 1.6, col); cupola(ax, ay, z + 1.6, .8, .5, cup); }
+  scatola(cx - 1, cy - 1, z, 2, 2, 2.1, col);
+  for(const [ax, ay, k] of [[cx + 1.0, cy, 1], [cx, cy + 1.0, 2]]){
+    cilindro(ax, ay, z, .8, 1.6, col); cupola(ax, ay, z + 1.6, .8, .5, cup);
+    for(const s of [-.4, .4]){ const [wx, wy] = iso(ax + (k === 1 ? .62 : s), ay + (k === 1 ? s : .62), z + .95); g.fillStyle = NOTTE > .3 ? '#FFD98A' : '#5A6582'; g.beginPath(); g.roundRect(wx - 3, wy - 8, 6, 14, 3); g.fill(); }
+  }
+  scatola(cx - .75, cy - .75, z + 2.1, 1.5, 1.5, .45, col);
+  cilindro(cx, cy, z + 2.55, .72, .55, col);
+  for(let k=0; k<5; k++){ const a = Math.PI*(.15 + k*.18); const [wx, wy] = iso(cx + Math.cos(a)*.72, cy + Math.sin(a)*.72, z + 2.8); g.fillStyle = '#5A6582'; g.fillRect(wx - 2, wy - 6, 4, 10); }
+  cupola(cx, cy, z + 3.1, .72, .95, cup);
+  cilindro(cx, cy, z + 4.02, .15, .32, col); cupola(cx, cy, z + 4.34, .15, .14, cup);
+}
+function duomo(){                        // Duomo di Todi: facciata a capanna con rosone
+  const x = 8.0, y = .2, w = 2.7, d = 2.0, z = Z3, h = 2.8, col = '#F1E4D0';
+  scatola(x, y, z, w, d, h, col, { right:'#DCCCB3' });
+  tettoCapannaY(x, y, z + h, w, d, .9, COL.coppi, col);
+  linea([x, y+d, z+h], [x+w/2, y+d, z+h+.9], '#D8C7AD', 2); linea([x+w/2, y+d, z+h+.9], [x+w, y+d, z+h], '#D8C7AD', 2);
+  for(let k=1;k<3;k++) fy(y+d, x, x+w, z + k*.95, z + k*.95 + .05, '#E2D2B8');
+  cerchioY(y+d, x+w/2, z+2.05, .45, '#D9C9AF'); cerchioY(y+d, x+w/2, z+2.05, .34, NOTTE > .3 ? '#FFD98A' : '#6A6F8E'); cerchioY(y+d, x+w/2, z+2.05, .1, '#E8C770');
+  cerchioY(y+d, x+.55, z+1.9, .2, '#6A6F8E'); cerchioY(y+d, x+w-.55, z+1.9, .2, '#6A6F8E');
+  arcoY(y+d, x+w/2, z, .65, 1.15, '#7E5A42'); arcoY(y+d, x+.55, z, .36, .8, '#7E5A42'); arcoY(y+d, x+w-.55, z, .36, .8, '#7E5A42');
+  for(let k=0;k<3;k++) finestraX(x+w, y + .4 + k*.55, y + .6 + k*.55, z + 1.0, z + 1.7, 900 + k);
+}
+function palazzoPriori(){                // Palazzo dei Priori: bifore, merli guelfi, torre
+  const x = 13.3, y = .3, w = 3.9, d = 2.0, z = Z3, h = 2.4, col = '#CDB38D';
+  scatola(x, y, z, w, d, h, col, { right:'#B89E79' });
+  for(let i=0; i<4; i++){ const cx = x + .55 + i*.95;
+    for(const k of [-.1, .1]) finestraY(y+d, cx+k-.07, cx+k+.07, z + 1.25, z + 1.75, 700 + i*2 + (k>0));
+    fy(y+d, cx - .22, cx + .22, z + 1.18, z + 1.24, '#E8DCC6'); }
+  for(let i=0; i<3; i++) arcoY(y+d, x + .8 + i*1.15, z, .55, .85, '#6B5A4E');
+  for(let i=0; i<9; i++) scatola(x + .05 + i*.44, y + d - .2, z + h, .22, .2, .22, col);
+  for(let i=0; i<5; i++) scatola(x + w - .2, y + .05 + i*.4, z + h, .2, .22, .22, col);
+  const tx = 16.3, ty = .4;
+  scatola(tx, ty, z + h, .85, .85, 1.5, col, { right:'#B89E79' });
+  finestraY(ty + .85, tx + .28, tx + .57, z + h + .7, z + h + 1.15, 720);
+  for(let i=0; i<3; i++){ scatola(tx + .02 + i*.31, ty + .65, z + h + 1.5, .2, .2, .22, col); scatola(tx + .65, ty + .02 + i*.31, z + h + 1.5, .2, .2, .22, col); }
+}
+function casa(x, y, w, d, piani, col, o={}){
+  const h = piani*.95 + .15, z = o.z || 0, id = x*100 + y*10;
+  scatola(x, y, z, w, d, h, col);
+  if(o.pietra) for(let i=0; i<24; i++){ const xx = x + hash(i + x*7)*(w-.35), zz = z + hash(i*5 + x)*(h-.2); fy(y+d, xx, xx+.32, zz, zz+.14, tono(col, -.07)); }
+  const nf = Math.max(1, Math.floor(w/1.0)), pers = o.persiane || COL.persiana;
+  for(let f=0; f<piani; f++) for(let j=0; j<nf; j++){
+    const cx = x + (j + .5)*w/nf, z0 = z + .25 + f*.95;
+    if(f === 0 && j === Math.floor(nf/2) && !o.noPorta){ arcoY(y+d, cx, z, .5, .8, COL.porta); continue; }
+    finestraY(y+d, cx - .14, cx + .14, z0 + .1, z0 + .55, id + f*10 + j);
+    fy(y+d, cx - .27, cx - .14, z0 + .1, z0 + .55, pers); fy(y+d, cx + .14, cx + .27, z0 + .1, z0 + .55, pers);
+    fy(y+d, cx - .18, cx + .18, z0 + .06, z0 + .1, '#F3EADB');
+  }
+  const nl = Math.max(1, Math.floor(d/1.1));
+  for(let f=0; f<piani; f++) for(let j=0; j<nl; j++){ const cy = y + (j + .5)*d/nl, z0 = z + .35 + f*.95; finestraX(x+w, cy - .12, cy + .12, z0, z0 + .4, id + 500 + f*10 + j); }
+  tettoCapanna(x, y, z + h, w, d, .65, COL.coppi, col);
+  if(o.camino) scatola(x + w*.7, y + d*.3, z + h + .25, .22, .22, .55, '#C9B08C');
+}
+// la scuola: istituto Ciuffelli-Einaudi (facciata con corpo centrale in pietra, portone, balcone, timpano, bandiera)
+function scuola(){
+  const x = 6.6, y = 5.4, w = 4.4, d = 2.6, h = 3.3, col = COL.scuola, cx = x + w/2;
+  scatola(x, y, 0, w, d, h, col, { right:'#D9C79C' });
+  fy(y+d, x, x+w, 0, .85, '#E5D3A6'); for(let r=1; r<4; r++) linea([x, y+d, r*.21], [x+w, y+d, r*.21], 'rgba(150,120,70,.25)');
+  fy(y+d, x, x+w, h - .18, h, '#F5EAD0'); fy(y+d, x, x+w, 1.12, 1.18, '#F5EAD0');
+  for(const fx0 of [x + .45, x + 1.15, x + 3.25, x + 3.95])                                     // finestre delle ali
+    for(let f=0; f<3; f++){ const z0 = .3 + f*1.02; fy(y+d, fx0 - .2, fx0 + .2, z0 - .04, z0 + .66, '#F5EEDC'); finestraY(y+d, fx0 - .15, fx0 + .15, z0, z0 + .6, 3000 + fx0*10 + f);
+      if(f === 0) for(let k=0;k<3;k++) linea([fx0 - .1 + k*.1, y+d, z0], [fx0 - .1 + k*.1, y+d, z0 + .6], '#4B5270'); }
+  for(let f=0; f<3; f++) for(let j=0; j<2; j++) finestraX(x+w, y + .5 + j*1.2, y + .8 + j*1.2, .35 + f*1.02, .9 + f*1.02, 3100 + f*3 + j);
+  // corpo centrale in pietra bugnata
+  scatola(cx - .7, y + d, 0, 1.4, .16, h - .1, COL.scuolaPietra, { top:'#E2E1DA', right:'#B9B8B0' });
+  for(let r=1; r<12; r++) linea([cx - .7, y+d+.16, r*.27], [cx + .7, y+d+.16, r*.27], 'rgba(90,90,90,.22)');
+  arcoY(y + d + .16, cx, 0, .65, 1.05, '#2F3A33');
+  fy(y + d + .16, cx - .05, cx + .05, .2, .8, '#4A5A50');
+  // balcone con balaustra
+  scatola(cx - .85, y + d + .16, 1.15, 1.7, .32, .08, '#DCDBD3');
+  for(let k=0; k<9; k++) linea([cx - .8 + k*.2, y+d+.48, 1.23], [cx - .8 + k*.2, y+d+.48, 1.48], '#D0CFC6', 2.5);
+  linea([cx - .85, y+d+.48, 1.5], [cx + .85, y+d+.48, 1.5], '#E6E5DE', 3);
+  // finestra con timpano sopra il balcone, e quella dell'ultimo piano
+  fy(y+d+.16, cx - .3, cx + .3, 1.22, 2.05, '#EEEDE6'); finestraY(y+d+.16, cx - .22, cx + .22, 1.25, 2.0, 3200);
+  poli(P([cx - .42, y+d+.16, 2.08], [cx + .42, y+d+.16, 2.08], [cx, y+d+.16, 2.38]), '#E6E5DE');
+  finestraY(y+d+.16, cx - .18, cx + .18, 2.5, 3.0, 3201);
+  // bandiera italiana sul balcone
+  const [bx, by] = iso(cx + .6, y + d + .45, 1.5), sv = Math.sin(performance.now()/300)*2;
+  g.strokeStyle = '#555'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + 16, by - 30); g.stroke();
+  [['#2E8B57',0],['#FFFFFF',1],['#D2353F',2]].forEach(([c, i]) => { g.fillStyle = c; g.beginPath(); g.moveTo(bx + 16 + i*7, by - 30 + sv*i*.3); g.lineTo(bx + 23 + i*7, by - 30 + sv*(i+1)*.3); g.lineTo(bx + 23 + i*7, by - 20 + sv*(i+1)*.3); g.lineTo(bx + 16 + i*7, by - 20 + sv*i*.3); g.fill(); });
+  // scalini davanti al portone
+  scatola(cx - .55, y + d + .16, 0, 1.1, .3, .08, '#D6D5CE');
+  tettoPadiglione(x - .1, y - .1, h, w + .2, d + .2, .75, COL.coppi);
+  // il logo della scuola, come insegna rotonda sul tetto
+  const [lx, ly] = iso(cx, y + d/2 + .3, h + .75);
+  g.fillStyle = '#5B6075'; g.fillRect(lx - 14, ly - 6, 3, 18); g.fillRect(lx + 11, ly - 6, 3, 18);
+  g.fillStyle = 'rgba(46,51,80,.25)'; g.beginPath(); g.ellipse(lx, ly + 12, 26, 6, 0, 0, 7); g.fill();
+  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(lx, ly - 30, 32, 0, 7); g.fill();
+  g.strokeStyle = '#6E9F38'; g.lineWidth = 3; g.stroke();
+  const logo = document.getElementById('logo-scuola');
+  if(logo && logo.complete && logo.naturalWidth){ g.save(); g.beginPath(); g.arc(lx, ly - 30, 29, 0, 7); g.clip(); g.drawImage(logo, lx - 30, ly - 60, 60, 60); g.restore(); }
+}
+// la gelateria (a destra della scalinata), con il display dei coni sul fianco
+const GEL = { x:13.0, y:5.4, w:4.4, d:2.6, h:2.8, porta:16.6 };
+function gelateria(coni, maxConi, aperta, t){
+  const { x, y, w, d, h } = GEL;
+  scatola(x, y, 0, w, d, h, COL.muro, { left:'#FFF0D9', right:'#F1DFC2', top:'#FFF8EC' });
+  fy(y+d, x, x+w, 0, .3, '#E9D7B8'); fx(x+w, y, y+d, 0, .3, '#D9C6A6');
+  const luce = NOTTE > .3 && !aperta;
+  fy(y+d, 13.3, 15.8, 1.0, 2.15, luce ? '#FFE7A6' : COL.vetro);
+  if(luce) LUCI.push(P([13.3,y+d,1.0],[15.8,y+d,1.0],[15.8,y+d,2.15],[13.3,y+d,2.15]));
+  if(!luce) poli(P([13.5,y+d,2.0],[14.05,y+d,2.0],[13.75,y+d,1.1],[13.4,y+d,1.1]), '#E8F7FD');
+  // porta: aperta (scura) o chiusa (legno)
+  arcoY(y+d, GEL.porta, 0, .75, 1.85, aperta ? '#3A2A22' : COL.porta);
+  if(!aperta){ fy(y+d, GEL.porta - .02, GEL.porta + .02, 0, 1.6, '#7A5236'); fy(y+d, GEL.porta + .18, GEL.porta + .24, .85, .95, '#F5C04A'); }
+  scatola(x - .15, y - .15, h, w + .3, d + .3, .25, COL.tetto);
+  const [sx, sy] = iso(x + 2.2, y + 1.3, h + .25);
+  coneIcona(sx, sy - 6 + Math.sin(t*2)*3, 1.3);
+  displayConi(coni, maxConi, t);
+}
+function displayConi(coni, maxConi, t){                  // display luminoso sul fianco: si legge subito quanti coni restano
+  const finiti = coni <= 0, lamp = finiti && Math.floor(t*3) % 2;
+  suParete('x', GEL.x + GEL.w, GEL.y + GEL.d - .45, 2.5, 1, 1, () => {
+    g.scale(1/100, 1/100);                               // 100 = 1 unità di mondo
+    g.fillStyle = '#23283E'; g.beginPath(); g.roundRect(0, 0, 170, 110, 12); g.fill();
+    g.strokeStyle = '#F7A8BE'; g.lineWidth = 5; g.stroke();
+    g.fillStyle = '#F2B866'; g.beginPath(); g.moveTo(18, 40); g.lineTo(48, 40); g.lineTo(33, 92); g.fill();
+    g.fillStyle = '#F7A1BC'; g.beginPath(); g.arc(33, 34, 16, 0, 7); g.fill();
+    g.font = '900 64px Nunito, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = finiti ? (lamp ? '#FF5A6E' : '#7A2A35') : coni <= maxConi*.25 ? '#FFC94A' : '#7CF0A0';
+    g.fillText(String(Math.max(0, coni)), 112, 60);
+    g.font = '800 15px Nunito, sans-serif'; g.fillStyle = '#AEB6D0'; g.fillText(finiti ? 'FINITI!' : 'CONI', 112, 98);
+  });
+  if(NOTTE > .2 || finiti){ const [cx, cy] = iso(GEL.x + GEL.w, GEL.y + 1.3, 2.0); LAMPIONI.push([cx, cy, finiti ? 'rgba(255,90,110,' : 'rgba(124,240,160,', 60, .35]); }
+}
+function tenda(){
+  const n = 12;
+  for(let i=0; i<n; i++){ const x0 = GEL.x + i*GEL.w/n, x1 = x0 + GEL.w/n, col = i % 2 ? '#FFFFFF' : COL.tenda;
+    poli(P([x0,8.0,2.6],[x1,8.0,2.6],[x1,8.5,2.3],[x0,8.5,2.3]), col);
+    poli(P([x0,8.5,2.3],[x1,8.5,2.3],[x1,8.5,2.14],[x0,8.5,2.14]), i % 2 ? '#EDEFF5' : tono(COL.tenda, -.12)); }
+}
+function bancone(bx, by, coni, maxConi){
+  scatola(bx, by, .1, 2.2, .5, .9, COL.banco, { top:'#BDEBDD' });
+  [COL.pallina, '#B8E07A', '#9C6B4E', '#9FE3F0'].forEach((c, i) => { const [sx, sy] = iso(bx + .25 + i*.52, by + .25, 1.0); g.fillStyle = c; g.beginPath(); g.ellipse(sx, sy, 9, 5, 0, 0, 7); g.fill(); });
+  const n = Math.ceil(6 * Math.max(0, coni) / Math.max(1, maxConi));
+  for(let i=0; i<n; i++){ const [sx, sy] = iso(bx + .15 + i*.36, by + .5, .6); g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx-5, sy-7); g.lineTo(sx+5, sy-7); g.lineTo(sx, sy+7); g.fill(); }
+}
+function pacco(x, y, z, k=1){                           // pacco con un cono disegnato sopra
+  scatola(x - .22*k, y - .22*k, z, .44*k, .44*k, .38*k, '#D9A066', { top:'#EBB884', left:'#D29758', right:'#B97F45' });
+  const [sx, sy] = iso(x, y + .22*k, z + .2*k);
+  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(sx, sy - 1, 7*k, 0, 7); g.fill();
+  g.fillStyle = COL.cono; g.beginPath(); g.moveTo(sx - 3.5*k, sy - 1); g.lineTo(sx + 3.5*k, sy - 1); g.lineTo(sx, sy + 6*k); g.fill();
+  g.fillStyle = COL.pallina; g.beginPath(); g.arc(sx, sy - 3*k, 3.2*k, 0, 7); g.fill();
+}
+
+/* ---------- arredo: alberi, lampioni, panchine, fiori ---------- */
+function cipresso(x, y, z, h=1.8){
+  ombra(x, y, z, 13, 5, .14);
+  const [bx, by] = iso(x, y, z), top = by - h*S;
+  const gr = g.createLinearGradient(bx - 12, 0, bx + 12, 0); gr.addColorStop(0, '#55A673'); gr.addColorStop(1, '#2F7349');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(bx, top); g.bezierCurveTo(bx + 15, top + h*S*.35, bx + 12, by - 6, bx, by - 2); g.bezierCurveTo(bx - 12, by - 6, bx - 15, top + h*S*.35, bx, top); g.fill();
+}
+function albero(x, y, z, s=1, col=COL.albero){
+  ombra(x, y, z, 24*s, 10*s, .12);
+  scatola(x-.06, y-.06, z, .12, .12, .6*s, COL.tronco);
+  const [sx, sy] = iso(x, y, z + .6*s + .4*s); sfera(sx, sy, 22*s, col, .3);
+}
+function lampione(x, y, z=0){
+  scatola(x - .05, y - .05, z + .1, .1, .1, 1.9, '#4B5270');
+  const [sx, sy] = iso(x, y, z + 2.05);
+  g.fillStyle = NOTTE > .2 ? '#FFE08A' : '#F4F1E6'; g.beginPath(); g.arc(sx, sy, 6, 0, 7); g.fill();
+  if(NOTTE > .2) LAMPIONI.push([sx, sy, 'rgba(255,222,140,', 95, .7]);
+}
+function panchina(x, y){ scatola(x, y, .35, 1.2, .3, .07, '#C98B5E'); scatola(x+.05, y+.05, .1, .07, .2, .25, '#7D6A62'); scatola(x+1.08, y+.05, .1, .07, .2, .25, '#7D6A62'); scatola(x, y-.03, .42, 1.2, .06, .32, '#C98B5E'); }
+const FIORI = [];
+for(let i=0; i<16; i++) FIORI.push([2.7 + hash(i)*3.4, 6.2 + hash(i+20)*1.6, 0, ['#F28CA8','#F5C04A','#FFFFFF','#9B7BE0'][i%4]]);
+for(let i=0; i<6; i++) FIORI.push([2.6 + hash(i+50)*1.1, 4.2 + hash(i+60)*1.0, Z2, ['#F28CA8','#F5C04A','#FFFFFF'][i%3]]);
+function fiore(x, y, z, col, sboccio){
+  const [sx, sy] = iso(x, y, z);
+  g.strokeStyle = '#4FA372'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx, sy - 8); g.stroke();
+  if(sboccio < .15){ g.fillStyle = '#7CC36A'; g.beginPath(); g.ellipse(sx, sy - 9, 2.2, 3.4, 0, 0, 7); g.fill(); return; }
+  const r = 1.2 + 3.2*sboccio;
+  g.fillStyle = col; for(let k=0;k<5;k++){ const a = k/5*Math.PI*2; g.beginPath(); g.arc(sx + Math.cos(a)*r*.8, sy - 9 + Math.sin(a)*r*.8, r*.6, 0, 7); g.fill(); }
+  g.fillStyle = '#F5C04A'; g.beginPath(); g.arc(sx, sy - 9, r*.35, 0, 7); g.fill();
+}
+function giardino(sboccio){
+  piano(2.4, 5.5, .004, 4.0, 2.4, '#8FCB73');
+  linea([2.4, 7.9, .01], [6.4, 7.9, .01], '#7CC36A', 2);
+  for(const f of FIORI) if(f[2] === 0) fiore(f[0], f[1], f[2], f[3], sboccio);
+  cipresso(2.8, 5.8, 0, 1.5); cipresso(6.1, 5.75, 0, 1.3); albero(4.3, 6.0, 0, .55);
+  panchina(3.6, 7.45);
+}
+
+/* =====================================================================
+   CIELO, SOLE, METEO
+   ===================================================================== */
+const SOLE = [[0,'#FFF27A'],[.35,'#FFE14D'],[.6,'#FFC93C'],[.8,'#FF9A3C'],[1,'#D9531E']];
+function posSole(p){ const a = Math.PI*clamp(p); return [640 - 600*Math.cos(a), 700 - 640*Math.sin(a)]; }
+let LAMPO = 0;
+function cielo(meteo, p, t){
+  const cieloAlto = scala([[0,'#9CCBF0'],[.3,'#79B8EE'],[.7,'#86BDEB'],[.88,'#C59AD0'],[1,'#3E3F7A']], p);
+  const cieloBasso = scala([[0,'#FFE9C2'],[.25,'#E9F4FB'],[.7,'#F3EBD9'],[.88,'#FFB98A'],[1,'#B9708A']], p);
+  const gr = g.createLinearGradient(0, 0, 0, LH); gr.addColorStop(0, cieloAlto); gr.addColorStop(1, cieloBasso);
+  g.fillStyle = gr; g.fillRect(0, 0, LW, LH);
+  if(meteo === 'pioggia'){ g.fillStyle = 'rgba(60,66,90,.6)'; g.fillRect(0, 0, LW, LH); }
+  if(meteo === 'nuvoloso'){ g.fillStyle = 'rgba(205,212,225,.5)'; g.fillRect(0, 0, LW, LH); }
+  if(NOTTE > 0) for(let i=0; i<50; i++){ g.fillStyle = `rgba(255,255,255,${NOTTE*(.3 + .7*hash(i))*(meteo === 'pioggia' ? .2 : 1)})`; g.beginPath(); g.arc(hash(i)*LW, hash(i+9)*LH*.4, .8 + hash(i+3)*1.4, 0, 7); g.fill(); }
+  // il sole: arco di 180° da est a ovest, dal giallo acceso all'arancione scuro
+  const [sx, sy] = posSole(p), col = scala(SOLE, p), vis = meteo === 'pioggia' ? .15 : meteo === 'nuvoloso' ? .6 : 1;
+  const gl = g.createRadialGradient(sx, sy, 10, sx, sy, 190); gl.addColorStop(0, col + 'aa'); gl.addColorStop(1, col + '00');
+  g.globalAlpha = vis; g.fillStyle = gl; g.fillRect(sx-190, sy-190, 380, 380);
+  g.fillStyle = col; g.beginPath(); g.arc(sx, sy, 36, 0, Math.PI*2); g.fill(); g.globalAlpha = 1;
+  // temporale all'orizzonte: nuvoloni neri e fulmini
+  LAMPO = 0;
+  if(meteo === 'pioggia'){
+    const k = Math.floor(t/2.6), ph = frac(t/2.6);
+    if(ph < .1){
+      const bx = 140 + hash(k)*1000; g.strokeStyle = '#FFF6C8'; g.lineWidth = 3; g.shadowColor = '#FFF6C8'; g.shadowBlur = 14;
+      g.beginPath(); g.moveTo(bx, 470); let x = bx, y = 470; for(let i=0;i<6;i++){ x += (hash(k*7+i) - .5)*40; y += 22; g.lineTo(x, y); } g.stroke(); g.shadowBlur = 0;
+      LAMPO = ph < .05 ? 1 - ph/.05 : 0;
+    }
+    g.save(); g.beginPath(); g.rect(0, 0, LW, 600); g.clip();                       // banco di nuvoloni neri all'orizzonte
+    const nb = g.createLinearGradient(0, 430, 0, 600); nb.addColorStop(0, '#5C637A'); nb.addColorStop(1, '#2B3042');
+    g.fillStyle = nb;
+    for(let i=0; i<10; i++){ const cx = i*140 - 30 + Math.sin(t*.25 + i)*12, h = 60 + hash(i+4)*50;
+      g.beginPath(); g.ellipse(cx, 600 - h*.4, 100, h, 0, 0, 7); g.ellipse(cx + 55, 600 - h*.7, 60, h*.6, 0, 0, 7); g.ellipse(cx - 50, 600 - h*.55, 55, h*.5, 0, 0, 7); g.fill(); }
+    g.restore();
+  }
+  // colline umbre (più cupe col maltempo)
+  const strati = [['#B9D3B4', 590, 40, .004], ['#9DC29A', 640, 34, .006], ['#86B386', 690, 28, .009]];
+  strati.forEach(([c, base, amp, f], i) => {
+    let colore = mix(c, cieloBasso, .15*(2-i));
+    if(meteo === 'pioggia') colore = mix(c, '#4C566B', .55);
+    if(meteo === 'nuvoloso') colore = mix(c, '#B7C0CC', .3);
+    g.fillStyle = mix(colore, '#2C3060', NOTTE*.6);
+    g.beginPath(); g.moveTo(0, LH);
+    for(let x=0; x<=LW; x+=16) g.lineTo(x, base - amp*Math.sin(x*f + i*1.7) - amp*.5*Math.sin(x*f*2.3 + i));
+    g.lineTo(LW, LH); g.closePath(); g.fill();
+  });
+}
+function uccellini(t){
+  g.strokeStyle = '#3A3355'; g.lineWidth = 2; g.lineCap = 'round';
+  for(let i=0; i<7; i++){
+    const x = ((t*45 + i*210) % 1600) - 150, y = 70 + (i%4)*28 + Math.sin(t*1.3 + i)*14, ali = Math.sin(t*11 + i*2)*6, s = .8 + (i%3)*.2;
+    g.beginPath(); g.moveTo(x - 9*s, y - ali*s); g.quadraticCurveTo(x - 4*s, y - 3*s, x, y); g.quadraticCurveTo(x + 4*s, y - 3*s, x + 9*s, y - ali*s); g.stroke();
+  }
+}
+function farfalle(t){
+  for(let i=0; i<3; i++){
+    const [cx, cy] = iso(3 + i*1.3 + Math.sin(t*.7 + i)*.6, 6.6 + Math.cos(t*.9 + i)*.6, .7 + Math.sin(t*2 + i)*.25);
+    const ali = Math.abs(Math.sin(t*14 + i))*5 + 1;
+    g.fillStyle = ['#F28CA8','#F5C04A','#9B7BE0'][i];
+    g.beginPath(); g.ellipse(cx - ali*.7, cy, ali, 3.5, -.4, 0, 7); g.ellipse(cx + ali*.7, cy, ali, 3.5, .4, 0, 7); g.fill();
+  }
+}
+const POZZE = [[4.5,10.0,0,.55],[9.0,10.7,0,.7],[13.6,10.1,0,.5],[1.2,5.6,0,.45],[18.8,4.2,0,.5],[8.2,8.7,.1,.35],[3.1,8.6,.1,.3],[8.8,4.4,Z2,.45],[15.4,4.0,Z2,.4],[12.2,1.3,Z3,.35]];
+function pozzanghere(k, t, livello){
+  POZZE.forEach(([x, y, z, r], i) => {
+    if(livello !== z) return;
+    ellisse(x, y, z + .006, r*k, 'rgba(140,168,204,.7)', .9);
+    ellisse(x - r*.2*k, y - r*.1*k, z + .007, r*.45*k, 'rgba(220,235,250,.45)', .6);
+    const [sx, sy] = iso(x, y, z + .01), rr = frac(t*1.4 + i*.37);
+    g.strokeStyle = `rgba(255,255,255,${.6*(1-rr)*k})`; g.lineWidth = 1; g.beginPath(); g.ellipse(sx, sy, RX(r*k*rr), RY(r*k*rr)*.9, 0, 0, 7); g.stroke();
+  });
+}
+function quotaSuolo(x, y){ if(x > 7 && x < 17.6 && y < 2.6) return Z3; if(x > 2.2 && x < 17.6 && y < 5.4) return Z2; return 0; }
 function pioggia(t){
-  g.strokeStyle = 'rgba(126,200,245,.75)'; g.lineWidth = 1.6;
-  for(let i=0; i<130; i++){
-    const x = hash(i)*DX, y = hash(i+30)*DY, zb = y < 3.6 ? ZT : 0, ph = frac(hash(i+60) + t*1.6), z = zb + 6 - ph*6;
-    const [sx, sy] = iso(x, y, z); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 3, sy + 12); g.stroke();
-    if(ph > .92){ const [px, py] = iso(x, y, zb); g.beginPath(); g.ellipse(px, py, 6*(ph-.92)/.08 + 2, 2, 0, 0, 7); g.stroke(); }
+  g.strokeStyle = 'rgba(160,205,245,.8)'; g.lineWidth = 1.5;
+  for(let i=0; i<170; i++){
+    const x = hash(i)*DX, y = hash(i+30)*DY, zb = quotaSuolo(x, y), ph = frac(hash(i+60) + t*1.7), z = zb + 7 - ph*7;
+    const [sx, sy] = iso(x, y, z); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 3, sy + 13); g.stroke();
+  }
+}
+function nebbia(t){                                   // banchi di nebbia sul terzo livello
+  for(let i=0; i<5; i++){
+    const cx = ((t*14 + i*380) % 1900) - 300, cy = 175 + (i%3)*45, rx = 280 + (i%2)*120;
+    const gr = g.createRadialGradient(cx, cy, 10, cx, cy, rx);
+    gr.addColorStop(0, 'rgba(245,247,252,.85)'); gr.addColorStop(.6, 'rgba(245,247,252,.5)'); gr.addColorStop(1, 'rgba(245,247,252,0)');
+    g.save(); g.translate(cx, cy); g.scale(1, .28); g.translate(-cx, -cy); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rx, 0, 7); g.fill(); g.restore();
   }
 }
 
 /* =====================================================================
-   DEMO: tre giorni (sole, pioggia, nuvoloso)
+   IL CAMION: percorre la strada a U (arriva da sinistra, riparte a destra)
+   ===================================================================== */
+const PERCORSO = (() => {
+  const pts = [], { xS, xD, yF, cy, r } = CL;
+  for(let y=-2.5; y<cy; y+=.1) pts.push([xS, y]);
+  for(let i=0; i<=24; i++){ const f = Math.PI - i/24*Math.PI/2; pts.push([2.4 + r*Math.cos(f), cy + r*Math.sin(f)]); }
+  for(let x=2.5; x<17.6; x+=.1) pts.push([x, yF]);
+  for(let i=0; i<=24; i++){ const f = Math.PI/2 - i/24*Math.PI/2; pts.push([17.6 + r*Math.cos(f), cy + r*Math.sin(f)]); }
+  for(let y=cy - .1; y>-3; y-=.1) pts.push([xD, y]);
+  const L = [0]; for(let i=1; i<pts.length; i++) L.push(L[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
+  const iStop = pts.findIndex(([x, y]) => y === yF && x >= 15.2);
+  return { pts, L, tot:L[L.length-1], sStop:L[iStop] };
+})();
+function lungoPercorso(s){
+  const { pts, L } = PERCORSO; let i = 1; while(i < L.length - 1 && L[i] < s) i++;
+  const k = clamp((s - L[i-1]) / (L[i] - L[i-1] || 1)), x = lerp(pts[i-1][0], pts[i][0], k), y = lerp(pts[i-1][1], pts[i][1], k);
+  const a = pts[Math.max(0, i-2)], b = pts[Math.min(pts.length-1, i+1)];
+  return { x, y, ang: Math.atan2(b[1]-a[1], b[0]-a[0]) };
+}
+function camion(px, py, ang, t, fermo){
+  const u = [Math.cos(ang), Math.sin(ang)], v = [-Math.sin(ang), Math.cos(ang)];
+  const pt = (a, b, z) => [px + u[0]*a + v[0]*b, py + u[1]*a + v[1]*b, z];
+  const b = fermo ? 0 : Math.abs(Math.sin(t*16))*.03;
+  ombra(px, py, .01, 95, 34, .2);
+  if(!fermo) for(let i=0; i<6; i++){ const a = frac(t*1.3 + i/6), [sx, sy] = iso(...pt(-2.3 - a*1.3, -.45, .45 + a*1.5));
+    g.fillStyle = `rgba(214,219,230,${.85*(1-a)})`; g.beginPath(); g.arc(sx, sy, 6 + a*20, 0, 7); g.fill(); }
+  const [c1x, c1y] = pt(-.6, 0, 0), [c2x, c2y] = pt(1.55, 0, 0);
+  scatolaRuotata(c1x, c1y, .35 + b, 3.0, 1.35, 1.6, ang, '#FFFFFF', { top:'#FFFFFF' });
+  scatolaRuotata(c2x, c2y, .35 + b, 1.2, 1.25, 1.15, ang, COL.cabina);
+  const s = (v[0] + v[1]) > 0 ? 1 : -1, w = .69*s;
+  poli(P(pt(-2.1, w, .75+b), pt(.9, w, .75+b), pt(.9, w, 1.0+b), pt(-2.1, w, 1.0+b)), COL.tenda);
+  const [cx, cy] = iso(...pt(-.6, w, 1.5 + b)); coneIcona(cx, cy - 4, .8);
+  poli(P(pt(1.15, .64*s, .85+b), pt(1.95, .64*s, .85+b), pt(1.95, .64*s, 1.35+b), pt(1.15, .64*s, 1.35+b)), '#E8F7FD');
+  if(u[0] + u[1] > 0) poli(P(pt(2.16, -.5, .85+b), pt(2.16, .5, .85+b), pt(2.16, .5, 1.35+b), pt(2.16, -.5, 1.35+b)), '#CDEFFB');
+  if(u[0] + u[1] < 0) linea(pt(-2.11, 0, .4+b), pt(-2.11, 0, 1.9+b), '#C9CCD6', 2);
+  for(const a of [-1.5, 1.45]){
+    const ruota = (rr, col) => { const q = []; for(let i=0;i<20;i++){ const f = i/20*Math.PI*2; q.push(pt(a + Math.cos(f)*rr, .7*s, .3 + Math.sin(f)*rr)); } poli(P(...q), col); };
+    ruota(.3, COL.ruota); ruota(.12, '#C5CBD8');
+  }
+}
+
+/* =====================================================================
+   LA GIORNATA
    ===================================================================== */
 const GIORNI = [
-  { meteo:'sole',     clienti:9, coni:6, camion:true },
-  { meteo:'pioggia',  clienti:3, coni:6 },
+  { meteo:'sole',     clienti:9, coni:6, camion:true },     // il gelato finisce; la sera arriva il camion
+  { meteo:'pioggia',  clienti:3, coni:6 },                  // la mattina i pacchi entrano in negozio
   { meteo:'nuvoloso', clienti:6, coni:6 }
 ];
-// il camion: entra a fine giornata, si ferma davanti alla gelateria, scarica e riparte
-const CAM = { entra:.70, ferma:.80, riparte:.90, esce:.99, xStop:5.2 };
-let durataGiorno = 10, modo = 'scena';
+const CAM = { entra:.62, ferma:.76, riparte:.84, esce:.97 };
+const CHIUDE = .87, BUIO = .95;
+const PACCHI = [[16.25, 8.85, .1], [16.8, 8.85, .1], [16.52, 8.85, .48]];
+let durataGiorno = 12, modo = 'scena';
 function scena(t){
-  const n = Math.floor(t / durataGiorno), p = frac(t / durataGiorno), G = GIORNI[n % 3];
-  const notte = seg(p, .93, 1);
-  OMBRA_DX = -Math.cos(Math.PI*p);                          // ombre opposte al sole
-  cielo(G.meteo, p);
+  const n = Math.floor(t / durataGiorno), p = frac(t / durataGiorno), G = GIORNI[n % 3], ieri = GIORNI[(n + 2) % 3];
+  LUCI = []; LAMPIONI = [];
+  NOTTE = Math.max(seg(p, CHIUDE, BUIO), 1 - seg(p, 0, .05));
+  OMBRA_DX = -Math.cos(Math.PI*p);
+  const sole = G.meteo === 'sole', piove = G.meteo === 'pioggia', k = piove ? seg(p, .03, .45) : 0;
+  const sboccio = sole ? seg(p, .03, .3) : .1;
+  cielo(G.meteo, p, t);
   terreno();
-  // terrazza (dal più lontano al più vicino)
-  tempio();
-  casa(4.9, .5, 1.9, 2.2, 2, '#E3B77A', { z:ZT, persiane:COL.persiana2, camino:true });
-  duomo();
-  casa(10.9, .4, 2.0, 2.3, 3, COL.pietra, { z:ZT, pietra:true });
-  palazzoPriori();
-  casa(18.3, .5, 1.5, 2.1, 2, '#E9B9A0', { z:ZT });
-  cipresso(4.5, 3.1, ZT, 1.7); cipresso(13.15, 3.1, ZT, 1.5); cipresso(18.1, 3.1, ZT, 1.6);
-  lampione(6.4, 3.2, notte);
-  // nuvole
-  if(G.meteo !== 'sole'){ const c = G.meteo === 'pioggia' ? '#C3CAD8' : '#FFFFFF';
-    nuvola(3 + frac(t*.012)*4, 4.5, 7.5, 1.2, c); nuvola(11 - frac(t*.01)*4, 2, 8.2, 1.4, c); nuvola(17, 5.5, 9.5, 1.0, c); }
-  else nuvola(8 + frac(t*.01)*5, 1, 8.8, .9, '#FFFFFF');
-  // fila di case lungo la via, con la gelateria e la scalinata
-  // giardinetto ai piedi della terrazza: lascia vedere il Tempio della Consolazione
-  piano(.4, 4.0, .004, 2.8, 2.2, '#8FCB73');
-  for(let i=0; i<6; i++){ const [fx2, fy2] = iso(.7 + hash(i)*2.3, 4.3 + hash(i+7)*1.8, .02); g.fillStyle = ['#F28CA8','#F5C04A','#FFFFFF'][i%3]; g.beginPath(); g.arc(fx2, fy2, 3, 0, 7); g.fill(); }
-  cipresso(.9, 4.4, 0, 1.6); cipresso(2.7, 4.6, 0, 1.9); albero(1.8, 5.6, 0, .7);
-  casa(3.5, 3.8, 3.1, 2.6, 2, '#E3B77A', { balcone:true });
-  gelateria(notte);
-  scalinata();
-  casa(13.2, 3.8, 2.8, 2.6, 2, '#E9B9A0', { archi:true, noPorta:true });
-  casa(16.2, 3.8, 3.5, 2.6, 3, '#EFE0C2', { persiane:COL.persiana2, camino:true });
-  // clienti, mascotte, bancone
-  const banco = 8.4, inizio = -.6, walkT = .2;
+  if(piove) pozzanghere(k, t, 0);
+  // camion (sulla gamba sinistra, dietro la città, va disegnato prima)
+  let cam = null;
+  if(G.camion && p > CAM.entra && p < CAM.esce){
+    let s;
+    if(p < CAM.ferma) s = lerp(0, PERCORSO.sStop, easeOutQ(seg(p, CAM.entra, CAM.ferma)));
+    else if(p < CAM.riparte) s = PERCORSO.sStop;
+    else s = lerp(PERCORSO.sStop, PERCORSO.tot, easeInQ(seg(p, CAM.riparte, CAM.esce)));
+    cam = { ...lungoPercorso(s), fermo: p >= CAM.ferma && p < CAM.riparte };
+    cam.alpha = clamp(Math.min(cam.y + 2.2, 99)*.8);
+    cam.prima = cam.x < 2.3 && cam.y < 5;
+  }
+  const disegnaCamion = () => { g.globalAlpha = cam.alpha; camion(cam.x, cam.y, cam.ang, t, cam.fermo); g.globalAlpha = 1; };
+  if(cam && cam.prima) disegnaCamion();
+  // livello 2 e 3
+  livello2();
+  if(piove) pozzanghere(k, t, Z2);
+  for(const f of FIORI) if(f[2] === Z2) fiore(f[0], f[1], f[2], f[3], sboccio);
+  tempio(); lampione(6.75, 4.95, Z2);
+  livello3(); torreMura();
+  if(piove) pozzanghere(k, t, Z3);
+  duomo(); casa(11.0, .35, 1.9, 1.7, 2, COL.pietra, { z:Z3, pietra:true, camino:true }); palazzoPriori();
+  merliDavanti(); portaCitta();
+  if(G.meteo === 'nuvoloso') nebbia(t);
+  scalinata(11.2, 1.6, 5.4, 3.0, Z2, Z2 + .7, 4); lampione(10.75, 4.95, Z2);
+  // livello 1
+  giardino(sboccio); scuola();
+  scalinata(11.2, 1.6, 8.0, 5.4, 0, Z2, 7);
+  // clienti e coni
+  const banco = 14.6, inizio = 2.3, walkT = .2;
   let serviti = 0, persi = 0, ultimoServito = -9;
-  const visti = [];
+  const dinamici = [];
   for(let i=0; i<G.clienti; i++){
-    const pi = .08 + .58*(i+.5)/G.clienti, q = (p - pi)/walkT, servito = i < G.coni;
+    const pi = .08 + .56*(i+.5)/G.clienti, q = (p - pi)/walkT, servito = i < G.coni;
     if(q >= .5){ if(servito){ serviti++; ultimoServito = Math.max(ultimoServito, pi + walkT*.5); } else persi++; }
     if(q < 0 || q > 1) continue;
     let x, verso = 1, st = 0, cono = false, cammina = true;
     if(q < .5) x = lerp(inizio, banco, ease(q/.5));
     else if(q < .62){ x = banco; cammina = false; st = servito ? 1 : -1; cono = servito; }
-    else { x = lerp(banco, servito ? DX + .6 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
-    visti.push({ x, y: 7.2 + (i % 2)*.22, ci: (i + n*2) % 6, passo: cammina ? t*2.2 + i*.3 : 0, verso, st, cono });
+    else { x = lerp(banco, servito ? 18.2 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
+    const y = 8.92 + (i % 2)*.18;
+    dinamici.push({ y, f: () => { g.globalAlpha = clamp(Math.min(x - 2.3, 18.3 - x)*2.5); cliente(x, y, (i + n*2) % 6, cammina ? t*2.2 + i*.3 : 0, verso, st, cono); g.globalAlpha = 1; } });
   }
-  // rifornimento: le casse rientrano nella pila di coni
-  let rimasti = G.coni - serviti, consegna = 0;
-  if(G.camion){ consegna = seg(p, CAM.ferma, CAM.riparte); if(consegna > .5) rimasti = G.coni; }
-  bancone(rimasti, G.coni);
-  tenda();
-  let emo = 'felice';
-  if(G.camion && p > CAM.ferma - .03 && p < CAM.ferma + .04) emo = 'sorpreso';
-  else if(G.camion && p >= CAM.ferma + .04 && p < CAM.esce) emo = 'fiero';
-  else if(rimasti === 0 && persi > 0) emo = 'triste';
-  else if(rimasti <= 1 && p > .1 && G.clienti > G.coni) emo = 'preoccupato';
-  else if(G.meteo === 'pioggia' && p > .5) emo = 'pensieroso';
-  const salto = Math.max(0, Math.sin(clamp(((p - ultimoServito)*durataGiorno)/.3)*Math.PI))*10;
-  ombra(10.4, 6.95, .1, 22, 8, .2);
-  const [mx, my] = iso(10.4, 6.95, .1);
-  mascotte(mx, my - salto + Math.sin(t*3)*1.5, 1.0, emo, t);
-  lampione(1.6, 6.6, notte); panchina(4.6, 6.55); lampione(15.4, 6.6, notte); lampione(19.2, 6.6, notte);
-  visti.sort((a, b) => a.y - b.y).forEach(v => {
-    g.globalAlpha = clamp(Math.min(v.x + .6, DX + .6 - v.x)*1.5);
-    cliente(v.x, v.y, v.ci, v.passo, v.verso, v.st, v.cono); g.globalAlpha = 1;
+  // pacchi: il camion li lascia la sera, la mattina dopo entrano in negozio
+  const pacchiStasera = G.camion && p > CAM.ferma;
+  const pacchiStamattina = ieri.camion && p < .08;
+  let coni = G.coni - serviti;
+  if(pacchiStamattina) coni = p < .06 ? 0 : G.coni;
+  if(pacchiStasera){
+    PACCHI.forEach(([px, py, pz], i) => {
+      const c = clamp((p - CAM.ferma)/(CAM.riparte - CAM.ferma)*1.5 - i*.25);
+      if(c <= 0) return;
+      const da = lungoPercorso(PERCORSO.sStop - 2.1), x = lerp(da.x, px, c), y = lerp(da.y, py, c), z = lerp(.9, pz, c) + Math.sin(c*Math.PI)*1.2;
+      dinamici.push({ y, f: () => pacco(x, y, z) });
+    });
+  }
+  if(pacchiStamattina) PACCHI.forEach(([px, py, pz], i) => {
+    const c = seg(p, .015 + i*.012, .05 + i*.012); if(c >= 1) return;
+    const x = lerp(px, GEL.porta, c), y = lerp(py, 8.05, c);
+    dinamici.push({ y, f: () => { g.globalAlpha = 1 - seg(c, .7, 1); pacco(x, y, lerp(pz, .1, c)); g.globalAlpha = 1; } });
   });
-  // casse scaricate dal camion al bancone
-  if(consegna > 0 && consegna < 1) for(let k=0; k<3; k++){ const c = clamp(consegna*1.6 - k*.3); if(c > 0 && c < 1){ const cx = lerp(CAM.xStop + .6, 7.6, c), cy = lerp(7.95, 7.05, c); cassa(cx, cy, .1 + Math.sin(c*Math.PI)*.8); } }
-  // camion
-  if(G.camion && p > CAM.entra && p < CAM.esce){
-    let cx;
-    if(p < CAM.ferma) cx = lerp(-5.5, CAM.xStop, easeOutQ(seg(p, CAM.entra, CAM.ferma)));
-    else if(p < CAM.riparte) cx = CAM.xStop;
-    else cx = lerp(CAM.xStop, DX + 1, easeInQ(seg(p, CAM.riparte, CAM.esce)));
-    g.globalAlpha = clamp(Math.min(cx + 5, DX + 1 - cx)*.8); camion(cx, t, p >= CAM.ferma && p < CAM.riparte); g.globalAlpha = 1;
-  }
-  albero(.6, 9.85, 0, .55, '#5FB57F'); albero(19.4, 9.8, 0, .6, '#5FB57F');
-  if(G.meteo === 'pioggia') pioggia(t);
-  // luce: mattino dorato, tramonto arancione, poi notte
-  const mattino = 1 - seg(p, 0, .15), sera = seg(p, .7, .93);
+  // apertura (mattina) e chiusura (sera): il gelataio porta dentro il bancone ed entra
+  const chiusura = Math.max(seg(p, CHIUDE, CHIUDE + .06), 1 - seg(p, .02, .07));
+  const aperta = chiusura < 1;
+  const bancoX = lerp(13.5, 16.3, ease(seg(chiusura, 0, .6))), bancoY = lerp(8.1, 7.95, seg(chiusura, .4, .7));
+  if(chiusura < .75) dinamici.push({ y: bancoY + .4, f: () => { g.globalAlpha = 1 - seg(chiusura, .55, .75); bancone(bancoX, bancoY, coni, G.coni); g.globalAlpha = 1; } });
+  let emo = 'felice';
+  if(G.camion && p > CAM.ferma - .02 && p < CAM.ferma + .03) emo = 'sorpreso';
+  else if(G.camion && p >= CAM.ferma + .03) emo = 'fiero';
+  else if(pacchiStamattina) emo = 'fiero';
+  else if(coni <= 0 && persi > 0) emo = 'triste';
+  else if(coni <= 1 && p > .1 && G.clienti > G.coni) emo = 'preoccupato';
+  else if(piove && p > .5) emo = 'pensieroso';
+  const salto = Math.max(0, Math.sin(clamp(((p - ultimoServito)*durataGiorno)/.3)*Math.PI))*10;
+  const mx = lerp(13.15, GEL.porta, ease(seg(chiusura, .5, .95))), my = lerp(8.65, 8.1, ease(seg(chiusura, .5, .95)));
+  if(chiusura < .97) dinamici.push({ y: my, f: () => { g.globalAlpha = 1 - seg(chiusura, .85, .97); ombra(mx, my, .1, 20, 8, .2); const [sx, sy] = iso(mx, my, .1); mascotte(sx, sy - salto + Math.sin(t*3)*1.5, .95, emo, t); g.globalAlpha = 1; } });
+  gelateria(coni, G.coni, aperta, t);
+  tenda();
+  lampione(2.5, 8.2); lampione(10.95, 8.2); lampione(17.7, 8.2);
+  dinamici.sort((a, b) => a.y - b.y).forEach(d => d.f());
+  if(cam && !cam.prima) disegnaCamion();
+  albero(9.6, 11.7, 0, .5, '#5FB57F'); albero(14.5, 11.75, 0, .45, '#5FB57F');
+  // effetti del tempo
+  if(piove) pioggia(t);
+  if(sole && NOTTE < .5){ uccellini(t); farfalle(t); }
+  // luce: mattino dorato, tramonto arancione, notte blu
+  const mattino = 1 - seg(p, .03, .16), sera = seg(p, .7, .9);
   g.globalCompositeOperation = 'multiply';
-  if(mattino > 0){ g.fillStyle = `rgba(255,236,190,${.35*mattino})`; g.fillRect(0, 0, LW, LH); }
-  if(sera > 0){ g.fillStyle = `rgba(255,170,120,${.38*sera})`; g.fillRect(0, 0, LW, LH); }
-  if(notte > 0){ g.fillStyle = `rgba(90,100,180,${.5*notte})`; g.fillRect(0, 0, LW, LH); }
+  if(mattino > 0){ g.fillStyle = `rgba(255,236,190,${.3*mattino})`; g.fillRect(0, 0, LW, LH); }
+  if(sera > 0){ g.fillStyle = `rgba(255,170,120,${.35*sera})`; g.fillRect(0, 0, LW, LH); }
+  if(NOTTE > 0){ g.fillStyle = `rgba(55,62,140,${.68*NOTTE})`; g.fillRect(0, 0, LW, LH); }
   g.globalCompositeOperation = 'source-over';
-  if(notte > .2){ const [vx, vy] = iso(8.3, 6.4, 1.6); const gl = g.createRadialGradient(vx, vy, 5, vx, vy, 120); gl.addColorStop(0, `rgba(255,226,150,${.35*notte})`); gl.addColorStop(1, 'rgba(255,226,150,0)'); g.fillStyle = gl; g.fillRect(vx-120, vy-120, 240, 240); }
+  // di notte la città si accende: finestre e lampioni
+  if(NOTTE > .25){
+    const a = seg(NOTTE, .25, .7);
+    for(const pts of LUCI){ g.globalAlpha = a; poli(pts, '#FFD47A'); }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'lighter';
+    for(const pts of LUCI){ const cx = pts.reduce((s,q)=>s+q[0],0)/pts.length, cy = pts.reduce((s,q)=>s+q[1],0)/pts.length;
+      const gl = g.createRadialGradient(cx, cy, 1, cx, cy, 22); gl.addColorStop(0, `rgba(255,200,110,${.35*a})`); gl.addColorStop(1, 'rgba(255,200,110,0)'); g.fillStyle = gl; g.fillRect(cx-22, cy-22, 44, 44); }
+    g.globalCompositeOperation = 'source-over';
+  }
+  g.globalCompositeOperation = 'lighter';
+  for(const [x, y, c, r, a] of LAMPIONI){ const gl = g.createRadialGradient(x, y, 2, x, y, r); gl.addColorStop(0, c + (a*Math.max(NOTTE, .4)) + ')'); gl.addColorStop(1, c + '0)'); g.fillStyle = gl; g.fillRect(x - r, y - r, 2*r, 2*r); }
+  g.globalCompositeOperation = 'source-over';
+  if(LAMPO > 0){ g.fillStyle = `rgba(235,240,255,${.35*LAMPO})`; g.fillRect(0, 0, LW, LH); }
   const oraArrivo = 8 + 12*CAM.ferma;
-  return { giorno:n+1, meteo:G.meteo, ora:8 + 12*p, rimasti, persi,
-    camion:(G.camion && p < CAM.ferma) ? Math.max(1, Math.ceil(oraArrivo - (8 + 12*p))) : null };
+  return { giorno:n+1, meteo:G.meteo, ora:8 + 12*p, coni, persi,
+    camion:(G.camion && p < CAM.ferma) ? Math.max(1, Math.ceil(oraArrivo - (8 + 12*p))) : null, notte: NOTTE > .5 };
 }
-const easeOutQ = x => 1 - Math.pow(1 - clamp(x), 2), easeInQ = x => Math.pow(clamp(x), 2);
 function schedaMascotte(t){
   const gr = g.createLinearGradient(0, 0, 0, LH); gr.addColorStop(0, '#DCEBFA'); gr.addColorStop(1, '#F6F2FA'); g.fillStyle = gr; g.fillRect(0, 0, LW, LH);
   ['felice','preoccupato','triste','sorpreso','fiero','pensieroso'].forEach((e, i) => {
@@ -577,8 +854,8 @@ function ciclo(now){
   info = modo === 'scena' ? scena(T) : (schedaMascotte(T), null);
   tempi.push(performance.now() - ini); if(tempi.length > 30) tempi.shift();
   if(ultimo){ scatti.push(now - ultimo); if(scatti.length > 30) scatti.shift(); } ultimo = now;
-  document.getElementById('hud').innerHTML = info ? `<span>📅 Giorno ${info.giorno} ${meteoIc[info.meteo]}</span><span>🕗 ${String(Math.floor(info.ora)).padStart(2,'0')}:00</span><span>🍦 ${info.rimasti}</span>` +
-    (info.persi ? `<span>😞 ${info.persi}</span>` : '') + (info.camion !== null ? `<span>🚚 arriva tra ${info.camion} h</span>` : '') : '';
+  document.getElementById('hud').innerHTML = info ? `<span>📅 Giorno ${info.giorno} ${meteoIc[info.meteo]}</span><span>${info.notte ? '🌙' : '🕗'} ${String(Math.floor(info.ora)).padStart(2,'0')}:00</span>` +
+    (info.persi ? `<span>😞 ${info.persi} clienti persi</span>` : '') + (info.camion !== null ? `<span>🚚 arriva tra ${info.camion} h</span>` : '') : '';
   if(++nF % 15 === 0) document.getElementById('perf').innerHTML = `<b>${(1000/media(scatti)).toFixed(0)}</b> immagini/s · ${media(tempi).toFixed(1)} ms per immagine`;
   requestAnimationFrame(ciclo);
 }
@@ -586,14 +863,15 @@ const $ = s => document.querySelector(s);
 $('#b-scene').onclick = () => { modo = 'scena'; $('#b-scene').classList.add('on'); $('#b-sheet').classList.remove('on'); $('#labels').hidden = true; };
 $('#b-sheet').onclick = () => { modo = 'scheda'; $('#b-sheet').classList.add('on'); $('#b-scene').classList.remove('on'); $('#labels').hidden = false; };
 $('#b-speed').onclick = () => {
-  const pos = T / durataGiorno; durataGiorno = durataGiorno === 10 ? 1.5 : 10;
+  const pos = T / durataGiorno; durataGiorno = durataGiorno === 12 ? 1.5 : 12;
   t0 = performance.now() - pos*durataGiorno*1000;
-  $('#b-speed').textContent = durataGiorno === 10 ? '🐢 Rallentato' : '⚡ Ritmo del gioco'; $('#b-speed').classList.toggle('on', durataGiorno !== 10);
+  $('#b-speed').textContent = durataGiorno === 12 ? '🐢 Rallentato' : '⚡ Ritmo del gioco'; $('#b-speed').classList.toggle('on', durataGiorno !== 12);
 };
 $('#b-full').onclick = () => { const s = $('#stage'); if(document.fullscreenElement) document.exitFullscreen(); else if(s.requestFullscreen) s.requestFullscreen().catch(()=>{}); };
 window.addEventListener('error', e => { $('#perf').textContent = '⚠️ Errore: ' + e.message; });
 window.PROVA = { get info(){ return info; }, get fps(){ return 1000/media(scatti); }, get ms(){ return media(tempi); }, set t(v){ t0 = performance.now() - v*1000; } };
 document.fonts.ready.then(() => requestAnimationFrame(ciclo));
+
 </script>
 </body>
 </html>
