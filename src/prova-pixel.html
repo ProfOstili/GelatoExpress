@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prova Pixel Gelateria</title>
+<!--
+  PROVA DI FATTIBILITÀ in pixel art 16-bit per "La Gelateria Automatica".
+  Sorgente: impacchettato in prova-pixel.html da strumenti/build.py (font e loghi incorporati, funziona offline).
+  - tela nativa 320x180, ingrandita a fattore intero senza anti-aliasing
+  - ogni pixel quantizzato su 20 colori (Sweetie-16 + 4) con dithering ordinato Bayer 4x4
+  - animazione a 12 immagini al secondo
+-->
+<style>
+@font-face{font-family:"Press Start 2P";src:url("@DATA:assets/fonts/PressStart2P.woff2@") format("woff2");font-display:block}
+@font-face{font-family:"VT323";src:url("@DATA:assets/fonts/VT323.woff2@") format("woff2");font-display:block}
+:root{
+  --bg:#1a1c2c; --panel:#333c57; --line:#f4f4f4; --text:#f4f4f4; --soft:#94b0c2;
+  --pink:#f5a3c1; --yellow:#ffcd75; --green:#38b764; --lime:#a7f070; --sky:#41a6f6; --red:#b13e53;
+  --title:"Press Start 2P",monospace; --body:"VT323",monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:24px;line-height:1.15}
+.wrap{max-width:1200px;margin:0 auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;gap:14px}
+header img{width:72px;height:72px;border-radius:50%;object-fit:cover;image-rendering:auto;border:4px solid var(--line);flex:none}
+header .t{flex:1;text-align:center;min-width:0}
+header h1{font-family:var(--title);font-weight:400;font-size:clamp(14px,2.6vw,28px);margin:0;line-height:1.4;text-shadow:3px 3px 0 var(--red)}
+header h1 span{color:var(--pink)}
+header p{margin:4px 0 0;color:var(--soft)}
+.stage{position:relative;display:flex;justify-content:center;background:#000;padding:6px;
+  box-shadow:0 0 0 4px var(--line),0 0 0 8px var(--bg),0 0 0 12px var(--panel)}
+.stage canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.schermo-box{position:relative}
+.hud{position:absolute;top:6px;left:6px;right:6px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;pointer-events:none}
+.hud span{background:var(--bg);color:var(--text);border:3px solid var(--line);padding:0 8px;font-size:24px;box-shadow:3px 3px 0 #000}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--title);font-size:12px;background:var(--panel);color:var(--text);border:0;padding:12px 14px;cursor:pointer;
+  box-shadow:0 -4px 0 0 #566c86 inset,0 0 0 3px var(--line),4px 4px 0 3px #000}
+.btn.on{background:var(--green);box-shadow:0 -4px 0 0 #257179 inset,0 0 0 3px var(--line),4px 4px 0 3px #000}
+.btn:active{translate:2px 2px}
+.btn:focus-visible{outline:3px dashed var(--yellow);outline-offset:6px}
+.perf{margin-left:auto;color:var(--soft);text-align:right;font-size:22px}
+.perf b{color:var(--lime)}
+.palette{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.palette i{width:22px;height:22px;display:block;box-shadow:0 0 0 2px #000}
+.palette span{color:var(--soft);margin-right:8px}
+.note{background:var(--panel);padding:10px 14px;box-shadow:0 0 0 3px var(--line)}
+.note h2{font-family:var(--title);font-weight:400;font-size:13px;margin:0 0 8px;color:var(--yellow)}
+.note ul{margin:4px 0;padding-left:22px}
+.labels{display:grid;grid-template-columns:repeat(6,1fr);text-align:center;color:var(--soft)}
+footer{color:var(--soft);font-size:20px;text-align:center}
+@media (max-width:640px){
+  header img{width:48px;height:48px}
+  .hud span{font-size:18px;padding:0 4px}
+  .perf{margin-left:0;text-align:left;width:100%}
+  .labels{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="@DATA:assets/logo-istituto.jpg@" alt="Logo Liceo Tecnologico e Professionale Ciuffelli-Einaudi, Todi">
+    <div class="t">
+      <h1>La Gelateria <span>Automatica</span></h1>
+      <p>Prova pixel art 16-bit · corso SIA</p>
+    </div>
+    <img src="@DATA:assets/logo-einaudi.jpg@" alt="Logo Liceo Tecnologico Luigi Einaudi, Todi">
+  </header>
+
+  <div class="stage" id="stage"><div class="schermo-box"><canvas id="schermo" width="320" height="180"></canvas><div class="hud" id="hud"></div></div></div>
+  <div class="labels" id="labels" hidden><span>felice</span><span>preoccupato</span><span>triste</span><span>sorpreso</span><span>fiero</span><span>pensieroso</span></div>
+
+  <div class="bar">
+    <button class="btn on" id="b-scene">SCENA</button>
+    <button class="btn" id="b-sheet">MASCOTTE</button>
+    <button class="btn" id="b-speed">LENTO</button>
+    <button class="btn on" id="b-dither">FILTRO RETRÒ: SÌ</button>
+    <div class="perf" id="perf">avvio…</div>
+  </div>
+  <div class="palette" id="palette"><span>Tavolozza (20 colori):</span></div>
+
+  <div class="note">
+    <h2>COSA GUARDARE</h2>
+    <ul>
+      <li>La scena è disegnata su una tela di 320×180 pixel e poi ingrandita: ogni pixel resta un quadratino nitido.</li>
+      <li>Ogni pixel viene ricondotto a uno dei 20 colori della tavolozza. Dove servirebbero sfumature (cielo, sera, fumo, pioggia) il "dithering" alterna i colori a scacchiera, come nelle console anni '90. Prova il pulsante FILTRO RETRÒ per vedere la differenza.</li>
+      <li>Si muove a 12 immagini al secondo, a scatti come un videogioco. I giorni si alternano: ☀️ il gelato finisce, 🌧️ avanzano coni, ⛅ tutto ok. Il camion parte il primo giorno e arriva la mattina dopo.</li>
+    </ul>
+  </div>
+  <footer>Tavolozza basata su Sweetie-16 di GrafxKid · font Press Start 2P e VT323 (SIL OFL)</footer>
+</div>
+
+<script>
+/* =====================================================================
+   TELA E TAVOLOZZA
+   ===================================================================== */
+const NW = 320, NH = 180;              // risoluzione nativa
+const FPS = 12;
+// Sweetie-16 (GrafxKid) + 4 colori per la gelateria
+const TAV = {
+  ink:'#1a1c2c', viola:'#5d275d', rosso:'#b13e53', arancio:'#ef7d57', giallo:'#ffcd75', lime:'#a7f070', verde:'#38b764', petrolio:'#257179',
+  navy:'#29366f', blu:'#3b5dc9', cielo:'#41a6f6', ciano:'#73eff7', bianco:'#f4f4f4', grigioC:'#94b0c2', grigio:'#566c86', grigioS:'#333c57',
+  fragola:'#f5a3c1', crema:'#fff1d6', cialda:'#c97f4a', cacao:'#8b5a3c'
+};
+const C = TAV;
+const PAL_RGB = Object.values(TAV).map(h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]);
+// tabella di ricerca: colore (5 bit per canale) -> colore della tavolozza più vicino
+const LUT = new Uint8Array(32768);
+for(let r=0;r<32;r++) for(let g=0;g<32;g++) for(let b=0;b<32;b++){
+  const R=r*8+4, G=g*8+4, B=b*8+4; let best=0, bd=1e9;
+  PAL_RGB.forEach(([pr,pg,pb],i) => { const d=(R-pr)**2*.3+(G-pg)**2*.59+(B-pb)**2*.11; if(d<bd){bd=d;best=i;} });
+  LUT[(r<<10)|(g<<5)|b] = best;
+}
+// matrice di Bayer 4x4 (dithering ordinato)
+const BAYER = [0,8,2,10, 12,4,14,6, 3,11,1,9, 15,7,13,5].map(v => (v + .5)/16 - .5);
+const SPREAD = 34;
+let filtro = true;
+function quantizza(id){
+  const d = id.data;
+  for(let y=0, i=0; y<NH; y++) for(let x=0; x<NW; x++, i+=4){
+    const o = BAYER[((y&3)<<2)|(x&3)] * SPREAD;
+    let r = d[i]+o, g = d[i+1]+o, b = d[i+2]+o;
+    r = r<0?0:r>255?255:r; g = g<0?0:g>255?255:g; b = b<0?0:b>255?255:b;
+    const p = PAL_RGB[LUT[((r>>3)<<10)|((g>>3)<<5)|(b>>3)]];
+    d[i]=p[0]; d[i+1]=p[1]; d[i+2]=p[2]; d[i+3]=255;
+  }
+}
+
+/* =====================================================================
+   STRUMENTI PIXEL (niente anti-aliasing: solo quadratini interi)
+   ===================================================================== */
+const hash = i => { const x = Math.sin(i*127.1 + 311.7)*43758.5453; return x - Math.floor(x); };
+const clamp = (x,a=0,b=1) => Math.max(a, Math.min(b, x));
+const lerp = (a,b,x) => a + (b-a)*x;
+const ease = x => { x = clamp(x); return x*x*(3-2*x); };
+const frac = x => x - Math.floor(x);
+const seg = (t,a,b) => clamp((t-a)/(b-a));
+function penna(g){
+  return {
+    p(x, y, col){ g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), 1, 1); },
+    r(x, y, w, h, col){ g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); },
+    // cerchio pieno con bordo scuro
+    cerchio(cx, cy, r, col, bordo){
+      for(let y=-r-1; y<=r+1; y++) for(let x=-r-1; x<=r+1; x++){
+        const d = x*x + y*y;
+        if(d <= r*r + r*.6) this.p(cx+x, cy+y, col);
+        else if(bordo && d <= (r+1)*(r+1) + (r+1)*.6) this.p(cx+x, cy+y, bordo);
+      }
+    },
+    linea(x0, y0, x1, y1, col){ const n = Math.max(Math.abs(x1-x0), Math.abs(y1-y0)) || 1;
+      for(let k=0; k<=n; k++) this.p(lerp(x0,x1,k/n), lerp(y0,y1,k/n), col); }
+  };
+}
+function sprite(w, h, fn){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false; fn(penna(g), g); return c;
+}
+
+/* =====================================================================
+   LA MASCOTTE: un cono gelato alla fragola (24 x 34 px, piedi in basso al centro)
+   ===================================================================== */
+const EMO = ['felice','felice2','preoccupato','triste','sorpreso','fiero','pensieroso'];
+function disegnaMascotte(emo){
+  return sprite(24, 34, P => {
+    // cono di cialda con la griglia
+    for(let y=19; y<=32; y++){
+      const hw = Math.round(6.5*(32-y)/13);
+      for(let x=12-hw; x<=12+hw; x++){
+        const bordo = x===12-hw || x===12+hw || y===19;
+        const griglia = (x+y)%4===0 || (x-y+40)%4===0;
+        P.p(x, y, bordo ? C.ink : griglia ? C.cialda : C.giallo);
+      }
+    }
+    P.p(12, 33, C.ink);
+    // braccine
+    const su = emo==='sorpreso' ? -4 : emo==='felice2' ? -3 : emo==='triste' ? 2 : emo==='preoccupato' ? -1 : 0;
+    P.linea(6, 22, 3, 22+Math.sign(su)*1 + (su>0?1:0), C.ink); P.p(2, 22+su, C.ink); P.p(2, 21+su, C.ink);
+    const suD = emo==='felice2' ? 0 : su;
+    P.linea(18, 22, 21, 22+Math.sign(suD)*1 + (suD>0?1:0), C.ink); P.p(22, 22+suD, C.ink); P.p(22, 21+suD, C.ink);
+    // pallina di gelato (testa) con le gocce
+    P.cerchio(12, 13, 7, C.fragola, C.ink);
+    for(const [x,h] of [[7,2],[10,1],[15,2],[17,1]]){ for(let k=0;k<h;k++) P.p(x, 20+k, C.fragola); P.p(x, 20+h, C.ink); }
+    P.p(8, 8, C.bianco); P.p(9, 7, C.bianco); P.p(8, 9, C.crema);           // riflesso
+    // ciliegina
+    P.cerchio(12, 4, 2, C.rosso, C.ink); P.p(11, 3, C.fragola);
+    P.p(13, 1, C.verde); P.p(14, 0, C.verde);
+    // faccia
+    const occhio = (x) => {
+      if(emo==='fiero'){ P.p(x-1, 13, C.ink); P.p(x, 12, C.ink); P.p(x+1, 13, C.ink); return; }
+      P.p(x, 12, C.ink); P.p(x, 13, C.ink);
+      if(emo==='sorpreso'){ P.p(x+1, 12, C.ink); P.p(x+1, 13, C.ink); P.p(x, 11, C.ink); P.p(x+1, 11, C.ink); }
+      else P.p(x, 11, C.ink);
+    };
+    occhio(9); occhio(14);
+    if(emo==='preoccupato' || emo==='triste'){ P.p(8, 9, C.ink); P.p(9, 9, C.ink); P.p(14, 9, C.ink); P.p(15, 9, C.ink); }
+    P.p(7, 15, C.arancio); P.p(17, 15, C.arancio);                           // guance
+    const m = (pts, col=C.ink) => pts.forEach(([x,y]) => P.p(x, y, col));
+    if(emo==='felice' || emo==='felice2' || emo==='fiero'){ m([[10,15],[14,15],[11,16],[12,16],[13,16]]); m([[12,16]], C.rosso); P.p(11,16,C.ink); P.p(13,16,C.ink); }
+    else if(emo==='triste') m([[10,17],[11,16],[12,16],[13,16],[14,17]]);
+    else if(emo==='sorpreso'){ m([[11,15],[12,15],[10,16],[13,16],[11,17],[12,17]]); m([[11,16],[12,16]], C.rosso); }
+    else if(emo==='preoccupato') m([[10,16],[11,15],[12,16],[13,15],[14,16]]);
+    else m([[11,16],[12,16],[13,16]]);
+  });
+}
+// segni sopra la testa (niente scritte)
+const EMOTE = {
+  goccia: sprite(4, 6, P => { P.p(1,0,C.ciano); P.r(1,1,1,1,C.ciano); P.r(0,2,3,2,C.ciano); P.r(1,4,1,1,C.cielo); P.p(0,2,C.bianco); }),
+  esclamativo: sprite(3, 9, P => { P.r(0,0,3,5,C.ink); P.r(1,0,1,5,C.giallo); P.r(0,6,3,3,C.ink); P.p(1,7,C.giallo); }),
+  stellina: sprite(5, 5, P => { P.p(2,0,C.bianco); P.r(0,2,5,1,C.bianco); P.p(2,4,C.bianco); P.p(2,1,C.giallo); P.p(2,3,C.giallo); P.p(2,2,C.giallo); }),
+  nuvola: sprite(14, 7, P => { P.cerchio(4,3,2,C.grigioC,C.grigio); P.cerchio(9,3,3,C.grigioC,C.grigio); P.r(3,4,8,2,C.grigioC); }),
+  punto: sprite(2, 2, P => P.r(0,0,2,2,C.bianco))
+};
+
+/* =====================================================================
+   CLIENTI (12 x 16 px) e CAMION (40 x 22 px)
+   ===================================================================== */
+const COL_CLIENTI = [C.blu, C.petrolio, C.viola, C.arancio, C.verde, C.rosso];
+function disegnaCliente(col, umore, gamba, cono){
+  return sprite(14, 17, P => {
+    // gambe
+    if(gamba === 0){ P.r(4, 12, 1, 4, C.ink); P.r(8, 12, 1, 4, C.ink); }
+    else { P.linea(4, 12, 2, 15, C.ink); P.linea(8, 12, 10, 15, C.ink); }
+    // corpo tondo
+    for(let y=-6; y<=6; y++) for(let x=-6; x<=6; x++){
+      const d = (x*x)/(4.6*4.6) + (y*y)/(5.8*5.8), dd = (x*x)/(5.6*5.6) + (y*y)/(6.8*6.8);
+      if(d <= 1) P.p(6+x, 7+y, col); else if(dd <= 1) P.p(6+x, 7+y, C.ink);
+    }
+    P.p(4, 3, C.bianco);
+    // occhi (guarda a destra)
+    P.r(7, 5, 1, 2, C.ink); P.r(9, 5, 1, 2, C.ink);
+    if(umore > 0){ P.p(7, 8, C.ink); P.p(8, 9, C.ink); P.p(9, 8, C.ink); }
+    else if(umore < 0){ P.p(7, 9, C.ink); P.p(8, 8, C.ink); P.p(9, 9, C.ink); }
+    else { P.p(7, 9, C.ink); P.p(8, 9, C.ink); }
+    if(cono){ P.r(11, 4, 3, 2, C.fragola); P.p(11, 4, C.bianco); P.r(11, 6, 3, 1, C.giallo); P.p(12, 7, C.giallo); P.p(12, 8, C.cialda); }
+  });
+}
+function disegnaCamion(ruota){
+  return sprite(42, 23, P => {
+    P.r(0, 17, 3, 2, C.grigio);                                    // tubo di scappamento
+    P.r(2, 2, 25, 16, C.ink); P.r(3, 3, 23, 14, C.bianco);          // cassone
+    P.r(3, 12, 23, 2, C.fragola);                                    // striscia rosa
+    P.cerchio(14, 6, 3, C.fragola, C.ink);                           // gelato disegnato sul cassone
+    for(let y=9; y<=13; y++){ const hw = Math.round(2.5*(13-y)/4); for(let x=14-hw; x<=14+hw; x++) P.p(x, y, x===14-hw||x===14+hw ? C.ink : C.giallo); }
+    // cabina
+    for(let y=6; y<=18; y++){ const sl = y < 12 ? Math.round((12-y)*.9) : 0; P.r(27, y, 13-sl, 1, C.ink); if(y>6 && y<18) P.r(28, y, 11-sl, 1, C.cielo); }
+    P.r(29, 8, 6, 4, C.ciano); P.p(29, 8, C.bianco);
+    P.r(27, 15, 13, 1, C.blu);
+    // ruote
+    for(const wx of [8, 32]){ P.cerchio(wx, 19, 3, C.grigioS, C.ink); P.p(wx, 19, C.grigioC);
+      if(ruota){ P.p(wx-1, 18, C.grigioC); P.p(wx+1, 20, C.grigioC); } else { P.p(wx+1, 18, C.grigioC); P.p(wx-1, 20, C.grigioC); } }
+  });
+}
+function disegnaTempio(){        // il Tempio della Consolazione di Todi, in miniatura
+  return sprite(18, 16, P => {
+    P.r(2, 9, 14, 7, C.ink); P.r(3, 10, 12, 6, C.crema);
+    P.r(5, 12, 1, 3, C.grigioC); P.r(8, 12, 2, 4, C.cacao); P.r(12, 12, 1, 3, C.grigioC);
+    for(let y=0; y<=5; y++){ const hw = Math.round(Math.sqrt(36 - (5-y)*(5-y))*1.05); P.r(9-hw, 3+y, hw*2, 1, y===0 ? C.ink : C.grigioC); P.p(9-hw, 3+y, C.ink); P.p(9+hw-1, 3+y, C.ink); }
+    P.r(8, 0, 2, 3, C.crema); P.p(8, 0, C.ink); P.p(9, 0, C.ink);
+  });
+}
+
+/* =====================================================================
+   SPRITE PRONTI
+   ===================================================================== */
+const SPR = { m:{}, c:{}, camion:[disegnaCamion(0), disegnaCamion(1)], tempio:disegnaTempio() };
+for(const e of EMO) SPR.m[e] = disegnaMascotte(e);
+COL_CLIENTI.forEach((col, i) => { for(const st of ['in','ok','ko']) for(const g of [0,1])
+  SPR.c[`${i}|${st}|${g}`] = disegnaCliente(col, st==='ok' ? 1 : st==='ko' ? -1 : 0, g, st==='ok'); });
+SPR.conoPila = sprite(4, 6, P => { P.r(0,0,4,1,C.ink); for(let y=1;y<6;y++){ const hw = Math.round(2*(5-y)/4); P.r(2-hw, y, Math.max(1,hw*2), 1, C.giallo); } P.p(2,5,C.ink); });
+
+/* =====================================================================
+   LA SCENA (320 x 180)
+   ===================================================================== */
+const off = document.createElement('canvas'); off.width = NW; off.height = NH;
+const g = off.getContext('2d'); g.imageSmoothingEnabled = false;
+const P = penna(g);
+const schermo = document.getElementById('schermo'), sc = schermo.getContext('2d');
+const disegna = (img, x, y, flip=false) => {
+  if(!flip) return g.drawImage(img, Math.round(x), Math.round(y));
+  g.save(); g.translate(Math.round(x) + img.width, Math.round(y)); g.scale(-1, 1); g.drawImage(img, 0, 0); g.restore();
+};
+
+function cielo(meteo, p){
+  const top = meteo==='sole' ? '#2f7fd8' : meteo==='nuvoloso' ? '#6f8aa6' : '#46566e';
+  const bot = meteo==='sole' ? '#9ff0f5' : meteo==='nuvoloso' ? '#c7d6de' : '#8ea3b4';
+  const gr = g.createLinearGradient(0, 0, 0, 100); gr.addColorStop(0, top); gr.addColorStop(1, bot);
+  g.fillStyle = gr; g.fillRect(0, 0, NW, 100);
+  if(p > .7){                                           // tramonto: il dithering fa le sfumature
+    const k = seg(p, .7, .9), gs = g.createLinearGradient(0, 0, 0, 100);
+    gs.addColorStop(0, `rgba(93,39,93,${.7*k})`); gs.addColorStop(1, `rgba(239,125,87,${.75*k})`);
+    g.fillStyle = gs; g.fillRect(0, 0, NW, 100);
+  }
+}
+function nuvola(x, y, s, col, bordo){
+  x = Math.round(x);
+  P.cerchio(x, y, 4*s, col, bordo); P.cerchio(x+6*s, y-2*s, 5*s, col, bordo); P.cerchio(x+13*s, y, 4*s, col, bordo);
+  P.r(x-1, y, 15*s+2, 4*s, col);
+  P.cerchio(x, y, 4*s-1, col); P.cerchio(x+6*s, y-2*s, 5*s-1, col); P.cerchio(x+13*s, y, 4*s-1, col);
+}
+function colline(){
+  for(let x=0; x<NW; x++){                              // collina lontana con Todi
+    const h = Math.round(74 + 7*Math.sin(x*.025 + 1) + 4*Math.sin(x*.07));
+    P.r(x, h, 1, 1, C.petrolio); P.r(x, h+1, 1, 110-h, C.verde);
+  }
+  disegna(SPR.tempio, 82, 58);
+  for(let i=0; i<5; i++){ const hx = 112 + i*11, hh = 6 + Math.round(hash(i)*4), hy = 70 - hh - i;   // case del borgo
+    P.r(hx, hy, 9, hh+4, C.ink); P.r(hx+1, hy+1, 7, hh+3, C.crema); P.r(hx-1, hy-2, 11, 3, C.ink); P.r(hx, hy-1, 9, 2, C.arancio); P.p(hx+3, hy+3, C.grigio); }
+  for(let x=0; x<NW; x++){                              // prato vicino
+    const h = Math.round(100 + 3*Math.sin(x*.045 + 2));
+    P.r(x, h, 1, 1, C.verde); P.r(x, h+1, 1, 129-h, C.lime);
+    if(hash(x*1.7) > .82) P.p(x, h + 6 + Math.round(hash(x)*18), C.verde);   // ciuffi d'erba
+  }
+  // marciapiede e strada
+  P.r(0, 129, NW, 1, C.ink); P.r(0, 130, NW, 6, C.grigioC); for(let x=0; x<NW; x+=12) P.r(x, 130, 1, 6, C.grigio);
+  P.r(0, 136, NW, 1, C.ink); P.r(0, 137, NW, 34, C.grigio); P.r(0, 171, NW, 9, C.grigioS);
+  for(let x=4; x<NW; x+=28) P.r(x, 153, 14, 2, C.grigioC);
+}
+function negozio(){
+  const x = 222, y = 62;
+  P.r(x-1, y-1, 87, 68, C.ink); P.r(x, y, 85, 67, C.crema);                       // muro
+  for(let yy=y+4; yy<y+66; yy+=6) P.r(x, yy, 85, 1, '#f3e2c4');                    // mattoncini chiari
+  P.r(x+56, y+29, 20, 38, C.ink); P.r(x+57, y+30, 18, 37, C.cacao); P.p(x+72, y+48, C.giallo);   // porta
+  P.r(x+8, y+12, 40, 22, C.ink); P.r(x+9, y+13, 38, 20, C.ciano); P.r(x+9, y+13, 38, 3, C.bianco); // vetrina
+  // tenda a strisce con il bordo smerlato
+  for(let i=0; i<15; i++){ const sx = x - 4 + i*6, col = i%2 ? C.bianco : C.fragola;
+    P.r(sx, y-10, 6, 12, col); P.r(sx+1, y+2, 4, 1, col); }
+  P.r(x-5, y-11, 92, 1, C.ink); P.r(x-5, y+2, 92, 1, C.ink);
+  // insegna con il cono (niente scritte)
+  P.r(x+30, y-26, 26, 14, C.ink); P.r(x+31, y-25, 24, 12, C.crema);
+  P.cerchio(x+43, y-21, 3, C.ciano, C.ink);
+  for(let yy=y-17; yy<=y-14; yy++){ const hw = y-14-yy; P.r(x+43-hw, yy, hw*2+1, 1, C.giallo); }
+  P.r(x+42, y-12, 2, 1, C.ink);
+}
+function bancone(coni, maxConi){
+  const x = 212, y = 108;
+  P.r(x-1, y-1, 60, 22, C.ink); P.r(x, y, 58, 20, C.blu); P.r(x, y, 58, 3, C.cielo);
+  [C.fragola, C.lime, C.cacao, C.ciano].forEach((col, i) => { P.r(x+4+i*13, y-4, 10, 4, C.ink); P.r(x+5+i*13, y-3, 8, 3, col); });
+  const n = Math.ceil(6 * coni / Math.max(1, maxConi));
+  for(let i=0; i<n; i++) disegna(SPR.conoPila, x+6+i*8, y+8);
+}
+
+/* =====================================================================
+   DEMO: tre giorni (sole, pioggia, nuvoloso)
+   ===================================================================== */
+const GIORNI = [
+  { meteo:'sole',     clienti:9, coni:6 },
+  { meteo:'pioggia',  clienti:3, coni:6 },
+  { meteo:'nuvoloso', clienti:6, coni:6 }
+];
+let durataGiorno = 8, modo = 'scena';
+function scena(t){
+  const n = Math.floor(t / durataGiorno), p = frac(t / durataGiorno), G = GIORNI[n % 3], f = Math.floor(t*FPS);
+  cielo(G.meteo, p);
+  if(G.meteo !== 'pioggia'){                                           // sole con i raggi che lampeggiano
+    P.cerchio(36, 28, 9, C.giallo, C.arancio);
+    const diag = f % 6 < 3;
+    for(let k=0; k<8; k++){ const a = k/8*Math.PI*2 + (diag ? Math.PI/8 : 0); P.linea(36+Math.cos(a)*13, 28+Math.sin(a)*13, 36+Math.cos(a)*16, 28+Math.sin(a)*16, C.giallo); }
+  }
+  if(G.meteo !== 'sole'){
+    const col = G.meteo === 'pioggia' ? C.grigioC : C.bianco, bordo = G.meteo === 'pioggia' ? C.grigio : C.grigioC;
+    nuvola(40 + (f>>3)%60, 22, 1, col, bordo); nuvola(150 - (f>>4)%40, 14, 1, col, bordo); nuvola(250 + (f>>3)%30, 26, 1, col, bordo);
+  } else nuvola(180 + (f>>4)%50, 20, 1, C.bianco, C.grigioC);
+  colline(); negozio();
+  // camion: ordinato la mattina del giorno di sole, arriva la mattina dopo
+  let cx = null;
+  if(n % 3 === 0 && p > .12) cx = lerp(-50, 150, ease(seg(p, .12, 1)));
+  if(n % 3 === 1 && p < .2) cx = lerp(150, 168, seg(p, 0, .1));
+  if(cx !== null){
+    const salto = f % 2;
+    for(let i=0; i<4; i++){ const a = frac(t*1.6 + i/4);                              // fumo che sfuma col dithering
+      g.globalAlpha = .9*(1-a); P.cerchio(cx - 2 - a*16, 147 - a*14, Math.round(1 + a*3), C.grigioC); g.globalAlpha = 1; }
+    disegna(SPR.camion[f % 2], cx, 144 - salto);
+  }
+  // clienti
+  const banco = 196, inizio = -16, walkT = .22;
+  let serviti = 0, persi = 0, ultimoServito = -9;
+  const visti = [];
+  for(let i=0; i<G.clienti; i++){
+    const pi = .1 + .66*(i+.5)/G.clienti, q = (p - pi)/walkT, servito = i < G.coni;
+    if(q >= .55){ if(servito){ serviti++; ultimoServito = Math.max(ultimoServito, pi + walkT*.55); } else persi++; }
+    if(q < 0 || q > 1) continue;
+    let x, flip = false, cammina = true, st = 'in';
+    if(q < .55) x = lerp(inizio, banco, q/.55);
+    else if(q < .68){ x = banco; cammina = false; st = servito ? 'ok' : 'ko'; }
+    else { x = lerp(banco, inizio - 10, (q-.68)/.32); flip = true; st = servito ? 'ok' : 'ko'; }
+    const gamba = cammina ? (f + i) % 2 : 0;
+    visti.push({ x, y: 119 + (i%2), c:(i + n*2) % 6, st, gamba, flip, triste: st==='ko' });
+  }
+  const rimasti = G.coni - serviti;
+  // mascotte dietro al bancone
+  let emo = 'felice';
+  if(n % 3 === 1 && p < .2) emo = 'sorpreso';
+  else if(rimasti === 0 && persi > 0) emo = 'triste';
+  else if(rimasti <= 1 && p > .1 && G.clienti > G.coni) emo = 'preoccupato';
+  else if(G.meteo === 'pioggia' && p > .5) emo = 'pensieroso';
+  else if(p > .85 && rimasti <= 1) emo = 'fiero';
+  if(emo === 'felice' && Math.floor(t*3) % 2) emo = 'felice2';
+  const salto = (p - ultimoServito)*durataGiorno < .25 ? 2 : 0;                     // saltello a ogni cono venduto
+  const mx = 230, my = 80 - salto + (f % 12 < 6 ? 0 : 1);
+  disegna(SPR.m[emo], mx, my);
+  emote(emo, mx, my, f);
+  bancone(rimasti, G.coni);
+  for(const v of visti){
+    g.globalAlpha = .5; P.r(v.x+2, v.y+16, 10, 1, C.grigioS); g.globalAlpha = 1;
+    disegna(SPR.c[`${v.c}|${v.st}|${v.gamba}`], v.x, v.y, v.flip);
+    if(v.triste) disegna(EMOTE.goccia, v.x + (v.flip ? 11 : -1), v.y - 3 + (f % 4 < 2 ? 0 : 1));
+  }
+  // pioggia
+  if(G.meteo === 'pioggia'){
+    for(let i=0; i<70; i++){ const x = Math.floor(hash(i)*NW + f*1.5) % NW, y = Math.floor(hash(i+40)*170 + f*7) % 170;
+      g.globalAlpha = .75; P.p(x, y, C.ciano); P.p(x-1, y+1, C.ciano); P.p(x-2, y+2, C.cielo); g.globalAlpha = 1; }
+  }
+  // pioggia: tutto un po' più grigio (il dithering fa il resto)
+  if(G.meteo === 'pioggia'){ g.fillStyle = 'rgba(51,60,87,.28)'; g.fillRect(0, 0, NW, NH); }
+  // notte: un velo blu che il dithering trasforma in scacchiera
+  if(p > .86){ g.fillStyle = `rgba(41,54,111,${.55*seg(p, .86, 1)})`; g.fillRect(0, 0, NW, NH); }
+  return { giorno:n+1, meteo:G.meteo, ora: 8 + 12*p, rimasti, persi, camion:(n%3===0 && p>.12) ? Math.max(0, Math.ceil(24 - 12*p)) : null };
+}
+function emote(emo, x, y, f){
+  const ex = x + 20, ey = y - 2;
+  if(emo==='preoccupato' || emo==='triste') disegna(EMOTE.goccia, ex, ey + (f % 6 < 3 ? 0 : 1));
+  if(emo==='triste'){ disegna(EMOTE.nuvola, x + 5, y - 10); if(f % 2) P.p(x + 9, y - 2, C.ciano); else P.p(x + 14, y - 2, C.ciano); }
+  if(emo==='sorpreso') disegna(EMOTE.esclamativo, ex, ey - 6 - (f % 4 < 2 ? 1 : 0));
+  if(emo==='fiero' || emo==='felice' || emo==='felice2'){ if(f % 8 < 4) disegna(EMOTE.stellina, ex, ey - 4); else disegna(EMOTE.stellina, ex + 3, ey + 1); }
+  if(emo==='pensieroso') for(let i=0; i<3; i++) disegna(EMOTE.punto, ex - 2 + i*3, ey - 2 - (i === Math.floor(f/4) % 3 ? 1 : 0));
+}
+function schedaMascotte(t){
+  const f = Math.floor(t*FPS);
+  const gr = g.createLinearGradient(0, 0, 0, 140); gr.addColorStop(0, '#3b5dc9'); gr.addColorStop(1, '#9ff0f5');
+  g.fillStyle = gr; g.fillRect(0, 0, NW, 140); P.r(0, 140, NW, 1, C.verde); P.r(0, 141, NW, 39, C.lime);
+  ['felice','preoccupato','triste','sorpreso','fiero','pensieroso'].forEach((e, i) => {
+    const ee = e === 'felice' && Math.floor(t*3) % 2 ? 'felice2' : e;
+    const x = 4 + i*53, y = 72 + ((f + i*3) % 12 < 6 ? 0 : 2);          // ingrandita 2x per vedere i dettagli
+    g.globalAlpha = .5; P.r(x+10, 140, 28, 2, C.ink); g.globalAlpha = 1;
+    g.save(); g.translate(x, y); g.scale(2, 2); disegna(SPR.m[ee], 0, 0); emote(e, 0, 0, f + i); g.restore();
+  });
+}
+
+/* =====================================================================
+   CICLO A 12 IMMAGINI AL SECONDO
+   ===================================================================== */
+let t0 = performance.now(), T = 0, prossimo = 0, info = null, tempi = [], scatti = [], ultimo = 0;
+const meteoIc = { sole:'☀️', pioggia:'🌧️', nuvoloso:'⛅' };
+function ciclo(now){
+  requestAnimationFrame(ciclo);
+  if(now < prossimo) return;
+  prossimo = Math.max(prossimo + 1000/FPS, now - 1000/FPS);
+  const ini = performance.now();
+  T = Math.max(0, (now - t0)/1000);
+  g.globalAlpha = 1;
+  info = modo === 'scena' ? scena(T) : (schedaMascotte(T), null);
+  const id = g.getImageData(0, 0, NW, NH);
+  if(filtro) quantizza(id);
+  sc.putImageData(id, 0, 0);
+  tempi.push(performance.now() - ini); if(tempi.length > 24) tempi.shift();
+  if(ultimo) { scatti.push(now - ultimo); if(scatti.length > 24) scatti.shift(); } ultimo = now;
+  hud();
+}
+const media = a => a.reduce((s,x)=>s+x,0)/Math.max(1,a.length);
+let nHud = 0;
+function hud(){
+  const el = document.getElementById('hud');
+  el.innerHTML = info ? `<span>GIORNO ${info.giorno} ${meteoIc[info.meteo]}</span><span>🕗 ${String(Math.floor(info.ora)).padStart(2,'0')}:00</span><span>🍦 ${info.rimasti}</span>` +
+    (info.persi ? `<span>😞 ${info.persi}</span>` : '') + (info.camion !== null ? `<span>🚚 ${info.camion}h</span>` : '') : '';
+  if(++nHud % 6 === 0) document.getElementById('perf').innerHTML =
+    `<b>${(1000/media(scatti)).toFixed(1)}</b> immagini/s · ${media(tempi).toFixed(1)} ms per immagine · ingrandimento ×${scala}`;
+}
+// ingrandimento: il fattore intero più grande che entra (6x su schermi Full HD)
+let scala = 1;
+function adatta(){
+  const w = document.getElementById('stage').clientWidth - 12;
+  scala = Math.min(6, Math.floor(w / NW));
+  const s = scala >= 1 ? scala : w / NW;
+  schermo.style.width = (NW*s) + 'px'; schermo.style.height = (NH*s) + 'px';
+}
+window.addEventListener('resize', adatta); adatta();
+// tavolozza visibile
+document.getElementById('palette').insertAdjacentHTML('beforeend', Object.values(TAV).map(h => `<i style="background:${h}" title="${h}"></i>`).join(''));
+// pulsanti
+const $ = s => document.querySelector(s);
+$('#b-scene').onclick = () => { modo = 'scena'; $('#b-scene').classList.add('on'); $('#b-sheet').classList.remove('on'); $('#labels').hidden = true; };
+$('#b-sheet').onclick = () => { modo = 'scheda'; $('#b-sheet').classList.add('on'); $('#b-scene').classList.remove('on'); $('#labels').hidden = false; };
+$('#b-speed').onclick = () => {
+  const pos = T / durataGiorno;
+  durataGiorno = durataGiorno === 8 ? 1.5 : 8;
+  t0 = performance.now() - pos * durataGiorno * 1000;
+  $('#b-speed').textContent = durataGiorno === 8 ? 'LENTO' : 'RITMO GIOCO';
+  $('#b-speed').classList.toggle('on', durataGiorno !== 8);
+};
+$('#b-dither').onclick = () => { filtro = !filtro; $('#b-dither').textContent = 'FILTRO RETRÒ: ' + (filtro ? 'SÌ' : 'NO'); $('#b-dither').classList.toggle('on', filtro); };
+window.addEventListener('error', e => { $('#perf').textContent = '⚠️ Errore: ' + e.message; });
+window.PROVA = { get info(){ return info; }, get fps(){ return 1000/media(scatti); }, get ms(){ return media(tempi); } };
+document.fonts.ready.then(() => requestAnimationFrame(ciclo));
+</script>
+</body>
+</html>
