@@ -38,7 +38,7 @@ function conci(asse, fisso, a0, a1, z0, z1, col, seme){
 }
 
 /* ---------- terreno e strada a U ---------- */
-const CL = { xS:1.2, xD:20.1, yF:10.35, cy:9.15, yB:-1.0, cyB:.2, r:1.2, w:.95 };   // linea di mezzo della strada ad anello
+const CL = { xS:1.2, xD:20.1, yF:10.35, cy:9.15, yB:-2.0, cyB:-.8, r:1.2, w:.95 };   // linea di mezzo della strada ad anello
 function settore(cx, cy, r0, r1, a0, a1, col, z=.004){
   const pts = []; for(let i=0;i<=14;i++){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r1*Math.cos(a), cy + r1*Math.sin(a), z]); }
   for(let i=14;i>=0;i--){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r0*Math.cos(a), cy + r0*Math.sin(a), z]); }
@@ -72,29 +72,29 @@ function terreno(){
 
 /* ---------- livello 2 e livello 3 (con le mura medievali) ---------- */
 function livello2(){
-  scatola(2.2, 0, 0, 15.4, 5.4, Z2, COL.pietra, { top:COL.lastricato, left:'#CDB690', right:'#B89F7B' });
-  conci('y', 5.4, 2.2, 17.6, 0, Z2, '#CDB690', 1); conci('x', 17.6, 0, 5.4, 0, Z2, '#B89F7B', 2);
-  for(let x=3; x<17.6; x+=1) linea([x,0,Z2],[x,5.4,Z2],'rgba(120,100,70,.1)');
-  for(let y=1; y<5.4; y+=1) linea([2.2,y,Z2],[17.6,y,Z2],'rgba(120,100,70,.1)');
+  scatola(2.2, -1, 0, 15.4, 6.4, Z2, COL.pietra, { top:COL.lastricato, left:'#CDB690', right:'#B89F7B' });
+  conci('y', 5.4, 2.2, 17.6, 0, Z2, '#CDB690', 1); conci('x', 17.6, -1, 5.4, 0, Z2, '#B89F7B', 2);
+  for(let x=3; x<17.6; x+=1) linea([x,-1,Z2],[x,5.4,Z2],'rgba(120,100,70,.1)');
+  for(let y=0; y<5.4; y+=1) linea([2.2,y,Z2],[17.6,y,Z2],'rgba(120,100,70,.1)');
   for(const [a, b] of [[2.2, 11.2], [12.8, 17.6]]) scatola(a, 5.25, Z2, b - a, .15, .22, '#E6D5B5');   // parapetto
 }
 function livello3(){
-  scatola(7, 0, Z2, 10.6, 3.4, Z3 - Z2, COL.mura, { top:COL.lastricato, left:'#C2AA82', right:'#AD956F' });
-  conci('y', 3.4, 7, 17.6, Z2, Z3, '#C2AA82', 3); conci('x', 17.6, 0, 3.4, Z2, Z3, '#AD956F', 4);
-  for(let x=8; x<17.6; x+=1) linea([x,0,Z3],[x,3.4,Z3],'rgba(120,100,70,.1)');
-  for(let y=.15; y<3.3; y+=.5) scatola(7, y, Z3, .18, .26, .3, COL.mura);                      // merli sul lato sinistro
+  scatola(7, -1, Z2, 10.6, 3.4, Z3 - Z2, COL.mura, { top:COL.lastricato, left:'#C2AA82', right:'#AD956F' });
+  conci('y', 2.4, 7, 17.6, Z2, Z3, '#C2AA82', 3); conci('x', 17.6, -1, 2.4, Z2, Z3, '#AD956F', 4);
+  for(let x=8; x<17.6; x+=1) linea([x,-1,Z3],[x,2.4,Z3],'rgba(120,100,70,.1)');
+  for(let y=-.85; y<2.3; y+=.5) scatola(7, y, Z3, .18, .26, .3, COL.mura);                      // merli sul lato sinistro
 }
 function merliDavanti(){
-  for(let x=7.05; x<17.4; x+=.5){ if(x > 10.5 && x < 13.2) continue; scatola(x, 3.22, Z3, .26, .18, .3, COL.mura, { left:'#C2AA82' }); }
-  for(let y=.15; y<3.3; y+=.5) scatola(17.42, y, Z3, .18, .26, .3, COL.mura, { right:'#AD956F' });
+  for(let x=7.05; x<17.4; x+=.5){ if(x > 10.5 && x < 13.2) continue; scatola(x, 2.22, Z3, .26, .18, .3, COL.mura, { left:'#C2AA82' }); }
+  for(let y=-.85; y<2.3; y+=.5) scatola(17.42, y, Z3, .18, .26, .3, COL.mura, { right:'#AD956F' });
 }
 function torreMura(){                     // torre delle mura all'angolo
-  scatola(7, 2.7, Z2, .9, .9, Z3 - Z2 + 1.0, COL.mura, { left:'#C2AA82', right:'#AD956F' });
-  fy(3.6, 7.35, 7.55, Z3 + .3, Z3 + .7, '#4F4A62');
-  for(let i=0; i<3; i++){ scatola(7.02 + i*.33, 3.42, Z3 + 1.0, .2, .18, .22, COL.mura); scatola(7.72, 2.72 + i*.33, Z3 + 1.0, .18, .2, .22, COL.mura); }
+  scatola(7, 1.7, Z2, .9, .9, Z3 - Z2 + 1.0, COL.mura, { left:'#C2AA82', right:'#AD956F' });
+  fy(2.6, 7.35, 7.55, Z3 + .3, Z3 + .7, '#4F4A62');
+  for(let i=0; i<3; i++){ scatola(7.02 + i*.33, 2.42, Z3 + 1.0, .2, .18, .22, COL.mura); scatola(7.72, 1.72 + i*.33, Z3 + 1.0, .18, .2, .22, COL.mura); }
 }
 function portaCitta(){                   // la porta nelle mura (mattoni, arco bugnato in pietra, attico)
-  const x = 10.8, y = 3.0, w = 2.4, d = .8, z = Z2, h = Z3 - Z2 + 1.3;
+  const x = 10.8, y = 2.0, w = 2.4, d = .8, z = Z2, h = Z3 - Z2 + 1.3;
   scatola(x, y, z, w, d, h, COL.mattoni, { left:'#C98F6E', right:'#B07A5C', top:'#D8A586' });
   for(let r=0; r<9; r++) linea([x, y+d, z + .2 + r*.28], [x + w, y+d, z + .2 + r*.28], 'rgba(120,60,40,.25)');
   fy(y+d, x + .55, x + w - .55, z, z + 2.2, '#E5E1D6');                                            // cornice in pietra
@@ -154,9 +154,9 @@ function tempio(){
   const [lx, ly] = iso(cx, cy, z + hc + 1.95); g.strokeStyle = '#6B7488'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(lx, ly); g.lineTo(lx, ly - 9); g.moveTo(lx - 3, ly - 6); g.lineTo(lx + 3, ly - 6); g.stroke();
 }
 function duomo(){
-  const x = 8.0, y = .2, w = 2.6, d = 2.8, z = Z3, h = 2.9, col = '#EEE6DA', rosa = '#E3B9A6';
+  const x = 8.0, y = -.8, w = 2.6, d = 2.8, z = Z3, h = 2.9, col = '#EEE6DA', rosa = '#E3B9A6';
   // campanile (dietro a destra): due ordini di celle campanarie, tetto basso e croce
-  const cx0 = 10.75, cy0 = .5, cw = .75, ch = 4.5;
+  const cx0 = 10.75, cy0 = -.5, cw = .75, ch = 4.5;
   scatola(cx0, cy0, z, cw, cw, ch, '#E2D8C8', { right:'#CBBFAD', top:'#C8663E' });
   for(const k of [0, 1]){ const zz = z + 2.7 + k*.85;
     arcoY(cy0 + cw, cx0 + cw/2, zz, .36, .62, '#3E3A48'); const [bx, by] = iso(cx0 + cw/2, cy0 + cw, zz + .25); g.fillStyle = '#9C7A3C'; g.beginPath(); g.arc(bx, by, 4, Math.PI, 0); g.fill();
@@ -182,7 +182,7 @@ function duomo(){
   for(const k of [.46, w - .46]){ arcoY(fy0, x + k, z, .44, .92, '#DCCDBB'); arcoY(fy0, x + k, z, .3, .78, '#6E4E3A'); }
 }
 function palazzoPriori(){                // Palazzo dei Priori: bifore, merli guelfi, torre
-  const x = 13.3, y = .3, w = 3.9, d = 2.75, z = Z3, h = 2.6, col = '#CDB38D';
+  const x = 13.3, y = -.7, w = 3.9, d = 2.75, z = Z3, h = 2.6, col = '#CDB38D';
   scatola(x, y, z, w, d, h, col, { right:'#B89E79' });
   for(let i=0; i<4; i++){ const cx = x + .55 + i*.95;
     for(const k of [-.1, .1]) finestraY(y+d, cx+k-.07, cx+k+.07, z + 1.25, z + 1.75, 700 + i*2 + (k>0));
@@ -190,7 +190,7 @@ function palazzoPriori(){                // Palazzo dei Priori: bifore, merli gu
   for(let i=0; i<3; i++) arcoY(y+d, x + .8 + i*1.15, z, .55, .85, '#6B5A4E');
   for(let i=0; i<9; i++) scatola(x + .05 + i*.44, y + d - .2, z + h, .22, .2, .22, col);
   for(let i=0; i<7; i++) scatola(x + w - .2, y + .05 + i*.4, z + h, .2, .22, .22, col);
-  const tx = 16.3, ty = .4;
+  const tx = 16.3, ty = -.6;
   scatola(tx, ty, z + h, .85, .85, 1.5, col, { right:'#B89E79' });
   finestraY(ty + .85, tx + .28, tx + .57, z + h + .7, z + h + 1.15, 720);
   for(let i=0; i<3; i++){ scatola(tx + .02 + i*.31, ty + .65, z + h + 1.5, .2, .2, .22, col); scatola(tx + .65, ty + .02 + i*.31, z + h + 1.5, .2, .2, .22, col); }

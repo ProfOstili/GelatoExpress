@@ -5,10 +5,10 @@
    ===================================================================== */
 const LW = 1280, LH = 820;
 const S = 39, A = S*Math.cos(Math.PI/6), B = S*.5;
-const OX = 640, OY = 410;
-const DX = 21.3, DY = 12, YMIN = -2;          // plastico: x da 0 a 21,3, y da -2 a 12
+const OX = 640, OY = 405;
+const DX = 21.3, DY = 12, YMIN = -3;          // plastico: x da 0 a 21,3, y da -3 a 12
 const Z2 = 1.4, Z3 = 2.8;                      // altezza del 2° e del 3° livello
-const iso = (x, y, z=0) => [OX + (x - y - 5.65)*A, OY + (x + y - 15.65)*B - z*S];
+const iso = (x, y, z=0) => [OX + (x - y - 6.15)*A, OY + (x + y - 15.15)*B - z*S];
 
 const tela = document.getElementById('tela');
 const DPR = Math.min(2, window.devicePixelRatio || 1);

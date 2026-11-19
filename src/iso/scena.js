@@ -60,7 +60,7 @@ function farfalle(t){
     g.beginPath(); g.ellipse(cx - ali*.7, cy, ali, 3.5, -.4, 0, 7); g.ellipse(cx + ali*.7, cy, ali, 3.5, .4, 0, 7); g.fill();
   }
 }
-const POZZE = [[4.5,10.0,0,.55],[9.0,10.7,0,.7],[13.6,10.1,0,.5],[1.2,5.6,0,.45],[20.1,4.2,0,.5],[8.2,8.7,.1,.35],[3.1,8.6,.1,.3],[8.8,4.4,Z2,.45],[15.4,4.0,Z2,.4],[12.2,1.3,Z3,.35]];
+const POZZE = [[4.5,10.0,0,.55],[9.0,10.7,0,.7],[13.6,10.1,0,.5],[1.2,5.6,0,.45],[20.1,4.2,0,.5],[8.2,8.7,.1,.35],[3.1,8.6,.1,.3],[8.8,4.4,Z2,.45],[15.4,4.0,Z2,.4],[12.2,.3,Z3,.35]];
 function pozzanghere(k, t, livello){
   POZZE.forEach(([x, y, z, r], i) => {
     if(livello !== z) return;
@@ -70,7 +70,7 @@ function pozzanghere(k, t, livello){
     g.strokeStyle = `rgba(255,255,255,${.6*(1-rr)*k})`; g.lineWidth = 1; g.beginPath(); g.ellipse(sx, sy, RX(r*k*rr), RY(r*k*rr)*.9, 0, 0, 7); g.stroke();
   });
 }
-function quotaSuolo(x, y){ if(y < 0) return 0; if(x > 7 && x < 17.6 && y < 3.4) return Z3; if(x > 2.2 && x < 17.6 && y < 5.4) return Z2; return 0; }
+function quotaSuolo(x, y){ if(y < -1) return 0; if(x > 7 && x < 17.6 && y < 2.4) return Z3; if(x > 2.2 && x < 17.6 && y < 5.4) return Z2; return 0; }
 function pioggia(t){
   g.strokeStyle = 'rgba(160,205,245,.8)'; g.lineWidth = 1.5;
   for(let i=0; i<170; i++){
@@ -176,7 +176,7 @@ function scena(t){
     else s = lerp(PERCORSO.sStop, PERCORSO.tot, easeInQ(seg(p, CAM.riparte, CAM.esce)));
     cam = { ...lungoPercorso(s), fermo: p >= CAM.ferma && p < CAM.riparte };
     cam.alpha = clamp(Math.min(s, PERCORSO.tot - s)/1.5);
-    cam.prima = cam.y < .3 || (cam.x < 2.3 && cam.y < 5);              // dietro la città: va disegnato prima
+    cam.prima = cam.y < -.7 || (cam.x < 2.3 && cam.y < 5);              // dietro la città: va disegnato prima
   }
   const disegnaCamion = () => { g.globalAlpha = cam.alpha; camion(cam.x, cam.y, cam.ang, t, cam.fermo); g.globalAlpha = 1; };
   if(cam && cam.prima) disegnaCamion();
@@ -187,10 +187,10 @@ function scena(t){
   tempio(); lampione(6.75, 4.95, Z2);
   livello3(); torreMura();
   if(piove) pozzanghere(k, t, Z3);
-  duomo(); casa(11.6, .35, 1.5, 2.5, 3, COL.pietra, { z:Z3, pietra:true, camino:true }); palazzoPriori();
+  duomo(); casa(11.6, -.65, 1.5, 2.5, 3, COL.pietra, { z:Z3, pietra:true, camino:true }); palazzoPriori();
   merliDavanti(); portaCitta();
   if(G.meteo === 'nuvoloso') nebbia(t);
-  scalinata(11.2, 1.6, 5.4, 3.8, Z2, Z2 + .7, 4); lampione(10.75, 4.95, Z2);
+  scalinata(11.2, 1.6, 5.4, 2.8, Z2, Z2 + .7, 6); lampione(10.75, 4.95, Z2);
   // livello 1
   giardino(sboccio); scuola();
   scalinata(11.2, 1.6, 8.0, 5.4, 0, Z2, 7);
