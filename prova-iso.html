@@ -85,11 +85,11 @@ header p{margin:0;color:var(--soft);font-weight:700;font-size:15px}
    Chi guarda sta "davanti" (verso +x+y): si vedono le facce +x, +y e quelle in alto.
    ===================================================================== */
 const LW = 1280, LH = 820;
-const S = 40, A = S*Math.cos(Math.PI/6), B = S*.5;
+const S = 39, A = S*Math.cos(Math.PI/6), B = S*.5;
 const OX = 640, OY = 410;
-const DX = 20, DY = 12, YMIN = -2;            // plastico: x da 0 a 20, y da -2 a 12
+const DX = 21.3, DY = 12, YMIN = -2;          // plastico: x da 0 a 21,3, y da -2 a 12
 const Z2 = 1.4, Z3 = 2.8;                      // altezza del 2° e del 3° livello
-const iso = (x, y, z=0) => [OX + (x - y - 5)*A, OY + (x + y - 15)*B - z*S];
+const iso = (x, y, z=0) => [OX + (x - y - 5.65)*A, OY + (x + y - 15.65)*B - z*S];
 
 const tela = document.getElementById('tela');
 const DPR = Math.min(2, window.devicePixelRatio || 1);
@@ -348,7 +348,7 @@ function conci(asse, fisso, a0, a1, z0, z1, col, seme){
 }
 
 /* ---------- terreno e strada a U ---------- */
-const CL = { xS:1.2, xD:18.8, yF:10.35, cy:9.15, yB:-1.0, cyB:.2, r:1.2, w:.95 };   // linea di mezzo della strada ad anello
+const CL = { xS:1.2, xD:20.1, yF:10.35, cy:9.15, yB:-1.0, cyB:.2, r:1.2, w:.95 };   // linea di mezzo della strada ad anello
 function settore(cx, cy, r0, r1, a0, a1, col, z=.004){
   const pts = []; for(let i=0;i<=14;i++){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r1*Math.cos(a), cy + r1*Math.sin(a), z]); }
   for(let i=14;i>=0;i--){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r0*Math.cos(a), cy + r0*Math.sin(a), z]); }
@@ -367,16 +367,17 @@ function terreno(){
   // strada: gamba sinistra, curva, tratto davanti, curva, gamba destra
   const { xS, xD, yF, cy, yB, cyB, r, w } = CL, c = COL.strada;
   piano(xS - w, cyB, .004, 2*w, cy - cyB, c); piano(xD - w, cyB, .004, 2*w, cy - cyB, c);
-  piano(2.4, yF - w, .004, 15.2, 2*w, c); piano(2.4, yB - w, .004, 15.2, 2*w, c);                // davanti e dietro
-  settore(2.4, cy, r - w, r + w, Math.PI/2, Math.PI, c); settore(17.6, cy, r - w, r + w, 0, Math.PI/2, c);
-  settore(2.4, cyB, r - w, r + w, Math.PI, Math.PI*1.5, c); settore(17.6, cyB, r - w, r + w, Math.PI*1.5, Math.PI*2, c);
+  const xR = xD - r;                                                                                   // centro delle curve a destra
+  piano(2.4, yF - w, .004, xR - 2.4, 2*w, c); piano(2.4, yB - w, .004, xR - 2.4, 2*w, c);                // davanti e dietro
+  settore(2.4, cy, r - w, r + w, Math.PI/2, Math.PI, c); settore(xR, cy, r - w, r + w, 0, Math.PI/2, c);
+  settore(2.4, cyB, r - w, r + w, Math.PI, Math.PI*1.5, c); settore(xR, cyB, r - w, r + w, Math.PI*1.5, Math.PI*2, c);
   for(let y=.6; y<8.8; y+=1.5){ piano(xS - .05, y, .006, .1, .7, '#FFFFFF'); piano(xD - .05, y, .006, .1, .7, '#FFFFFF'); }
-  for(let x=3; x<17; x+=1.6){ piano(x, yF - .05, .006, .8, .1, '#FFFFFF'); piano(x, yB - .05, .006, .8, .1, '#FFFFFF'); }
+  for(let x=3; x<xR - .6; x+=1.6){ piano(x, yF - .05, .006, .8, .1, '#FFFFFF'); piano(x, yB - .05, .006, .8, .1, '#FFFFFF'); }
   for(let k=0; k<6; k++) piano(8.3, 9.48 + k*.32, .007, 1.0, .17, '#F4F6FA');                  // strisce pedonali davanti alla scuola
-  for(const a of [.62, .88]){ settore(2.4, cy, r - .05, r + .05, Math.PI*(.5 + a*.5) - .12, Math.PI*(.5 + a*.5), '#FFFFFF', .006); settore(17.6, cy, r - .05, r + .05, Math.PI*a*.5 - .12, Math.PI*a*.5, '#FFFFFF', .006); }
+  for(const a of [.62, .88]){ settore(2.4, cy, r - .05, r + .05, Math.PI*(.5 + a*.5) - .12, Math.PI*(.5 + a*.5), '#FFFFFF', .006); settore(xR, cy, r - .05, r + .05, Math.PI*a*.5 - .12, Math.PI*a*.5, '#FFFFFF', .006); }
   // marciapiede davanti alle case
-  scatola(2.2, 8.0, 0, 15.6, 1.2, .1, COL.marciapiede, { left:'#C9CFDB', right:'#B9C0CC' });
-  for(let x=2.2; x<17.8; x+=1) linea([x,8.0,.1],[x,9.2,.1],'rgba(46,51,80,.07)');
+  scatola(2.2, 8.0, 0, xR - 2.2, 1.2, .1, COL.marciapiede, { left:'#C9CFDB', right:'#B9C0CC' });
+  for(let x=2.2; x<xR; x+=1) linea([x,8.0,.1],[x,9.2,.1],'rgba(46,51,80,.07)');
 }
 
 /* ---------- livello 2 e livello 3 (con le mura medievali) ---------- */
@@ -750,7 +751,7 @@ function farfalle(t){
     g.beginPath(); g.ellipse(cx - ali*.7, cy, ali, 3.5, -.4, 0, 7); g.ellipse(cx + ali*.7, cy, ali, 3.5, .4, 0, 7); g.fill();
   }
 }
-const POZZE = [[4.5,10.0,0,.55],[9.0,10.7,0,.7],[13.6,10.1,0,.5],[1.2,5.6,0,.45],[18.8,4.2,0,.5],[8.2,8.7,.1,.35],[3.1,8.6,.1,.3],[8.8,4.4,Z2,.45],[15.4,4.0,Z2,.4],[12.2,1.3,Z3,.35]];
+const POZZE = [[4.5,10.0,0,.55],[9.0,10.7,0,.7],[13.6,10.1,0,.5],[1.2,5.6,0,.45],[20.1,4.2,0,.5],[8.2,8.7,.1,.35],[3.1,8.6,.1,.3],[8.8,4.4,Z2,.45],[15.4,4.0,Z2,.4],[12.2,1.3,Z3,.35]];
 function pozzanghere(k, t, livello){
   POZZE.forEach(([x, y, z, r], i) => {
     if(livello !== z) return;
@@ -788,11 +789,12 @@ const PERCORSO = (() => {                          // strada ad anello: il camio
   for(let i=0; i<=24; i++){ const f = Math.PI*1.5 - i/24*Math.PI/2; pts.push([2.4 + r*Math.cos(f), cyB + r*Math.sin(f)]); }
   for(let y=cyB + .1; y<cy; y+=.1) pts.push([xS, y]);
   for(let i=0; i<=24; i++){ const f = Math.PI - i/24*Math.PI/2; pts.push([2.4 + r*Math.cos(f), cy + r*Math.sin(f)]); }
-  for(let x=2.5; x<17.6; x+=.1) pts.push([x, yF]);
-  for(let i=0; i<=24; i++){ const f = Math.PI/2 - i/24*Math.PI/2; pts.push([17.6 + r*Math.cos(f), cy + r*Math.sin(f)]); }
+  const xR = xD - r;
+  for(let x=2.5; x<xR; x+=.1) pts.push([x, yF]);
+  for(let i=0; i<=24; i++){ const f = Math.PI/2 - i/24*Math.PI/2; pts.push([xR + r*Math.cos(f), cy + r*Math.sin(f)]); }
   for(let y=cy - .1; y>cyB; y-=.1) pts.push([xD, y]);
-  for(let i=0; i<=24; i++){ const f = -i/24*Math.PI/2; pts.push([17.6 + r*Math.cos(f), cyB + r*Math.sin(f)]); }
-  for(let x=17.5; x>9.5; x-=.1) pts.push([x, yB]);
+  for(let i=0; i<=24; i++){ const f = -i/24*Math.PI/2; pts.push([xR + r*Math.cos(f), cyB + r*Math.sin(f)]); }
+  for(let x=xR - .1; x>9.5; x-=.1) pts.push([x, yB]);
   const L = [0]; for(let i=1; i<pts.length; i++) L.push(L[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
   const iStop = pts.findIndex(([x, y]) => y === yF && x >= 15.2);
   return { pts, L, tot:L[L.length-1], sStop:L[iStop] };
@@ -894,9 +896,9 @@ function scena(t){
     let x, verso = 1, st = 0, cono = false, cammina = true;
     if(q < .5) x = lerp(inizio, banco, ease(q/.5));
     else if(q < .62){ x = banco; cammina = false; st = servito ? 1 : -1; cono = servito; }
-    else { x = lerp(banco, servito ? 18.2 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
+    else { x = lerp(banco, servito ? 19.3 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
     const y = 8.92 + (i % 2)*.18;
-    dinamici.push({ y, f: () => { g.globalAlpha = clamp(Math.min(x - 2.3, 18.3 - x)*2.5); cliente(x, y, (i + n*2) % 6, cammina ? t*2.2 + i*.3 : 0, verso, st, cono); g.globalAlpha = 1; } });
+    dinamici.push({ y, f: () => { g.globalAlpha = clamp(Math.min(x - 2.3, 19.4 - x)*2.5); cliente(x, y, (i + n*2) % 6, cammina ? t*2.2 + i*.3 : 0, verso, st, cono); g.globalAlpha = 1; } });
   }
   // i ragazzi attraversano sulle strisce ed entrano a scuola; escono verso mezzogiorno
   for(let i=0; i<8; i++){

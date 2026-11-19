@@ -60,7 +60,7 @@ function farfalle(t){
     g.beginPath(); g.ellipse(cx - ali*.7, cy, ali, 3.5, -.4, 0, 7); g.ellipse(cx + ali*.7, cy, ali, 3.5, .4, 0, 7); g.fill();
   }
 }
-const POZZE = [[4.5,10.0,0,.55],[9.0,10.7,0,.7],[13.6,10.1,0,.5],[1.2,5.6,0,.45],[18.8,4.2,0,.5],[8.2,8.7,.1,.35],[3.1,8.6,.1,.3],[8.8,4.4,Z2,.45],[15.4,4.0,Z2,.4],[12.2,1.3,Z3,.35]];
+const POZZE = [[4.5,10.0,0,.55],[9.0,10.7,0,.7],[13.6,10.1,0,.5],[1.2,5.6,0,.45],[20.1,4.2,0,.5],[8.2,8.7,.1,.35],[3.1,8.6,.1,.3],[8.8,4.4,Z2,.45],[15.4,4.0,Z2,.4],[12.2,1.3,Z3,.35]];
 function pozzanghere(k, t, livello){
   POZZE.forEach(([x, y, z, r], i) => {
     if(livello !== z) return;
@@ -98,11 +98,12 @@ const PERCORSO = (() => {                          // strada ad anello: il camio
   for(let i=0; i<=24; i++){ const f = Math.PI*1.5 - i/24*Math.PI/2; pts.push([2.4 + r*Math.cos(f), cyB + r*Math.sin(f)]); }
   for(let y=cyB + .1; y<cy; y+=.1) pts.push([xS, y]);
   for(let i=0; i<=24; i++){ const f = Math.PI - i/24*Math.PI/2; pts.push([2.4 + r*Math.cos(f), cy + r*Math.sin(f)]); }
-  for(let x=2.5; x<17.6; x+=.1) pts.push([x, yF]);
-  for(let i=0; i<=24; i++){ const f = Math.PI/2 - i/24*Math.PI/2; pts.push([17.6 + r*Math.cos(f), cy + r*Math.sin(f)]); }
+  const xR = xD - r;
+  for(let x=2.5; x<xR; x+=.1) pts.push([x, yF]);
+  for(let i=0; i<=24; i++){ const f = Math.PI/2 - i/24*Math.PI/2; pts.push([xR + r*Math.cos(f), cy + r*Math.sin(f)]); }
   for(let y=cy - .1; y>cyB; y-=.1) pts.push([xD, y]);
-  for(let i=0; i<=24; i++){ const f = -i/24*Math.PI/2; pts.push([17.6 + r*Math.cos(f), cyB + r*Math.sin(f)]); }
-  for(let x=17.5; x>9.5; x-=.1) pts.push([x, yB]);
+  for(let i=0; i<=24; i++){ const f = -i/24*Math.PI/2; pts.push([xR + r*Math.cos(f), cyB + r*Math.sin(f)]); }
+  for(let x=xR - .1; x>9.5; x-=.1) pts.push([x, yB]);
   const L = [0]; for(let i=1; i<pts.length; i++) L.push(L[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
   const iStop = pts.findIndex(([x, y]) => y === yF && x >= 15.2);
   return { pts, L, tot:L[L.length-1], sStop:L[iStop] };
@@ -204,9 +205,9 @@ function scena(t){
     let x, verso = 1, st = 0, cono = false, cammina = true;
     if(q < .5) x = lerp(inizio, banco, ease(q/.5));
     else if(q < .62){ x = banco; cammina = false; st = servito ? 1 : -1; cono = servito; }
-    else { x = lerp(banco, servito ? 18.2 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
+    else { x = lerp(banco, servito ? 19.3 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
     const y = 8.92 + (i % 2)*.18;
-    dinamici.push({ y, f: () => { g.globalAlpha = clamp(Math.min(x - 2.3, 18.3 - x)*2.5); cliente(x, y, (i + n*2) % 6, cammina ? t*2.2 + i*.3 : 0, verso, st, cono); g.globalAlpha = 1; } });
+    dinamici.push({ y, f: () => { g.globalAlpha = clamp(Math.min(x - 2.3, 19.4 - x)*2.5); cliente(x, y, (i + n*2) % 6, cammina ? t*2.2 + i*.3 : 0, verso, st, cono); g.globalAlpha = 1; } });
   }
   // i ragazzi attraversano sulle strisce ed entrano a scuola; escono verso mezzogiorno
   for(let i=0; i<8; i++){
