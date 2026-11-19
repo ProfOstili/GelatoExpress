@@ -5,10 +5,10 @@
    ===================================================================== */
 const LW = 1280, LH = 820;
 const S = 40, A = S*Math.cos(Math.PI/6), B = S*.5;
-const OX = 640, OY = 420;
-const DX = 20, DY = 12;                       // plastico 20 x 12
+const OX = 640, OY = 410;
+const DX = 20, DY = 12, YMIN = -2;            // plastico: x da 0 a 20, y da -2 a 12
 const Z2 = 1.4, Z3 = 2.8;                      // altezza del 2° e del 3° livello
-const iso = (x, y, z=0) => [OX + (x - y - 4)*A, OY + (x + y - 16)*B - z*S];
+const iso = (x, y, z=0) => [OX + (x - y - 5)*A, OY + (x + y - 15)*B - z*S];
 
 const tela = document.getElementById('tela');
 const DPR = Math.min(2, window.devicePixelRatio || 1);
@@ -63,7 +63,7 @@ function cupola(cx, cy, z, r, h, col){
   const gr = g.createRadialGradient(x - rx*.4, y - h*S*.7, 2, x, y - h*S*.3, rx*1.3); gr.addColorStop(0, tono(col, .35)); gr.addColorStop(1, tono(col, -.2));
   g.fillStyle = gr; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI); g.ellipse(x, y, rx, h*S, 0, Math.PI, 0); g.fill();
   g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1;
-  for(const k of [-.55, 0, .55]){ g.beginPath(); g.ellipse(x, y, Math.abs(k)*rx || .1, h*S, 0, Math.PI, 0); g.stroke(); }
+  for(const k of [-.82, -.55, -.27, 0, .27, .55, .82]){ g.beginPath(); g.ellipse(x, y, Math.abs(k)*rx || .1, h*S, 0, Math.PI, 0); g.stroke(); }   // spicchi
 }
 function sfera(sx, sy, r, col, luce=.35){
   const gr = g.createRadialGradient(sx - r*.35, sy - r*.4, r*.1, sx, sy, r);

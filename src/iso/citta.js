@@ -38,7 +38,7 @@ function conci(asse, fisso, a0, a1, z0, z1, col, seme){
 }
 
 /* ---------- terreno e strada a U ---------- */
-const CL = { xS:1.2, xD:18.8, yF:10.35, cy:9.15, r:1.2, w:.95 };   // linea di mezzo della strada
+const CL = { xS:1.2, xD:18.8, yF:10.35, cy:9.15, yB:-1.0, cyB:.2, r:1.2, w:.95 };   // linea di mezzo della strada ad anello
 function settore(cx, cy, r0, r1, a0, a1, col, z=.004){
   const pts = []; for(let i=0;i<=14;i++){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r1*Math.cos(a), cy + r1*Math.sin(a), z]); }
   for(let i=14;i>=0;i--){ const a = a0 + (a1-a0)*i/14; pts.push([cx + r0*Math.cos(a), cy + r0*Math.sin(a), z]); }
@@ -47,19 +47,22 @@ function settore(cx, cy, r0, r1, a0, a1, col, z=.004){
 function terreno(){
   const z0 = -1.2;
   poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,0],[0,DY,0]), COL.terra);
-  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,0],[DX,0,0]), COL.terraScura);
+  poli(P([DX,YMIN,z0],[DX,DY,z0],[DX,DY,0],[DX,YMIN,0]), COL.terraScura);
   poli(P([0,DY,z0],[DX,DY,z0],[DX,DY,z0+.3],[0,DY,z0+.3]), tono(COL.roccia, .1));
-  poli(P([DX,0,z0],[DX,DY,z0],[DX,DY,z0+.3],[DX,0,z0+.3]), COL.roccia);
+  poli(P([DX,YMIN,z0],[DX,DY,z0],[DX,DY,z0+.3],[DX,YMIN,z0+.3]), COL.roccia);
   for(let i=0; i<14; i++){ const xx = .5 + i*1.4, zz = -.5 - hash(i)*.4; fy(DY, xx, xx+.5, zz, zz+.18, tono(COL.terra, -.1)); }
   poli(P([0,DY,-.15],[DX,DY,-.15],[DX,DY,0],[0,DY,0]), COL.erbaLato);
-  poli(P([DX,0,-.15],[DX,DY,-.15],[DX,DY,0],[DX,0,0]), tono(COL.erbaLato, -.12));
-  piano(0, 0, 0, DX, DY, COL.erba);
+  poli(P([DX,YMIN,-.15],[DX,DY,-.15],[DX,DY,0],[DX,YMIN,0]), tono(COL.erbaLato, -.12));
+  piano(0, YMIN, 0, DX, DY - YMIN, COL.erba);
   // strada: gamba sinistra, curva, tratto davanti, curva, gamba destra
-  const { xS, xD, yF, cy, r, w } = CL, c = COL.strada;
-  piano(xS - w, 0, .004, 2*w, cy, c); piano(xD - w, 0, .004, 2*w, cy, c); piano(2.4, yF - w, .004, 15.2, 2*w, c);
+  const { xS, xD, yF, cy, yB, cyB, r, w } = CL, c = COL.strada;
+  piano(xS - w, cyB, .004, 2*w, cy - cyB, c); piano(xD - w, cyB, .004, 2*w, cy - cyB, c);
+  piano(2.4, yF - w, .004, 15.2, 2*w, c); piano(2.4, yB - w, .004, 15.2, 2*w, c);                // davanti e dietro
   settore(2.4, cy, r - w, r + w, Math.PI/2, Math.PI, c); settore(17.6, cy, r - w, r + w, 0, Math.PI/2, c);
-  for(let y=.3; y<8.8; y+=1.5){ piano(xS - .05, y, .006, .1, .7, '#FFFFFF'); piano(xD - .05, y, .006, .1, .7, '#FFFFFF'); }
-  for(let x=3; x<17; x+=1.6) piano(x, yF - .05, .006, .8, .1, '#FFFFFF');
+  settore(2.4, cyB, r - w, r + w, Math.PI, Math.PI*1.5, c); settore(17.6, cyB, r - w, r + w, Math.PI*1.5, Math.PI*2, c);
+  for(let y=.6; y<8.8; y+=1.5){ piano(xS - .05, y, .006, .1, .7, '#FFFFFF'); piano(xD - .05, y, .006, .1, .7, '#FFFFFF'); }
+  for(let x=3; x<17; x+=1.6){ piano(x, yF - .05, .006, .8, .1, '#FFFFFF'); piano(x, yB - .05, .006, .8, .1, '#FFFFFF'); }
+  for(let k=0; k<6; k++) piano(8.3, 9.48 + k*.32, .007, 1.0, .17, '#F4F6FA');                  // strisce pedonali davanti alla scuola
   for(const a of [.62, .88]){ settore(2.4, cy, r - .05, r + .05, Math.PI*(.5 + a*.5) - .12, Math.PI*(.5 + a*.5), '#FFFFFF', .006); settore(17.6, cy, r - .05, r + .05, Math.PI*a*.5 - .12, Math.PI*a*.5, '#FFFFFF', .006); }
   // marciapiede davanti alle case
   scatola(2.2, 8.0, 0, 15.6, 1.2, .1, COL.marciapiede, { left:'#C9CFDB', right:'#B9C0CC' });
@@ -75,22 +78,22 @@ function livello2(){
   for(const [a, b] of [[2.2, 11.2], [12.8, 17.6]]) scatola(a, 5.25, Z2, b - a, .15, .22, '#E6D5B5');   // parapetto
 }
 function livello3(){
-  scatola(7, 0, Z2, 10.6, 2.6, Z3 - Z2, COL.mura, { top:COL.lastricato, left:'#C2AA82', right:'#AD956F' });
-  conci('y', 2.6, 7, 17.6, Z2, Z3, '#C2AA82', 3); conci('x', 17.6, 0, 2.6, Z2, Z3, '#AD956F', 4);
-  for(let x=8; x<17.6; x+=1) linea([x,0,Z3],[x,2.6,Z3],'rgba(120,100,70,.1)');
-  for(let y=.15; y<2.5; y+=.5) scatola(7, y, Z3, .18, .26, .3, COL.mura);                      // merli sul lato sinistro
+  scatola(7, 0, Z2, 10.6, 3.4, Z3 - Z2, COL.mura, { top:COL.lastricato, left:'#C2AA82', right:'#AD956F' });
+  conci('y', 3.4, 7, 17.6, Z2, Z3, '#C2AA82', 3); conci('x', 17.6, 0, 3.4, Z2, Z3, '#AD956F', 4);
+  for(let x=8; x<17.6; x+=1) linea([x,0,Z3],[x,3.4,Z3],'rgba(120,100,70,.1)');
+  for(let y=.15; y<3.3; y+=.5) scatola(7, y, Z3, .18, .26, .3, COL.mura);                      // merli sul lato sinistro
 }
 function merliDavanti(){
-  for(let x=7.05; x<17.4; x+=.5){ if(x > 10.5 && x < 13.2) continue; scatola(x, 2.42, Z3, .26, .18, .3, COL.mura, { left:'#C2AA82' }); }
-  for(let y=.15; y<2.5; y+=.5) scatola(17.42, y, Z3, .18, .26, .3, COL.mura, { right:'#AD956F' });
+  for(let x=7.05; x<17.4; x+=.5){ if(x > 10.5 && x < 13.2) continue; scatola(x, 3.22, Z3, .26, .18, .3, COL.mura, { left:'#C2AA82' }); }
+  for(let y=.15; y<3.3; y+=.5) scatola(17.42, y, Z3, .18, .26, .3, COL.mura, { right:'#AD956F' });
 }
 function torreMura(){                     // torre delle mura all'angolo
-  scatola(7, 1.9, Z2, .9, .9, Z3 - Z2 + 1.0, COL.mura, { left:'#C2AA82', right:'#AD956F' });
-  fy(2.8, 7.35, 7.55, Z3 + .3, Z3 + .7, '#4F4A62');
-  for(let i=0; i<3; i++){ scatola(7.02 + i*.33, 2.62, Z3 + 1.0, .2, .18, .22, COL.mura); scatola(7.72, 1.92 + i*.33, Z3 + 1.0, .18, .2, .22, COL.mura); }
+  scatola(7, 2.7, Z2, .9, .9, Z3 - Z2 + 1.0, COL.mura, { left:'#C2AA82', right:'#AD956F' });
+  fy(3.6, 7.35, 7.55, Z3 + .3, Z3 + .7, '#4F4A62');
+  for(let i=0; i<3; i++){ scatola(7.02 + i*.33, 3.42, Z3 + 1.0, .2, .18, .22, COL.mura); scatola(7.72, 2.72 + i*.33, Z3 + 1.0, .18, .2, .22, COL.mura); }
 }
 function portaCitta(){                   // la porta nelle mura (mattoni, arco bugnato in pietra, attico)
-  const x = 10.8, y = 2.2, w = 2.4, d = .8, z = Z2, h = Z3 - Z2 + 1.3;
+  const x = 10.8, y = 3.0, w = 2.4, d = .8, z = Z2, h = Z3 - Z2 + 1.3;
   scatola(x, y, z, w, d, h, COL.mattoni, { left:'#C98F6E', right:'#B07A5C', top:'#D8A586' });
   for(let r=0; r<9; r++) linea([x, y+d, z + .2 + r*.28], [x + w, y+d, z + .2 + r*.28], 'rgba(120,60,40,.25)');
   fy(y+d, x + .55, x + w - .55, z, z + 2.2, '#E5E1D6');                                            // cornice in pietra
@@ -108,62 +111,103 @@ function scalinata(x, w, y0, y1, za, zb, n){
 
 /* ---------- edifici ---------- */
 // abside poligonale (mezzo ottagono) con mezza cupola, appoggiata al cubo centrale; (dx,dy) = verso l'esterno
+// abside poligonale (mezzo dodecagono) a due ordini, con mezza cupola a spicchi; (dx,dy) = verso l'esterno
 function apside(cx, cy, z, r, h, dx, dy, col, cup){
-  const px = -dy, py = dx, pts = [];
-  for(let k=0; k<=4; k++){ const th = -Math.PI/2 + k*Math.PI/4; pts.push([cx + r*(Math.cos(th)*dx + Math.sin(th)*px), cy + r*(Math.cos(th)*dy + Math.sin(th)*py)]); }
-  for(let k=0; k<4; k++){
+  const px = -dy, py = dx, pts = [], n = 6, h2 = .38;
+  for(let k=0; k<=n; k++){ const th = -Math.PI/2 + k*Math.PI/n; pts.push([cx + r*(Math.cos(th)*dx + Math.sin(th)*px), cy + r*(Math.cos(th)*dy + Math.sin(th)*py)]); }
+  for(let k=0; k<n; k++){
     const a = pts[k], b = pts[k+1], nx = (a[0]+b[0])/2 - cx, ny = (a[1]+b[1])/2 - cy, L = Math.hypot(nx, ny);
     if(nx + ny <= .01) continue;
-    poli(P([...a,z],[...b,z],[...b,z+h],[...a,z+h]), tono(col, -.2*Math.max(0, nx/L) + .03*Math.max(0, ny/L)));
-    const [wx, wy] = iso((a[0]+b[0])/2 + nx/L*.01, (a[1]+b[1])/2 + ny/L*.01, z + h*.5);
-    g.fillStyle = NOTTE > .3 ? '#FFD98A' : '#5A6582'; g.beginPath(); g.roundRect(wx - 3, wy - 7, 6, 13, 3); g.fill();
-    linea([...b, z], [...b, z + h], tono(col, -.28));
+    const sh = -.2*Math.max(0, nx/L) + .03*Math.max(0, ny/L);
+    poli(P([...a,z],[...b,z],[...b,z+h],[...a,z+h]), tono(col, sh));
+    poli(P([...a,z+h],[...b,z+h],[...b,z+h+h2],[...a,z+h+h2]), tono(col, sh - .04));            // secondo ordine (attico)
+    const m = [(a[0]+b[0])/2 + nx/L*.01, (a[1]+b[1])/2 + ny/L*.01];
+    const [wx, wy] = iso(m[0], m[1], z + h*.5), [ax, ay] = iso(m[0], m[1], z + h + h2*.5);
+    g.fillStyle = NOTTE > .3 ? '#FFD98A' : '#5A6582'; g.fillRect(wx - 3, wy - 8, 6, 14); g.fillRect(ax - 2, ay - 3, 4, 6);
+    g.fillStyle = tono(col, .1); g.beginPath(); g.moveTo(wx - 6, wy - 9); g.lineTo(wx + 6, wy - 9); g.lineTo(wx, wy - 14); g.fill();   // timpano sulla finestra
+    linea([...b, z], [...b, z + h + h2], tono(col, -.25));
   }
-  poli(P(...pts.map(q => [...q, z + h]), [cx, cy, z + h]), tono(col, -.05));
-  for(let k=0; k<4; k++) linea([...pts[k], z + h], [...pts[k+1], z + h], '#E9DFCB', 3);
-  cupola(cx + dx*.02, cy + dy*.02, z + h, r*.92, r*.62, cup);
+  for(let k=0; k<n; k++){ linea([...pts[k], z + h], [...pts[k+1], z + h], '#F6EEDD', 2.5); linea([...pts[k], z + h + h2], [...pts[k+1], z + h + h2], '#F6EEDD', 3); }
+  poli(P(...pts.map(q => [...q, z + h + h2]), [cx, cy, z + h + h2]), tono(col, -.05));
+  cupola(cx + dx*.02, cy + dy*.02, z + h + h2, r*.9, r*.55, cup);
 }
 // Tempio della Consolazione: cubo centrale alto, quattro absidi poligonali più basse, attico, tamburo, cupola e lanterna
 function tempio(){
-  const cx = 4.4, cy = 2.6, z = Z2, m = 1.15, r = .85, col = COL.travertino, cup = '#A3ACBD';
-  ombra(cx + .7, cy + .7, z, 140, 58, .1);
-  apside(cx - m, cy, z, r, 1.45, -1, 0, col, cup); apside(cx, cy - m, z, r, 1.45, 0, -1, col, cup);
-  scatola(cx - m, cy - m, z, 2*m, 2*m, 2.3, col, { right:'#D9CDB6' });
-  fy(cy + m, cx - m, cx + m, z + 2.12, z + 2.3, '#F6EEDD'); fx(cx + m, cy - m, cy + m, z + 2.12, z + 2.3, '#E2D6BF');   // cornicione
-  for(const k of [-m, m - .14]){ fy(cy + m, cx + k, cx + k + .14, z, z + 2.12, '#F4EBD9'); fx(cx + m, cy + k, cy + k + .14, z, z + 2.12, '#E6DAC4'); } // paraste agli spigoli
-  cerchioY(cy + m, cx, z + 1.82, .16, '#5A6582');
-  apside(cx + m, cy, z, r, 1.45, 1, 0, col, cup); apside(cx, cy + m, z, r, 1.45, 0, 1, col, cup);
-  scatola(cx - .85, cy - .85, z + 2.3, 1.7, 1.7, .3, col, { right:'#DCD0B9' });
-  cilindro(cx, cy, z + 2.6, .78, .5, col);
-  for(let k=0; k<6; k++){ const a = Math.PI*(.05 + k*.17); const [wx, wy] = iso(cx + Math.cos(a)*.78, cy + Math.sin(a)*.78, z + 2.85);
-    g.fillStyle = NOTTE > .3 ? '#FFD98A' : '#5A6582'; g.fillRect(wx - 2, wy - 6, 4, 10); g.fillStyle = '#F6EEDD'; g.fillRect(wx + 5, wy - 9, 2, 16); }
-  cupola(cx, cy, z + 3.1, .78, .82, cup);
-  cilindro(cx, cy, z + 3.9, .16, .28, col); cupola(cx, cy, z + 4.18, .16, .14, cup);
+  const cx = 4.4, cy = 2.6, z = Z2, m = 1.15, r = 1.03, col = COL.travertino, cup = '#A3ACBD', hc = 2.45;
+  ombra(cx + .7, cy + .7, z, 150, 62, .1);
+  apside(cx - m, cy, z, r, 1.2, -1, 0, col, cup); apside(cx, cy - m, z, r, 1.2, 0, -1, col, cup);
+  scatola(cx - m, cy - m, z, 2*m, 2*m, hc, col, { right:'#D9CDB6' });
+  for(const k of [-m, m - .14]){ fy(cy + m, cx + k, cx + k + .14, z, z + hc, '#F4EBD9'); fx(cx + m, cy + k, cy + k + .14, z, z + hc, '#E6DAC4'); }   // paraste
+  fy(cy + m, cx - m, cx + m, z + hc - .16, z + hc, '#F6EEDD'); fx(cx + m, cy - m, cy + m, z + hc - .16, z + hc, '#E2D6BF');               // cornicione
+  for(const k of [-.55, .55]){ fy(cy + m, cx + k - .1, cx + k + .1, z + 1.75, z + 2.1, '#5A6582'); fx(cx + m, cy + k - .1, cy + k + .1, z + 1.75, z + 2.1, '#4F5A75'); }
+  apside(cx + m, cy, z, r, 1.2, 1, 0, col, cup); apside(cx, cy + m, z, r, 1.2, 0, 1, col, cup);
+  for(let k=0; k<10; k++){ scatola(cx - m + .08 + k*.23, cy + m - .1, z + hc, .07, .07, .2, '#F6EEDD'); scatola(cx + m - .1, cy - m + .08 + k*.23, z + hc, .07, .07, .2, '#E9DFCB'); }   // balaustra
+  linea([cx - m, cy + m - .06, z + hc + .21], [cx + m, cy + m - .06, z + hc + .21], '#F6EEDD', 3); linea([cx + m - .06, cy - m, z + hc + .21], [cx + m - .06, cy + m, z + hc + .21], '#E9DFCB', 3);
+  cilindro(cx, cy, z + hc, .84, .62, col);
+  for(let k=0; k<6; k++){ const a = Math.PI*(.04 + k*.18), [wx, wy] = iso(cx + Math.cos(a)*.84, cy + Math.sin(a)*.84, z + hc + .3);
+    g.fillStyle = NOTTE > .3 ? '#FFD98A' : '#5A6582'; g.fillRect(wx - 2.5, wy - 6, 5, 11);
+    g.fillStyle = '#F6EEDD'; g.beginPath(); g.moveTo(wx - 5, wy - 7); g.lineTo(wx + 5, wy - 7); g.lineTo(wx, wy - 11); g.fill(); }
+  const [ex, ey] = iso(cx, cy, z + hc + .62); g.strokeStyle = '#F6EEDD'; g.lineWidth = 3; g.beginPath(); g.ellipse(ex, ey, RX(.86), RY(.86), 0, 0, Math.PI); g.stroke();
+  cupola(cx, cy, z + hc + .62, .84, .92, cup);
+  cilindro(cx, cy, z + hc + 1.52, .15, .26, col); cupola(cx, cy, z + hc + 1.78, .15, .13, cup);
+  const [lx, ly] = iso(cx, cy, z + hc + 1.95); g.strokeStyle = '#6B7488'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(lx, ly); g.lineTo(lx, ly - 9); g.moveTo(lx - 3, ly - 6); g.lineTo(lx + 3, ly - 6); g.stroke();
 }
-function duomo(){                        // Duomo di Todi: facciata a capanna con rosone
-  const x = 8.0, y = .2, w = 2.7, d = 2.0, z = Z3, h = 2.8, col = '#F1E4D0';
-  scatola(x, y, z, w, d, h, col, { right:'#DCCCB3' });
-  tettoCapannaY(x, y, z + h, w, d, .9, COL.coppi, col);
-  linea([x, y+d, z+h], [x+w/2, y+d, z+h+.9], '#D8C7AD', 2); linea([x+w/2, y+d, z+h+.9], [x+w, y+d, z+h], '#D8C7AD', 2);
-  for(let k=1;k<3;k++) fy(y+d, x, x+w, z + k*.95, z + k*.95 + .05, '#E2D2B8');
-  cerchioY(y+d, x+w/2, z+2.05, .45, '#D9C9AF'); cerchioY(y+d, x+w/2, z+2.05, .34, NOTTE > .3 ? '#FFD98A' : '#6A6F8E'); cerchioY(y+d, x+w/2, z+2.05, .1, '#E8C770');
-  cerchioY(y+d, x+.55, z+1.9, .2, '#6A6F8E'); cerchioY(y+d, x+w-.55, z+1.9, .2, '#6A6F8E');
-  arcoY(y+d, x+w/2, z, .65, 1.15, '#7E5A42'); arcoY(y+d, x+.55, z, .36, .8, '#7E5A42'); arcoY(y+d, x+w-.55, z, .36, .8, '#7E5A42');
-  for(let k=0;k<3;k++) finestraX(x+w, y + .4 + k*.55, y + .6 + k*.55, z + 1.0, z + 1.7, 900 + k);
+function duomo(){
+  const x = 8.0, y = .2, w = 2.6, d = 2.8, z = Z3, h = 2.9, col = '#EEE6DA', rosa = '#E3B9A6';
+  // campanile (dietro a destra): due ordini di celle campanarie, tetto basso e croce
+  const cx0 = 10.75, cy0 = .5, cw = .75, ch = 4.5;
+  scatola(cx0, cy0, z, cw, cw, ch, '#E2D8C8', { right:'#CBBFAD', top:'#C8663E' });
+  for(const k of [0, 1]){ const zz = z + 2.7 + k*.85;
+    arcoY(cy0 + cw, cx0 + cw/2, zz, .36, .62, '#3E3A48'); const [bx, by] = iso(cx0 + cw/2, cy0 + cw, zz + .25); g.fillStyle = '#9C7A3C'; g.beginPath(); g.arc(bx, by, 4, Math.PI, 0); g.fill();
+    fx(cx0 + cw, cy0 + .2, cy0 + .55, zz, zz + .55, '#3E3A48'); }
+  fy(cy0 + cw, cx0, cx0 + cw, z + 2.55, z + 2.6, '#F2EBDF');
+  poli(P([cx0, cy0 + cw, z + ch], [cx0 + cw, cy0 + cw, z + ch], [cx0 + cw/2, cy0 + cw/2, z + ch + .25]), '#C8663E');
+  poli(P([cx0 + cw, cy0, z + ch], [cx0 + cw, cy0 + cw, z + ch], [cx0 + cw/2, cy0 + cw/2, z + ch + .25]), '#A9522F');
+  const [crx, cry] = iso(cx0 + cw/2, cy0 + cw/2, z + ch + .25); g.strokeStyle = '#4B4F60'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(crx, cry); g.lineTo(crx, cry - 12); g.moveTo(crx - 4, cry - 8); g.lineTo(crx + 4, cry - 8); g.stroke();
+  // navata con il tetto rosso, poi la facciata che la copre davanti
+  scatola(x, y, z, w, d, h - .3, col, { right:'#D8CFC2' });
+  for(let k=0; k<3; k++) finestraX(x + w, y + .5 + k*.75, y + .72 + k*.75, z + 1.2, z + 2.0, 900 + k);
+  tettoCapannaY(x + .05, y, z + h - .3, w - .1, d - .1, .75, COL.coppi, col);
+  scatola(x - .05, y + d, z, w + .1, .12, h + .35, col, { right:'#D8CFC2', top:'#F4EEE4' });
+  const fy0 = y + d + .12, H = h + .35;
+  for(const k of [0, .82, 1.78, 2.6]) fy(fy0, x - .05 + k, x + .1 + k, z, z + H, rosa);                     // lesene a fasce rosa
+  for(const zz of [1.62, 2.12]) fy(fy0, x - .05, x + w + .05, z + zz, z + zz + .06, '#D7C8B6');               // cornici orizzontali
+  fy(fy0, x - .05, x + w + .05, z + H - .1, z + H, '#D7C8B6');
+  cerchioY(fy0, x + w/2, z + 2.75, .5, '#DCCDBB'); cerchioY(fy0, x + w/2, z + 2.75, .4, NOTTE > .3 ? '#FFD98A' : '#77748A');   // rosone grande
+  for(let k=0; k<12; k++){ const a = k/12*Math.PI*2; linea([x + w/2, fy0, z + 2.75], [x + w/2 + Math.cos(a)*.38, fy0, z + 2.75 + Math.sin(a)*.38], '#CFC2B0'); }
+  cerchioY(fy0, x + w/2, z + 2.75, .1, '#E8C770');
+  for(const k of [.46, w - .46]){ cerchioY(fy0, x + k, z + 1.3, .22, '#DCCDBB'); cerchioY(fy0, x + k, z + 1.3, .15, '#77748A'); }   // rosoni piccoli
+  arcoY(fy0, x + w/2, z, .9, 1.42, rosa); arcoY(fy0, x + w/2, z, .76, 1.32, '#F2EBDF'); arcoY(fy0, x + w/2, z, .56, 1.12, '#6E4E3A');   // portale centrale
+  for(const k of [.46, w - .46]){ arcoY(fy0, x + k, z, .44, .92, '#DCCDBB'); arcoY(fy0, x + k, z, .3, .78, '#6E4E3A'); }
 }
 function palazzoPriori(){                // Palazzo dei Priori: bifore, merli guelfi, torre
-  const x = 13.3, y = .3, w = 3.9, d = 2.0, z = Z3, h = 2.4, col = '#CDB38D';
+  const x = 13.3, y = .3, w = 3.9, d = 2.75, z = Z3, h = 2.6, col = '#CDB38D';
   scatola(x, y, z, w, d, h, col, { right:'#B89E79' });
   for(let i=0; i<4; i++){ const cx = x + .55 + i*.95;
     for(const k of [-.1, .1]) finestraY(y+d, cx+k-.07, cx+k+.07, z + 1.25, z + 1.75, 700 + i*2 + (k>0));
     fy(y+d, cx - .22, cx + .22, z + 1.18, z + 1.24, '#E8DCC6'); }
   for(let i=0; i<3; i++) arcoY(y+d, x + .8 + i*1.15, z, .55, .85, '#6B5A4E');
   for(let i=0; i<9; i++) scatola(x + .05 + i*.44, y + d - .2, z + h, .22, .2, .22, col);
-  for(let i=0; i<5; i++) scatola(x + w - .2, y + .05 + i*.4, z + h, .2, .22, .22, col);
+  for(let i=0; i<7; i++) scatola(x + w - .2, y + .05 + i*.4, z + h, .2, .22, .22, col);
   const tx = 16.3, ty = .4;
   scatola(tx, ty, z + h, .85, .85, 1.5, col, { right:'#B89E79' });
   finestraY(ty + .85, tx + .28, tx + .57, z + h + .7, z + h + 1.15, 720);
   for(let i=0; i<3; i++){ scatola(tx + .02 + i*.31, ty + .65, z + h + 1.5, .2, .2, .22, col); scatola(tx + .65, ty + .02 + i*.31, z + h + 1.5, .2, .2, .22, col); }
+  const [ax, ay] = iso(tx + .42, ty + .42, z + h + 1.5); aquila(ax, ay, 1);
+}
+// l'aquila, simbolo di Todi, in bronzo con le ali spiegate
+function aquila(x, y, s){
+  g.fillStyle = '#5B6070'; g.fillRect(x - 5*s, y - 4*s, 10*s, 4*s);
+  const c = '#6E5236', cs = '#4E3A27';
+  g.fillStyle = cs;
+  for(const v of [-1, 1]){ g.beginPath(); g.moveTo(x, y - 18*s); g.quadraticCurveTo(x + v*12*s, y - 36*s, x + v*26*s, y - 34*s);
+    for(let k=0; k<4; k++) g.lineTo(x + v*(22 - k*5)*s, y - (28 - k*3)*s + (k%2)*3*s);
+    g.lineTo(x + v*4*s, y - 12*s); g.closePath(); g.fill(); }
+  g.fillStyle = c; g.beginPath(); g.ellipse(x, y - 14*s, 5*s, 10*s, 0, 0, 7); g.fill();
+  g.beginPath(); g.moveTo(x - 4*s, y - 5*s); g.lineTo(x + 4*s, y - 5*s); g.lineTo(x, y - 1*s); g.fill();
+  g.beginPath(); g.arc(x + 1*s, y - 26*s, 4*s, 0, 7); g.fill();
+  g.fillStyle = '#D9A93A'; g.beginPath(); g.moveTo(x + 4*s, y - 27*s); g.lineTo(x + 9*s, y - 25*s); g.lineTo(x + 4*s, y - 24*s); g.fill();
+  g.fillStyle = '#F2D06B'; g.beginPath(); g.arc(x + 2.5*s, y - 27*s, 1*s, 0, 7); g.fill();
 }
 function casa(x, y, w, d, piani, col, o={}){
   const h = piani*.95 + .15, z = o.z || 0, id = x*100 + y*10;
@@ -212,10 +256,9 @@ function scuola(){
   for(const k of [-.5, .5]){ fy(yc, cx + k - .13, cx + k + .13, 1.3, 2.0, '#F5EEDC'); finestraY(yc, cx + k - .1, cx + k + .1, 1.33, 1.95, 3061 + (k > 0)); }
   for(const k of [-.48, 0, .48]) finestraY(yc, cx + k - .1, cx + k + .1, 2.55, 2.95, 3070 + k*10);
   fy(yc, c0, c1, 3.0, 3.75, '#F3E7CB'); fy(yc, c0, c1, 2.98, 3.03, '#F5EAD0');
-  adesivo([cx - .34, yc, 3.71], [cx + .66, yc, 3.71], [cx - .34, yc, 2.71], () => {          // il logo della scuola, medaglione sull'attico
-    g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(34, 34, 34, 0, 7); g.fill(); g.strokeStyle = '#6E9F38'; g.lineWidth = 4; g.stroke();
-    const logo = document.getElementById('logo-scuola');
-    if(logo && logo.complete && logo.naturalWidth){ g.save(); g.beginPath(); g.arc(34, 34, 31, 0, 7); g.clip(); g.drawImage(logo, 2, 2, 64, 64); g.restore(); }
+  adesivo([c0 + .06, yc, 3.66], [c0 + 1.06, yc, 3.66], [c0 + .06, yc, 2.66], () => {                    // insegna in facciata
+    g.fillStyle = '#FBF6EA'; g.beginPath(); g.roundRect(0, 6, 128, 54, 8); g.fill(); g.strokeStyle = '#6E9F38'; g.lineWidth = 4; g.stroke();
+    g.fillStyle = '#2F5F2A'; g.font = '900 31px Nunito, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('SCUOLA', 64, 35);
   });
   for(let k=0; k<8; k++) scatola(c0 + .04 + k*.18, yc - .1, hc, .08, .08, .22, '#EFE6D0');   // balaustra della terrazza
   scatola(c0, yc - .1, hc + .22, c1 - c0, .1, .05, '#F5EAD0');
@@ -229,6 +272,13 @@ function scuola(){
   corpo(9.5, 10.05, 7.72, 3020); corpo(10.05, 11.0, 8.0, 3030);
   for(let f=0; f<3; f++) for(let j=0; j<2; j++) finestraX(11.0, y + .5 + j*1.2, y + .8 + j*1.2, .35 + f*1.0, .9 + f*1.0, 3100 + f*3 + j);
   tettoPadiglione(9.45, 5.3, h, 1.65, 2.82, .5, COL.coppi);
+  // il logo della scuola, grande, come insegna sulla terrazza del tetto
+  const [lx, ly] = iso(cx, y + 1.5, hc), R0 = 46;
+  g.fillStyle = 'rgba(46,51,80,.25)'; g.beginPath(); g.ellipse(lx, ly + 2, 34, 8, 0, 0, 7); g.fill();
+  g.fillStyle = '#5B6075'; g.fillRect(lx - 20, ly - 22, 4, 24); g.fillRect(lx + 16, ly - 22, 4, 24);
+  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(lx, ly - 22 - R0, R0, 0, 7); g.fill(); g.strokeStyle = '#6E9F38'; g.lineWidth = 4; g.stroke();
+  const logo = document.getElementById('logo-scuola');
+  if(logo && logo.complete && logo.naturalWidth){ g.save(); g.beginPath(); g.arc(lx, ly - 22 - R0, R0 - 3, 0, 7); g.clip(); g.drawImage(logo, lx - R0, ly - 22 - 2*R0, 2*R0, 2*R0); g.restore(); }
 }
 // la gelateria (a destra della scalinata), con il display dei coni sul fianco
 const GEL = { x:13.0, y:5.4, w:4.4, d:2.6, h:2.8, porta:16.6 };

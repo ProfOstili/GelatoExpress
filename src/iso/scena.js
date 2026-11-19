@@ -70,33 +70,39 @@ function pozzanghere(k, t, livello){
     g.strokeStyle = `rgba(255,255,255,${.6*(1-rr)*k})`; g.lineWidth = 1; g.beginPath(); g.ellipse(sx, sy, RX(r*k*rr), RY(r*k*rr)*.9, 0, 0, 7); g.stroke();
   });
 }
-function quotaSuolo(x, y){ if(x > 7 && x < 17.6 && y < 2.6) return Z3; if(x > 2.2 && x < 17.6 && y < 5.4) return Z2; return 0; }
+function quotaSuolo(x, y){ if(y < 0) return 0; if(x > 7 && x < 17.6 && y < 3.4) return Z3; if(x > 2.2 && x < 17.6 && y < 5.4) return Z2; return 0; }
 function pioggia(t){
   g.strokeStyle = 'rgba(160,205,245,.8)'; g.lineWidth = 1.5;
   for(let i=0; i<170; i++){
-    const x = hash(i)*DX, y = hash(i+30)*DY, zb = quotaSuolo(x, y), ph = frac(hash(i+60) + t*1.7), z = zb + 7 - ph*7;
+    const x = hash(i)*DX, y = YMIN + hash(i+30)*(DY - YMIN), zb = quotaSuolo(x, y), ph = frac(hash(i+60) + t*1.7), z = zb + 7 - ph*7;
     const [sx, sy] = iso(x, y, z); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 3, sy + 13); g.stroke();
   }
 }
-function nebbia(t){                                   // banchi di nebbia sul terzo livello
-  for(let i=0; i<5; i++){
-    const cx = ((t*14 + i*380) % 1900) - 300, cy = 175 + (i%3)*45, rx = 280 + (i%2)*120;
+function nebbia(t){                                   // banchi di nebbia: fitti sulla città alta, più leggeri in basso
+  const vel = g.createLinearGradient(0, 0, 0, LH); vel.addColorStop(0, 'rgba(236,240,246,.55)'); vel.addColorStop(.45, 'rgba(236,240,246,.35)'); vel.addColorStop(1, 'rgba(236,240,246,.05)');
+  g.fillStyle = vel; g.fillRect(0, 0, LW, LH);
+  for(let i=0; i<9; i++){
+    const cx = ((t*(12 + (i%3)*5) + i*260) % 2000) - 350, cy = 120 + (i%4)*55, rx = 320 + (i%3)*110;
     const gr = g.createRadialGradient(cx, cy, 10, cx, cy, rx);
-    gr.addColorStop(0, 'rgba(245,247,252,.85)'); gr.addColorStop(.6, 'rgba(245,247,252,.5)'); gr.addColorStop(1, 'rgba(245,247,252,0)');
-    g.save(); g.translate(cx, cy); g.scale(1, .28); g.translate(-cx, -cy); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rx, 0, 7); g.fill(); g.restore();
+    gr.addColorStop(0, 'rgba(246,248,252,.95)'); gr.addColorStop(.55, 'rgba(246,248,252,.6)'); gr.addColorStop(1, 'rgba(246,248,252,0)');
+    g.save(); g.translate(cx, cy); g.scale(1, .32); g.translate(-cx, -cy); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, rx, 0, 7); g.fill(); g.restore();
   }
 }
 
 /* =====================================================================
    IL CAMION: percorre la strada a U (arriva da sinistra, riparte a destra)
    ===================================================================== */
-const PERCORSO = (() => {
-  const pts = [], { xS, xD, yF, cy, r } = CL;
-  for(let y=-2.5; y<cy; y+=.1) pts.push([xS, y]);
+const PERCORSO = (() => {                          // strada ad anello: il camion sbuca da dietro la città e ci torna
+  const pts = [], { xS, xD, yF, cy, yB, cyB, r } = CL;
+  for(let x=10.5; x>2.4; x-=.1) pts.push([x, yB]);
+  for(let i=0; i<=24; i++){ const f = Math.PI*1.5 - i/24*Math.PI/2; pts.push([2.4 + r*Math.cos(f), cyB + r*Math.sin(f)]); }
+  for(let y=cyB + .1; y<cy; y+=.1) pts.push([xS, y]);
   for(let i=0; i<=24; i++){ const f = Math.PI - i/24*Math.PI/2; pts.push([2.4 + r*Math.cos(f), cy + r*Math.sin(f)]); }
   for(let x=2.5; x<17.6; x+=.1) pts.push([x, yF]);
   for(let i=0; i<=24; i++){ const f = Math.PI/2 - i/24*Math.PI/2; pts.push([17.6 + r*Math.cos(f), cy + r*Math.sin(f)]); }
-  for(let y=cy - .1; y>-3; y-=.1) pts.push([xD, y]);
+  for(let y=cy - .1; y>cyB; y-=.1) pts.push([xD, y]);
+  for(let i=0; i<=24; i++){ const f = -i/24*Math.PI/2; pts.push([17.6 + r*Math.cos(f), cyB + r*Math.sin(f)]); }
+  for(let x=17.5; x>9.5; x-=.1) pts.push([x, yB]);
   const L = [0]; for(let i=1; i<pts.length; i++) L.push(L[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]));
   const iStop = pts.findIndex(([x, y]) => y === yF && x >= 15.2);
   return { pts, L, tot:L[L.length-1], sStop:L[iStop] };
@@ -146,7 +152,7 @@ const GIORNI = [
   { meteo:'pioggia',  clienti:3, coni:6 },                  // la mattina i pacchi entrano in negozio
   { meteo:'nuvoloso', clienti:6, coni:6 }
 ];
-const CAM = { entra:.62, ferma:.76, riparte:.84, esce:.97 };
+const CAM = { entra:.58, ferma:.76, riparte:.84, esce:.985 };
 const CHIUDE = .87, BUIO = .95;
 const PACCHI = [[16.2, 8.85, .1], [16.95, 8.85, .1], [16.57, 8.85, .67]];
 let durataGiorno = 12, modo = 'scena';
@@ -168,8 +174,8 @@ function scena(t){
     else if(p < CAM.riparte) s = PERCORSO.sStop;
     else s = lerp(PERCORSO.sStop, PERCORSO.tot, easeInQ(seg(p, CAM.riparte, CAM.esce)));
     cam = { ...lungoPercorso(s), fermo: p >= CAM.ferma && p < CAM.riparte };
-    cam.alpha = clamp(Math.min(cam.y + 2.2, 99)*.8);
-    cam.prima = cam.x < 2.3 && cam.y < 5;
+    cam.alpha = clamp(Math.min(s, PERCORSO.tot - s)/1.5);
+    cam.prima = cam.y < .3 || (cam.x < 2.3 && cam.y < 5);              // dietro la città: va disegnato prima
   }
   const disegnaCamion = () => { g.globalAlpha = cam.alpha; camion(cam.x, cam.y, cam.ang, t, cam.fermo); g.globalAlpha = 1; };
   if(cam && cam.prima) disegnaCamion();
@@ -180,10 +186,10 @@ function scena(t){
   tempio(); lampione(6.75, 4.95, Z2);
   livello3(); torreMura();
   if(piove) pozzanghere(k, t, Z3);
-  duomo(); casa(11.0, .35, 1.9, 1.7, 2, COL.pietra, { z:Z3, pietra:true, camino:true }); palazzoPriori();
+  duomo(); casa(11.6, .35, 1.5, 2.5, 3, COL.pietra, { z:Z3, pietra:true, camino:true }); palazzoPriori();
   merliDavanti(); portaCitta();
   if(G.meteo === 'nuvoloso') nebbia(t);
-  scalinata(11.2, 1.6, 5.4, 3.0, Z2, Z2 + .7, 4); lampione(10.75, 4.95, Z2);
+  scalinata(11.2, 1.6, 5.4, 3.8, Z2, Z2 + .7, 4); lampione(10.75, 4.95, Z2);
   // livello 1
   giardino(sboccio); scuola();
   scalinata(11.2, 1.6, 8.0, 5.4, 0, Z2, 7);
@@ -201,6 +207,18 @@ function scena(t){
     else { x = lerp(banco, servito ? 18.2 : inizio, ease((q - .62)/.38)); verso = servito ? 1 : -1; st = servito ? 1 : -1; cono = servito; }
     const y = 8.92 + (i % 2)*.18;
     dinamici.push({ y, f: () => { g.globalAlpha = clamp(Math.min(x - 2.3, 18.3 - x)*2.5); cliente(x, y, (i + n*2) % 6, cammina ? t*2.2 + i*.3 : 0, verso, st, cono); g.globalAlpha = 1; } });
+  }
+  // i ragazzi attraversano sulle strisce ed entrano a scuola; escono verso mezzogiorno
+  for(let i=0; i<8; i++){
+    const xs = 8.5 + (i%3)*.22, entra = seg(p, .06 + i*.011, .14 + i*.011), esce = seg(p, .4 + i*.011, .48 + i*.011);
+    for(const [q, dir] of [[entra, 1], [esce, -1]]){
+      if(q <= 0 || q >= 1) continue;
+      const k = dir > 0 ? q : 1 - q;                     // 0 = bordo del plastico, 1 = portone della scuola
+      let x = xs, y = lerp(12.3, 8.7, seg(k, 0, .8));
+      if(k > .8){ x = lerp(xs, 8.8, seg(k, .8, 1)); y = lerp(8.7, 8.25, seg(k, .8, 1)); }
+      const a = clamp(Math.min((12.3 - y)*2.5, (1 - k)*8));
+      dinamici.push({ y, f: () => { g.globalAlpha = a; ragazzo(x, y, i, t*2.4 + i*.4, dir > 0 ? 1 : -1); g.globalAlpha = 1; } });
+    }
   }
   // pacchi: il camion li lascia la sera, la mattina dopo entrano in negozio
   const pacchiStasera = G.camion && p > CAM.ferma;

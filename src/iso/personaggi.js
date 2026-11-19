@@ -73,3 +73,19 @@ function coneIcona(sx, sy, s){
 }
 
 
+
+// un ragazzo che va a scuola, con lo zaino
+function ragazzo(x, y, ci, passo, verso, umore=1){
+  const [sx, sy0] = iso(x, y, .02), col = ['#5C7CE0','#E86A8F','#F5A04A','#4FB89A','#9B7BE0','#E0C34A','#6CC0E8','#D9655B'][ci % 8], s = .72 + hash(ci + 9)*.12;
+  const salto = -Math.abs(Math.sin(passo*Math.PI))*3, sy = sy0 + salto;
+  ombra(x, y, .02, 10, 4, .18);
+  g.save(); g.translate(sx, sy); g.scale(verso, 1);
+  g.strokeStyle = COL.ink; g.lineWidth = 2.5; g.lineCap = 'round';
+  const gamba = Math.sin(passo*Math.PI*2)*4;
+  g.beginPath(); g.moveTo(-4, -8); g.lineTo(-4 + gamba, -salto); g.moveTo(4, -8); g.lineTo(4 - gamba, -salto); g.stroke();
+  g.fillStyle = ['#2F5F9A','#7A3B5E','#3F6E3A','#A0522D'][ci % 4]; g.beginPath(); g.roundRect(-17*s, -32*s, 9*s, 16*s, 3*s); g.fill();   // zaino
+  sfera(0, -22*s, 14*s, col, .3);
+  g.fillStyle = COL.ink; g.beginPath(); g.ellipse(4*s, -26*s, 1.8*s, 2.7*s, 0, 0, 7); g.ellipse(10*s, -26*s, 1.8*s, 2.7*s, 0, 0, 7); g.fill();
+  g.lineWidth = 1.8; g.beginPath(); g.arc(7*s, -21.5*s, 3*s, .2, Math.PI - .2); g.stroke();
+  g.restore();
+}
