@@ -263,22 +263,28 @@ function scuola(){
   for(let k=0; k<8; k++) scatola(c0 + .04 + k*.18, yc - .1, hc, .08, .08, .22, '#EFE6D0');   // balaustra della terrazza
   scatola(c0, yc - .1, hc + .22, c1 - c0, .1, .05, '#F5EAD0');
   for(let f=0; f<3; f++) finestraX(c1, y + 2.3, y + 2.6, .4 + f*1.0, .9 + f*1.0, 3080 + f);
-  // bandiera italiana sul balcone
-  const [bx, by] = iso(c1 - .1, yc + .28, 1.48), sv = Math.sin(performance.now()/300)*2;
-  g.strokeStyle = '#555'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + 16, by - 30); g.stroke();
-  [['#2E8B57',0],['#FFFFFF',1],['#D2353F',2]].forEach(([c, i]) => { g.fillStyle = c; g.beginPath(); g.moveTo(bx + 16 + i*7, by - 30 + sv*i*.3); g.lineTo(bx + 23 + i*7, by - 30 + sv*(i+1)*.3); g.lineTo(bx + 23 + i*7, by - 20 + sv*(i+1)*.3); g.lineTo(bx + 16 + i*7, by - 20 + sv*i*.3); g.fill(); });
   scatola(cx - .7, yc, 0, 1.4, .32, .06, '#D6D5CE'); scatola(cx - .5, yc + .32, 0, 1.0, .2, .04, '#D6D5CE');   // gradini
   // rientranza destra, ala destra e il tetto di questa metà
   corpo(9.5, 10.05, 7.72, 3020); corpo(10.05, 11.0, 8.0, 3030);
   for(let f=0; f<3; f++) for(let j=0; j<2; j++) finestraX(11.0, y + .5 + j*1.2, y + .8 + j*1.2, .35 + f*1.0, .9 + f*1.0, 3100 + f*3 + j);
   tettoPadiglione(9.45, 5.3, h, 1.65, 2.82, .5, COL.coppi);
+  // bandiera italiana: asta che sporge dal balcone verso la strada, disegnata per ultima così non viene coperta
+  const [bx, by] = iso(cx + .55, yc + .3, 1.5), [tx, ty] = iso(cx + .55, yc + 1.05, 2.55), t = performance.now()/300;
+  g.strokeStyle = '#4B5270'; g.lineWidth = 2.2; g.lineCap = 'round'; g.beginPath(); g.moveTo(bx, by); g.lineTo(tx, ty); g.stroke();
+  g.fillStyle = '#D9A93A'; g.beginPath(); g.arc(tx, ty, 2.6, 0, 7); g.fill();
+  const fw = 13, fh = 22;
+  [['#2E8B57',0],['#FFFFFF',1],['#D2353F',2]].forEach(([c, i]) => {
+    const o0 = Math.sin(t + i*.9)*2.2, o1 = Math.sin(t + (i+1)*.9)*2.2;
+    g.fillStyle = c; g.beginPath(); g.moveTo(tx + i*fw, ty + 2 + o0); g.lineTo(tx + (i+1)*fw, ty + 2 + o1); g.lineTo(tx + (i+1)*fw, ty + 2 + fh + o1); g.lineTo(tx + i*fw, ty + 2 + fh + o0); g.closePath(); g.fill();
+  });
+  g.strokeStyle = 'rgba(46,51,80,.25)'; g.lineWidth = 1; g.strokeRect(tx, ty + 2, 3*fw, fh);
   // il logo della scuola, grande, come insegna sulla terrazza del tetto
-  const [lx, ly] = iso(cx, y + 1.5, hc), R0 = 37;
-  g.fillStyle = 'rgba(46,51,80,.25)'; g.beginPath(); g.ellipse(lx, ly + 2, 27, 6, 0, 0, 7); g.fill();
-  g.fillStyle = '#5B6075'; g.fillRect(lx - 16, ly - 18, 3, 19); g.fillRect(lx + 13, ly - 18, 3, 19);
-  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(lx, ly - 18 - R0, R0, 0, 7); g.fill(); g.strokeStyle = '#6E9F38'; g.lineWidth = 3.2; g.stroke();
+  const [lx, ly] = iso(cx, y + 1.5, hc), R0 = 30;
+  g.fillStyle = 'rgba(46,51,80,.25)'; g.beginPath(); g.ellipse(lx, ly + 2, 22, 5, 0, 0, 7); g.fill();
+  g.fillStyle = '#5B6075'; g.fillRect(lx - 13, ly - 15, 2.5, 16); g.fillRect(lx + 10.5, ly - 15, 2.5, 16);
+  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(lx, ly - 15 - R0, R0, 0, 7); g.fill(); g.strokeStyle = '#6E9F38'; g.lineWidth = 2.6; g.stroke();
   const logo = document.getElementById('logo-scuola');
-  if(logo && logo.complete && logo.naturalWidth){ g.save(); g.beginPath(); g.arc(lx, ly - 18 - R0, R0 - 3, 0, 7); g.clip(); g.drawImage(logo, lx - R0, ly - 18 - 2*R0, 2*R0, 2*R0); g.restore(); }
+  if(logo && logo.complete && logo.naturalWidth){ g.save(); g.beginPath(); g.arc(lx, ly - 15 - R0, R0 - 3, 0, 7); g.clip(); g.drawImage(logo, lx - R0, ly - 15 - 2*R0, 2*R0, 2*R0); g.restore(); }
 }
 // la gelateria (a destra della scalinata), con il display dei coni sul fianco
 const GEL = { x:13.0, y:5.4, w:4.4, d:2.6, h:2.8, porta:16.6 };
