@@ -273,12 +273,12 @@ function scuola(){
   for(let f=0; f<3; f++) for(let j=0; j<2; j++) finestraX(11.0, y + .5 + j*1.2, y + .8 + j*1.2, .35 + f*1.0, .9 + f*1.0, 3100 + f*3 + j);
   tettoPadiglione(9.45, 5.3, h, 1.65, 2.82, .5, COL.coppi);
   // il logo della scuola, grande, come insegna sulla terrazza del tetto
-  const [lx, ly] = iso(cx, y + 1.5, hc), R0 = 46;
-  g.fillStyle = 'rgba(46,51,80,.25)'; g.beginPath(); g.ellipse(lx, ly + 2, 34, 8, 0, 0, 7); g.fill();
-  g.fillStyle = '#5B6075'; g.fillRect(lx - 20, ly - 22, 4, 24); g.fillRect(lx + 16, ly - 22, 4, 24);
-  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(lx, ly - 22 - R0, R0, 0, 7); g.fill(); g.strokeStyle = '#6E9F38'; g.lineWidth = 4; g.stroke();
+  const [lx, ly] = iso(cx, y + 1.5, hc), R0 = 37;
+  g.fillStyle = 'rgba(46,51,80,.25)'; g.beginPath(); g.ellipse(lx, ly + 2, 27, 6, 0, 0, 7); g.fill();
+  g.fillStyle = '#5B6075'; g.fillRect(lx - 16, ly - 18, 3, 19); g.fillRect(lx + 13, ly - 18, 3, 19);
+  g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(lx, ly - 18 - R0, R0, 0, 7); g.fill(); g.strokeStyle = '#6E9F38'; g.lineWidth = 3.2; g.stroke();
   const logo = document.getElementById('logo-scuola');
-  if(logo && logo.complete && logo.naturalWidth){ g.save(); g.beginPath(); g.arc(lx, ly - 22 - R0, R0 - 3, 0, 7); g.clip(); g.drawImage(logo, lx - R0, ly - 22 - 2*R0, 2*R0, 2*R0); g.restore(); }
+  if(logo && logo.complete && logo.naturalWidth){ g.save(); g.beginPath(); g.arc(lx, ly - 18 - R0, R0 - 3, 0, 7); g.clip(); g.drawImage(logo, lx - R0, ly - 18 - 2*R0, 2*R0, 2*R0); g.restore(); }
 }
 // la gelateria (a destra della scalinata), con il display dei coni sul fianco
 const GEL = { x:13.0, y:5.4, w:4.4, d:2.6, h:2.8, porta:16.6 };
