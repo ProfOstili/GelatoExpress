@@ -7,6 +7,7 @@
 <!--
   PROVA della scena della simulazione in stile "Tiny Diorama" (three.js, tempo reale).
   Sorgente: impacchettato in prova-diorama.html da strumenti/build.py (three.js e font incorporati, funziona offline).
+  Ridisegna nel nuovo stile la Todi della versione isometrica (livelli, mura, Consolazione, Duomo, Priori, scuola).
   I pulsanti chiamano gli stessi agganci che userà il gioco: setMeteo, setOra, camion, cliente, setFinito, setStock.
 -->
 <style>
@@ -77,7 +78,15 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
 </div>
 
 <script>/*@JS:vendor/three.min.js@*/</script>
-<script>/*@JS:src/diorama/diorama.js@*/</script>
+<img id="logo-scuola" src="@DATA:assets/logo-istituto.jpg@" alt="" hidden>
+<script>
+// il diorama: kit (forme e vernici), città (Todi su tre livelli), scena (luci, camera, animazioni)
+(() => {
+/*@JS:src/diorama/kit.js@*/
+/*@JS:src/diorama/citta.js@*/
+/*@JS:src/diorama/diorama.js@*/
+})();
+</script>
 <script>
 // ---- pagina di prova: imita i pezzi del gioco che useranno gli agganci ----
 const $ = (s) => document.querySelector(s);
@@ -116,7 +125,7 @@ function arriva(kg) {
 }
 // clienti
 let coni = 12, cassa = 120;
-Diorama.setConi(coni);
+Diorama.setConi(coni, 12);
 function cliente(servito) {
   Diorama.cliente(servito, 2600 / speed);
   if (servito && coni > 0) {

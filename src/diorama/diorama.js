@@ -1,431 +1,221 @@
 /* =====================================================================
    DIORAMA 3D — "Tiny Diorama" per La Gelateria Automatica
-   Un piccolo mondo su una sola piastrella sospesa: il fornitore, la strada
-   e la gelateria, collegati dal furgoncino. Stile ripreso da Futurepedia
-   3D Style Atlas #04 (docs/tiny-diorama-prompt.md): stessi materiali,
-   luce, camera e finitura, ma rifatto per il tempo reale (un solo render
-   per fotogramma + un passaggio di post-produzione leggero).
+   Todi su una sola piastrella sospesa, come un plastico da architetto:
+   il fornitore (tappa 1), la strada ad anello (tappa 2), la gelateria (tappa 3),
+   la scuola, le mura, la Consolazione, il Duomo e il Palazzo dei Priori.
+   Un solo render per fotogramma + un passaggio di post-produzione leggero.
 
+   Richiede: three.js 0.187.0 (window.THREE), src/diorama/kit.js, src/diorama/citta.js
    Uso:   Diorama.monta(contenitore)  poi gli agganci:
           setMeteo, setOra, camion, cliente, setConi, setFinito,
-          setVenduto, setStock, nuovoGiorno, setSpeed
-   Richiede la variabile globale THREE (three.js 0.187.0, solo core).
+          setVenduto, setStock, nuovoGiorno, setSpeed, posizioneSchermo
    ===================================================================== */
-const Diorama = (() => {
-  const THREE = window.THREE;
-
-  /* ---------------------------------------------------------------
-     MATEMATICA E CASO CON SEME (niente Math.random nella scena)
-     --------------------------------------------------------------- */
-  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const seg = (t, a, b) => clamp((t - a) / (b - a));
-  const liscio = (a, b, x) => { const t = seg(x, a, b); return t * t * (3 - 2 * t); };
-  const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const easeOutBack = (t, s = 1.70158) => 1 + (s + 1) * Math.pow(t - 1, 3) + s * Math.pow(t - 1, 2);
-  // molla smorzata da 0 a 1 (t in secondi): per i cartelli che si girano e le cose che rimbalzano
-  const molla = (t, freq = 2.2, damp = 0.45) => {
-    if (t <= 0) return 0;
-    const w = 2 * Math.PI * freq, wd = w * Math.sqrt(1 - damp * damp);
-    return 1 - Math.exp(-damp * w * t) * (Math.cos(wd * t) + (damp * w / wd) * Math.sin(wd * t));
-  };
-  // generatore pseudo-casuale con seme (mulberry32)
-  const rng = (seme) => {
-    let a = seme >>> 0;
-    const r = () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    r.range = (lo, hi) => lo + (hi - lo) * r();
-    r.pick = (arr) => arr[Math.floor(r() * arr.length)];
-    r.chance = (p) => r() < p;
-    return r;
-  };
-  const hash = (x, y = 0) => { const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123; return h - Math.floor(h); };
-
-  /* ---------------------------------------------------------------
-     CONTENUTO: posizioni sulla piastrella (x sinistra→destra, z dietro(−)→davanti(+), y in alto, 0 = erba)
-     --------------------------------------------------------------- */
-  const TILE = { w: 13, d: 8.6, r: 1.0 }, FLOOR = -3.6;
-  const STRADA = [[-2.3, -1.9], [-1.0, -1.9], [0.2, -1.85], [1.2, -1.6], [1.85, -0.9], [1.9, 0.1], [1.35, 0.95], [1.0, 1.85], [1.5, 2.65], [2.6, 2.85], [3.9, 2.85], [5.2, 2.85], [6.6, 2.85]];
-  const FORN = { x: -4.0, z: -2.0, w: 3.0, d: 2.6, h: 1.45 };      // tappa 1: il fornitore
-  const GEL = { x: 3.65, z: 0.55, w: 2.7, d: 1.9, h: 1.65 };        // tappa 3: la gelateria
-  const CASSE = { x: 5.65, z: 0.15 };                               // la pila di casse del magazzino
-  const CARTELLI = [
-    { parola: 'ORDINATO', at: [-3.4, -3.05], h: 2.35 },             // sul tetto del fornitore
-    { parola: 'IN VIAGGIO', at: [0.35, 0.15], h: 1.35 },          // lungo la strada
-    { parola: 'VENDUTO', at: [4.75, -0.55], h: 2.85 },             // dietro la gelateria
-  ];
-  // la passeggiata dei clienti: arrivano da sinistra, si fermano al bancone, ripartono
-  const CLIENTI = { da: [0.3, 2.08], banco: [3.05, 2.08], via: [6.3, 2.12] };
-  const FURGONE_PARTENZA = -1.15, FURGONE_ARRIVO = 3.2;            // x sulla strada dove parte e dove si ferma
-
-  // pochi colori di vernice opaca; UN solo accento, riservato al gelato
-  const PAL = {
-    sfondo: '#b4d2de', sera: '#8fa6c6', notte: '#4d556c', pioggia: '#97a7b5', nuvole: '#aebfcb',
-    erba: '#9fc47c', foglie: ['#5fa574', '#3f866c', '#84ba6b'], tronco: '#8b5b3e',
-    terra: ['#5c4135', '#8f6248', '#c9955f', '#7c7f8e'], sasso: ['#a9a9b0', '#d9cdb8', '#8d8f9c'],
-    crema: '#f6ebd8', ardesia: '#44718a', senape: '#f0b040', accento: '#ff6fa5', vetro: '#2c4658', scuro: '#272b36',
-    strada: '#6e7080', cartone: '#cb9c68', pelle: '#f2c8a2', fumo: '#ffffff', acqua: '#7f9fb8', lampada: '#ffc56e',
-    travertino: '#eee4d0', cupola: '#9aa3b4', cialda: '#e0a85a', cioccolato: '#7a4a35', menta: '#bfe3cf',
-  };
-  const FONT = '600 160px "Fredoka"';
-
+window.Diorama = (() => {
   /* ---------------------------------------------------------------
      STATO (impostato dagli agganci del gioco)
      --------------------------------------------------------------- */
   const stato = {
-    meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10,
-    camion: { attivo: false, kg: 0, ore: 0 }, coni: 0, finito: false, venduto: false, stock: 40, stockMax: 100,
+    meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
+    camion: { attivo: false, kg: 0, ore: 0 }, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
     speed: 1, qualita: 'alta',
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
+  const O = {};                                                     // tutto ciò che si anima
   const tReale = () => performance.now() / 1000;
   let tGioco = 0, ultimoT = 0;                                      // orologio che segue la velocità (1×, 2×, 4×)
-  const eventi = [];                                                // animazioni a tempo (clienti, ritorno del furgone)
+  const eventi = [];                                                // clienti in arrivo
+
+  // i cartelli delle tre tappe (coordinate isometriche + altezza dell'asta)
+  const CARTELLI = [
+    { parola: 'ORDINATO', at: [-1.95, -2.35, 0], h: 3.3 },
+    { parola: 'IN VIAGGIO', at: [-1.55, 6.45, 0], h: 2.1 },
+    { parola: 'VENDUTO', at: [16.7, 4.45, Z2], h: 2.85 },
+  ];
 
   /* ---------------------------------------------------------------
-     FORME (dal kit del riferimento): anelli arrotondati, estrusioni, scatole morbide
+     MATTONCINI CHE SI MUOVONO: omini a piolo, il gelataio, cartelli, furgone, sbuffi
      --------------------------------------------------------------- */
-  // un rettangolo con gli angoli arrotondati, come anello di punti con le normali verso l'esterno
-  function anello(w, d, r, n = 10) {
-    const pts = [], hx = w / 2 - r, hz = d / 2 - r; let u = 0, px = 0, pz = 0;
-    for (let k = 0; k < 4; k++) for (let i = 0; i <= n; i++) {
-      const a = (k + i / n) * Math.PI / 2, x = (k === 0 || k === 3 ? hx : -hx) + r * Math.cos(a), z = (k < 2 ? hz : -hz) + r * Math.sin(a);
-      if (pts.length) u += Math.hypot(x - px, z - pz);
-      px = x; pz = z; pts.push({ x, z, nx: Math.cos(a), nz: Math.sin(a), u });
-    }
-    pts.push({ ...pts[0], u: u + Math.hypot(pts[0].x - px, pts[0].z - pz) });
-    pts.giro = pts[pts.length - 1].u;
-    return pts;
-  }
-  // un profilo laterale fatto girare lungo l'anello: piastrella, bordo d'erba, zoccoli, pozzanghere
-  function loft(giro, profilo, tappo = true) {
-    const Pf = profilo.map(([ins, y, a], j) => { const p0 = profilo[Math.max(0, j - 1)], p1 = profilo[Math.min(profilo.length - 1, j + 1)]; return [ins, y, a == null ? Math.atan2(p0[1] - p1[1], p0[0] - p1[0]) : a]; });
-    const M = giro.length, pos = [], nor = [], uv = [], idx = [], y0 = Pf[0][1], y1 = Pf[Pf.length - 1][1];
-    for (const [ins, y, a] of Pf) for (const p of giro) { pos.push(p.x - p.nx * ins, y, p.z - p.nz * ins); nor.push(p.nx * Math.sin(a), Math.cos(a), p.nz * Math.sin(a)); uv.push(p.u / giro.giro, (y - y1) / (y0 - y1 || 1)); }
-    for (let j = 0; j < Pf.length - 1; j++) for (let i = 0; i < M - 1; i++) { const a = j * M + i, b = a + 1, c = a + M, d = c + 1; idx.push(a, b, c, b, d, c); }
-    const g = new THREE.BufferGeometry(), nLati = idx.length;
-    if (tappo) {
-      const base = pos.length / 3; pos.push(0, y0, 0); nor.push(0, 1, 0); uv.push(0, 0);
-      for (const p of giro) { const x = p.x - p.nx * Pf[0][0], z = p.z - p.nz * Pf[0][0]; pos.push(x, y0, z); nor.push(0, 1, 0); uv.push(x, z); }
-      for (let i = 0; i < M - 1; i++) idx.push(base, base + 2 + i, base + 1 + i);
-    }
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    g.setIndex(idx); g.addGroup(0, nLati, 0); if (tappo) g.addGroup(nLati, idx.length - nLati, 1);
-    return g;
-  }
-  const bordino = (r, y, n = 5) => Array.from({ length: n + 1 }, (_, i) => { const a = i / n * Math.PI / 2; return [r * (1 - Math.sin(a)), y - r * (1 - Math.cos(a)), a]; });
-  // una sagoma con gli angoli arrotondati, estrusa con i bordi morbidi (tetti, furgone)
-  function prisma(pts, r, prof, bev = 0.04) {
-    const s = new THREE.Shape(), n = pts.length;
-    pts.forEach((p, i) => {
-      const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n], da = Math.hypot(a[0] - p[0], a[1] - p[1]), db = Math.hypot(b[0] - p[0], b[1] - p[1]), k = Math.min(Array.isArray(r) ? r[i] : r, da / 2, db / 2);
-      const p0 = [p[0] + (a[0] - p[0]) * k / da, p[1] + (a[1] - p[1]) * k / da], p1 = [p[0] + (b[0] - p[0]) * k / db, p[1] + (b[1] - p[1]) * k / db];
-      if (i === 0) s.moveTo(p0[0], p0[1]); else s.lineTo(p0[0], p0[1]);
-      s.quadraticCurveTo(p[0], p[1], p1[0], p1[1]);
-    });
-    s.closePath();
-    const g = new THREE.ExtrudeGeometry(s, { depth: prof - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 2, curveSegments: 5 });
-    g.translate(0, 0, -(prof - 2 * bev) / 2);
-    return g;
-  }
-  // scatola con gli spigoli arrotondati (geometrie messe in cache: la stessa misura si costruisce una volta sola)
-  const cacheGeo = new Map();
-  function scatolaGeo(w, h, d, r = 0.05, seg = 3) {
-    const key = [w, h, d, r, seg].map((v) => v.toFixed(3)).join('|');
-    if (cacheGeo.has(key)) return cacheGeo.get(key);
-    r = Math.max(1e-4, Math.min(r, w / 2, h / 2, d / 2));
-    const N = 2 * seg + 1, g = new THREE.BoxGeometry(2, 2, 2, N, N, N), p = g.attributes.position, nrm = g.attributes.normal;
-    const half = [w / 2 - r, h / 2 - r, d / 2 - r], v = new THREE.Vector3();
-    for (let i = 0; i < p.count; i++) {
-      const c = [p.getX(i), p.getY(i), p.getZ(i)], inner = [0, 0, 0], a = [0, 0, 0];
-      for (let k = 0; k < 3; k++) { const ix = Math.round((c[k] + 1) * N / 2), lato = ix <= seg ? -1 : 1; a[k] = ix <= seg ? -(1 - ix / seg) : (ix - seg - 1) / seg; inner[k] = lato * half[k]; }
-      v.set(Math.tan(a[0] * Math.PI / 4), Math.tan(a[1] * Math.PI / 4), Math.tan(a[2] * Math.PI / 4)).normalize();
-      p.setXYZ(i, inner[0] + v.x * r, inner[1] + v.y * r, inner[2] + v.z * r); nrm.setXYZ(i, v.x, v.y, v.z);
-    }
-    g.computeBoundingSphere(); cacheGeo.set(key, g);
-    return g;
-  }
-  function rettangoloGeo(w, h, r = 0.05) {
-    const s = new THREE.Shape(), x = w / 2, y = h / 2; r = Math.min(r, x, y);
-    s.moveTo(-x + r, -y); s.lineTo(x - r, -y); s.absarc(x - r, -y + r, r, -Math.PI / 2, 0); s.lineTo(x, y - r); s.absarc(x - r, y - r, r, 0, Math.PI / 2);
-    s.lineTo(-x + r, y); s.absarc(-x + r, y - r, r, Math.PI / 2, Math.PI); s.lineTo(-x, -y + r); s.absarc(-x + r, -y + r, r, Math.PI, Math.PI * 1.5);
-    const g = new THREE.ShapeGeometry(s, 6), p = g.attributes.position, uv = g.attributes.uv;
-    for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / w + 0.5, p.getY(i) / h + 0.5);
-    return g;
-  }
-  function texCanvas(w, h, disegna, ripeti) {
-    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-    const ctx = cv.getContext('2d'); if (disegna) disegna(ctx, w, h);
-    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-    if (ripeti) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(ripeti[0], ripeti[1]); }
-    t.ridisegna = (fn) => { ctx.clearRect(0, 0, w, h); fn(ctx, w, h); t.needsUpdate = true; };
-    return t;
-  }
-
-  /* ---------------------------------------------------------------
-     VERNICE: tutto opaco da modellino, un materiale per colore (condiviso)
-     --------------------------------------------------------------- */
-  const vernici = new Map();
-  const vernice = (hex, rough = 0.86) => { const k = hex + rough; if (!vernici.has(k)) vernici.set(k, new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: 0 })); return vernici.get(k); };
-  // qualcosa che si accende: vetro scuro di giorno, lampadina calda quando sale emissiveIntensity
-  const luminosa = (hex = PAL.vetro, glow = PAL.lampada) => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.45, emissive: glow, emissiveIntensity: 0 });
-  function metti(padre, geo, mat, p = [0, 0, 0], r, ombra = true) {
-    const m = new THREE.Mesh(geo, typeof mat === 'string' ? vernice(mat) : mat);
-    m.position.set(p[0], p[1], p[2]); if (r) m.rotation.set(r[0], r[1], r[2]);
-    m.castShadow = ombra; m.receiveShadow = true; padre.add(m); return m;
-  }
-  const scatola = (padre, w, h, d, col, p, r = 0.06, rot) => metti(padre, scatolaGeo(w, h, d, r), col, p, rot);
-  const pannello = (padre, w, h, r, mat, p, rot) => metti(padre, rettangoloGeo(w, h, r), mat, p, rot, false);   // pannello dipinto appena fuori da una superficie
-  // ombra di contatto: una macchia morbida sotto le cose (il cielo freddo che scurisce i contatti)
-  let texContatto;
-  function contatto(padre, w, d, p, forza = 0.5) {
-    if (!texContatto) texContatto = texCanvas(128, 128, (ctx, W) => { const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(20,35,45,1)'); g.addColorStop(0.55, 'rgba(20,35,45,0.45)'); g.addColorStop(1, 'rgba(20,35,45,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); });
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: texContatto, transparent: true, opacity: forza, depthWrite: false }));
-    m.rotation.x = -Math.PI / 2; m.position.set(p[0], (p[1] || 0) + 0.012, p[2]); m.renderOrder = 1; padre.add(m); return m;
-  }
-
-  /* ---------------------------------------------------------------
-     LA PIASTRELLA: erba floccata con un bordino morbido, poi il taglio con terra, argilla e roccia
-     --------------------------------------------------------------- */
-  function piastrella(padre) {
-    const g = new THREE.Group(); padre.add(g);
-    const rr = rng(7);
-    const erba = texCanvas(1024, 1024, (ctx, W) => {
-      ctx.fillStyle = PAL.erba; ctx.fillRect(0, 0, W, W);
-      for (let i = 0; i < 90; i++) { const x = rr.range(0, W), y = rr.range(0, W), s = rr.range(60, 190), c = rr.chance(0.5) ? '255,246,190' : '60,120,70'; for (const ox of [-W, 0, W]) for (const oy of [-W, 0, W]) { const gr = ctx.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, s); gr.addColorStop(0, `rgba(${c},0.11)`); gr.addColorStop(1, `rgba(${c},0)`); ctx.fillStyle = gr; ctx.fillRect(x + ox - s, y + oy - s, 2 * s, 2 * s); } }
-      for (let i = 0; i < 22000; i++) { ctx.fillStyle = rr.chance(0.5) ? 'rgba(255,255,210,0.10)' : 'rgba(40,90,50,0.10)'; ctx.fillRect(rr.range(0, W), rr.range(0, W), 2, 2); }
-    }, [1 / 5, 1 / 5]);
-    const matErba = new THREE.MeshPhysicalMaterial({ map: erba, roughness: 0.95, sheen: 0.6, sheenRoughness: 0.7, sheenColor: new THREE.Color('#e8f5b0') });
-    const matBordo = new THREE.MeshPhysicalMaterial({ color: PAL.erba, roughness: 0.95, sheen: 0.6, sheenRoughness: 0.7, sheenColor: new THREE.Color('#e8f5b0') });
-    const cap = metti(g, loft(anello(TILE.w + 0.18, TILE.d + 0.18, TILE.r + 0.09, 12), [...bordino(0.11, 0), [0, -0.19, Math.PI / 2], [0.1, -0.27, Math.PI]]), [matBordo, matErba]);
-    cap.castShadow = false;
-    // il taglio: una sezione dipinta a mano che gira intorno alla piastrella
-    const H = 1.8, strati = texCanvas(2048, 512, (ctx, W, Hh) => {
-      const onda = (base, amp, k, ph) => (x) => base + amp * Math.sin(x / W * Math.PI * 2 * k + ph) + amp * 0.5 * Math.sin(x / W * Math.PI * 2 * (k * 2 + 1) + ph * 2.3);
-      const fascia = (top, colore) => { ctx.fillStyle = colore; ctx.beginPath(); ctx.moveTo(0, Hh); for (let x = 0; x <= W; x += 8) ctx.lineTo(x, top(x)); ctx.lineTo(W, Hh); ctx.fill(); };
-      ctx.fillStyle = PAL.terra[0]; ctx.fillRect(0, 0, W, Hh);
-      fascia(onda(44, 7, 5, 0.4), PAL.terra[1]); fascia(onda(170, 14, 3, 1.9), PAL.terra[2]); fascia(onda(292, 16, 2, 4.0), PAL.terra[3]);
-      const sasso = (x, y, a, b, rot, colore) => { for (const ox of [-W, 0, W]) { ctx.fillStyle = colore; ctx.beginPath(); ctx.ellipse(x + ox, y, a, b, rot, 0, 7); ctx.fill(); } };
-      for (let i = 0; i < 6; i++) { ctx.strokeStyle = 'rgba(255,240,205,0.28)'; ctx.lineWidth = 5; ctx.beginPath(); const f = onda(194 + i * 15, 12, 3, 1.9 + i * 0.25); for (let x = 0; x <= W; x += 8) ctx.lineTo(x, f(x)); ctx.stroke(); }
-      for (let i = 0; i < 46; i++) sasso(rr.range(0, W), rr.range(66, 160), rr.range(7, 20), rr.range(5, 12), rr.range(-0.5, 0.5), rr.pick(['#d7c4a6', '#a88a70', '#6f4c3b']));
-      for (let i = 0; i < 30; i++) sasso(rr.range(0, W), rr.range(322, 500), rr.range(24, 70), rr.range(10, 24), rr.range(-0.3, 0.3), rr.pick(['#8b8e9d', '#6e7181', '#73768a']));
-      for (let i = 0; i < 40; i++) { const x = rr.range(0, W); ctx.strokeStyle = 'rgba(60,40,30,0.5)'; ctx.lineWidth = rr.range(2, 4); ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + rr.range(-18, 18), 30, x + rr.range(-26, 26), rr.range(40, 90)); ctx.stroke(); }
-    }, [2, 1]);
-    metti(g, loft(anello(TILE.w, TILE.d, TILE.r, 12), [[0, -0.19, Math.PI / 2], [0, -1.32, Math.PI / 2], [0.07, -1.52], [0.3, -1.76], [0.62, -1.9], [0.95, -H - 0.19]], false), new THREE.MeshStandardMaterial({ map: strati, roughness: 0.9 })).castShadow = false;
-    metti(g, loft(anello(TILE.w - 1.9, TILE.d - 1.9, 0.3), [[0, -H - 0.17, 0]]), PAL.terra[3]);
-    // sassi veri incastrati a metà nel taglio
-    const giro = anello(TILE.w, TILE.d, TILE.r, 12), sassi = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), vernice('#ffffff', 0.9), 30);
-    sassi.receiveShadow = true; g.add(sassi);
-    const o = new THREE.Object3D();
-    for (let i = 0; i < sassi.count; i++) {
-      const at = rr.range(0, giro.giro), j = giro.findIndex((q) => q.u >= at), a = giro[Math.max(0, j - 1)], b = giro[j], f = (at - a.u) / (b.u - a.u || 1);
-      const x = lerp(a.x, b.x, f), z = lerp(a.z, b.z, f), y = rr.range(-0.45, -1.25), s = rr.range(0.05, 0.11);
-      o.position.set(x - b.nx * s * 0.25, y, z - b.nz * s * 0.25); o.rotation.set(rr.range(0, 3), rr.range(0, 3), 0); o.scale.set(s * rr.range(1, 1.7), s * rr.range(0.6, 1), s); o.updateMatrix();
-      sassi.setMatrixAt(i, o.matrix); sassi.setColorAt(i, new THREE.Color(y > -1.0 ? rr.pick(PAL.sasso) : PAL.sasso[2]));
-    }
-    g.userData.matErba = matErba; g.userData.matBordo = matBordo;
-    return g;
-  }
-  // un nastro rialzato lungo un percorso (la strada); restituisce la curva su cui viaggia il furgone
-  function nastro(padre, pts, larg, tex, periodo) {
-    const curva = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, 'centripetal'); curva.arcLengthDivisions = 600;
-    const len = curva.getLength(), n = Math.ceil(len * 12), pos = [], uv = [], idx = [], sez = [[-larg / 2, 0, 0], [-larg / 2 + 0.05, 0.05, 0.06], [larg / 2 - 0.05, 0.05, 0.94], [larg / 2, 0, 1]];
-    for (let i = 0; i <= n; i++) {
-      const p = curva.getPointAt(i / n), tg = curva.getTangentAt(i / n);
-      for (const [o, y, v] of sez) { pos.push(p.x - tg.z * o, y, p.z + tg.x * o); uv.push(i / n * len / periodo, v); }
-      if (i < n) for (let k = 0; k < 3; k++) { const a = i * 4 + k; idx.push(a, a + 1, a + 4, a + 1, a + 5, a + 4); }
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
-    metti(padre, g, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }), [0, 0, 0], null, false);
-    return Object.assign(curva, { len });
-  }
-
-  /* ---------------------------------------------------------------
-     MATTONCINI: finestre, omini a piolo, alberi a lecca-lecca, cartelli, furgone, sbuffi
-     --------------------------------------------------------------- */
-  const capanna = (w, h, len, r = 0.1) => prisma([[-w / 2, 0], [w / 2, 0], [0, h]], [r, r, r * 1.6], len, 0.05);
-  function finestra(padre, w, h, p, rotY = 0, cornice = PAL.crema) {
-    const g = new THREE.Group(); g.position.set(p[0], p[1], p[2]); g.rotation.y = rotY; padre.add(g);
-    scatola(g, w + 0.12, h + 0.12, 0.07, cornice, [0, 0, 0], 0.03);
-    const m = luminosa(); pannello(g, w, h, 0.04, m, [0, 0, 0.04]); scatola(g, 0.035, h, 0.02, cornice, [0, 0, 0.045], 0.008);
-    return m;
-  }
-  // gli omini sono pioli di legno tornito: corpo, testa a pallina e un dettaglio che dice chi sono
-  const geoCorpo = () => new THREE.LatheGeometry([[0, 0], [0.15, 0], [0.185, 0.04], [0.17, 0.3], [0.12, 0.43], [0, 0.46]].map(([x, y]) => new THREE.Vector2(x, y)), 16);
-  let GEO_CORPO, GEO_TESTA, GEO_CAPELLI, GEO_CONO, GEO_PALLINA;
-  function piolo(padre, colore, capelli) {
-    GEO_CORPO ??= geoCorpo(); GEO_TESTA ??= new THREE.SphereGeometry(0.15, 16, 12); GEO_CAPELLI ??= new THREE.SphereGeometry(0.162, 16, 8, 0, 7, 0, 1.75);
-    const g = new THREE.Group(); padre.add(g);
+  let GEO = null;
+  const geo = () => GEO ??= {
+    corpo: new THREE.LatheGeometry([[0, 0], [0.15, 0], [0.185, 0.04], [0.17, 0.3], [0.12, 0.43], [0, 0.46]].map(([x, y]) => new THREE.Vector2(x, y)), 14),
+    testa: new THREE.SphereGeometry(0.15, 14, 10), capelli: new THREE.SphereGeometry(0.162, 14, 8, 0, 7, 0, 1.75),
+    cono: new THREE.ConeGeometry(0.07, 0.2, 10), pallina: new THREE.SphereGeometry(0.08, 12, 8), zaino: scatolaGeo(0.22, 0.24, 0.12, 0.04),
+  };
+  // un omino a piolo: corpo tornito, testa a pallina, capelli; il gruppo "corpo" si piega e si schiaccia
+  function piolo(padre, colore, capelli, s = 1.25) {
+    const g = new THREE.Group(); g.scale.setScalar(s); g.userData.vivo = true; padre.add(g);
     const corpo = new THREE.Group(); g.add(corpo);
-    metti(corpo, GEO_CORPO, colore); metti(corpo, GEO_TESTA, PAL.pelle, [0, 0.58, 0]);
-    if (capelli) metti(corpo, GEO_CAPELLI, capelli, [0, 0.59, -0.012], [-0.35, 0, 0]);
+    metti(corpo, geo().corpo, colore); metti(corpo, geo().testa, PAL.pelle, [0, 0.58, 0]);
+    if (capelli) metti(corpo, geo().capelli, capelli, [0, 0.59, -0.012], [-0.35, 0, 0]);
     g.userData.corpo = corpo;
     return g;
   }
-  // un cono gelato in miniatura: cialda e pallina color accento
-  function cono(padre, s = 1) {
-    GEO_CONO ??= new THREE.ConeGeometry(0.07, 0.2, 12); GEO_PALLINA ??= new THREE.SphereGeometry(0.08, 14, 10);
-    const g = new THREE.Group(); g.scale.setScalar(s); padre.add(g);
-    metti(g, GEO_CONO, PAL.cialda, [0, -0.1, 0], [Math.PI, 0, 0]); metti(g, GEO_PALLINA, PAL.accento, [0, 0.02, 0]);
+  function cono(padre) {
+    const g = new THREE.Group(); padre.add(g);
+    metti(g, geo().cono, PAL.cialda, [0, -0.1, 0], [Math.PI, 0, 0]); metti(g, geo().pallina, PAL.accento, [0, 0.02, 0]);
     return g;
   }
-  function albero(padre, x, z, s, tipo) {
-    const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); padre.add(g);
-    metti(g, new THREE.CylinderGeometry(0.06, 0.09, 0.6, 8), PAL.tronco, [0, 0.3, 0]);
-    if (tipo === 'cipresso') metti(g, new THREE.LatheGeometry([[0, 0.3], [0.26, 0.38], [0.3, 0.7], [0.22, 1.4], [0.1, 1.95], [0, 2.05]].map(([a, b]) => new THREE.Vector2(a, b)), 16), PAL.foglie[1]);
-    else if (tipo === 'gommina') metti(g, new THREE.LatheGeometry([[0, 0.38], [0.4, 0.4], [0.5, 0.52], [0.47, 0.72], [0.3, 1.2], [0.1, 1.68], [0, 1.75]].map(([a, b]) => new THREE.Vector2(a, b)), 18), PAL.foglie[1]);
-    else {
-      metti(g, new THREE.SphereGeometry(0.52, 20, 14), PAL.foglie[tipo === 'chiaro' ? 2 : 0], [0, 0.98, 0]).scale.set(1, 0.92, 1);
-      metti(g, new THREE.SphereGeometry(0.3, 16, 12), PAL.foglie[tipo === 'chiaro' ? 2 : 0], [0.3, 0.74, 0.22]);
-    }
-    contatto(padre, 1.2 * s, 1.2 * s, [x + 0.12, 0, z + 0.1], 0.35);
+  // il gelataio: un cono gelato vivente (la nostra mascotte), con gli occhi e la ciliegina
+  function mascotte(padre) {
+    const g = new THREE.Group(); g.userData.vivo = true; padre.add(g);
+    const corpo = new THREE.Group(); g.add(corpo);
+    metti(corpo, new THREE.LatheGeometry([[0, 0], [0.05, 0.02], [0.24, 0.62], [0.27, 0.66], [0, 0.66]].map(([x, y]) => new THREE.Vector2(x, y)), 16), PAL.cialda);
+    metti(corpo, new THREE.SphereGeometry(0.31, 18, 14), PAL.accento, [0, 0.86, 0]);
+    metti(corpo, new THREE.TorusGeometry(0.27, 0.06, 8, 20), PAL.accento, [0, 0.68, 0], [Math.PI / 2, 0, 0]);
+    metti(corpo, new THREE.SphereGeometry(0.08, 10, 8), '#e2465e', [0.02, 1.2, 0.02]);
+    for (const s of [-1, 1]) metti(corpo, new THREE.SphereGeometry(0.04, 8, 6), PAL.scuro, [s * 0.1, 0.9, 0.27]);
+    const bocca = metti(corpo, new THREE.TorusGeometry(0.06, 0.016, 6, 12, Math.PI), PAL.scuro, [0, 0.8, 0.29], [0, 0, Math.PI]);
+    g.userData = { vivo: true, corpo, bocca };
     return g;
   }
-  // il cartello di una tappa: un cartoncino su un'asta che guarda sempre l'obiettivo. Un lato grigio ("non ancora"),
-  // l'altro color accento ("fatto"): si gira ruotando `giro` di PI intorno a x.
+  // il cartello di una tappa: cartoncino su un'asta che guarda l'obiettivo. Lato grigio = "non ancora",
+  // lato color accento = "fatto": si gira ruotando `giro` di PI intorno a x, con una molla.
   function cartello(padre, parola, numero) {
-    const g = new THREE.Group(), giro = new THREE.Group(); padre.add(g); g.add(giro);
+    const g = new THREE.Group(), giro = new THREE.Group(); g.userData.vivo = true; padre.add(g); g.add(giro);
     const PX = 380, SP = 0.05, m = document.createElement('canvas').getContext('2d'); m.font = FONT; m.letterSpacing = SP * 160 + 'px';
-    const capPx = m.measureText('H').actualBoundingBoxAscent, k = 0.3 * PX / capPx, textW = m.measureText(parola).width * k / PX;
+    const capPx = m.measureText('H').actualBoundingBoxAscent || 112, k = 0.3 * PX / capPx, textW = m.measureText(parola).width * k / PX;
     const bh = 0.62, moneta = 0.4, bw = textW + moneta * 2 + 0.34, tx = -bw / 2 + moneta * 2 + 0.08;
     const faccia = (bg, fg) => new THREE.MeshStandardMaterial({ roughness: 0.8, map: texCanvas(Math.round(bw * PX), Math.round(bh * PX), (ctx, W, Hh) => {
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, Hh); ctx.fillStyle = fg; ctx.font = FONT.replace('160px', 160 * k + 'px'); ctx.letterSpacing = SP * 160 * k + 'px'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, Hh); ctx.fillStyle = fg; ctx.font = fontPx(160 * k); ctx.letterSpacing = SP * 160 * k + 'px'; ctx.textBaseline = 'alphabetic';
       ctx.fillText(parola, (tx + bw / 2) * PX, Hh / 2 + 0.15 * PX);
     }) });
     const disco = (bg, fg) => new THREE.MeshStandardMaterial({ roughness: 0.8, map: texCanvas(256, 256, (ctx) => {
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, 256, 256); ctx.fillStyle = fg; ctx.font = FONT.replace('160px', '190px'); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-      const mm = ctx.measureText(String(numero)); ctx.fillText(String(numero), 128, 128 + mm.actualBoundingBoxAscent / 2);
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 256, 256); ctx.fillStyle = fg; ctx.font = fontPx(190); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const mm = ctx.measureText(String(numero)); ctx.fillText(String(numero), 128, 128 + (mm.actualBoundingBoxAscent || 130) / 2);
     }) });
-    scatola(giro, bw, bh, 0.1, PAL.crema, [0, 0, 0], 0.05);
+    metti(giro, scatolaGeo(bw, bh, 0.1, 0.05), PAL.crema);
     metti(giro, new THREE.CylinderGeometry(moneta + 0.07, moneta + 0.07, 0.16, 32), PAL.crema, [-bw / 2 + moneta, 0, 0], [Math.PI / 2, 0, 0]);
     for (const [lato, bg, fg, cbg, cfg] of [[1, '#ece8df', '#7d8996', '#aab3bd', '#f4f1ea'], [-1, PAL.accento, '#fff6e6', '#fff6e6', PAL.accento]]) {
       const s = new THREE.Group(); s.rotation.x = lato > 0 ? 0 : Math.PI; giro.add(s);
-      pannello(s, bw - 0.09, bh - 0.09, 0.03, faccia(bg, fg), [0, 0, 0.052]);
+      metti(s, rettangoloGeo(bw - 0.09, bh - 0.09, 0.03), faccia(bg, fg), [0, 0, 0.052], null, false);
       metti(s, new THREE.CircleGeometry(moneta, 32), disco(cbg, cfg), [-bw / 2 + moneta, 0, 0.082], null, false);
     }
     const asta = metti(g, new THREE.CylinderGeometry(0.05, 0.06, 1, 10), PAL.crema, [0, 0, -0.1]);
     metti(g, new THREE.CylinderGeometry(0.13, 0.15, 0.08, 14), PAL.ardesia, [0, 0.04, -0.1]);
-    return { g, giro, asta, fatto: false, quando: -99, altezza(h) { giro.position.y = h; asta.scale.y = h; asta.position.y = h / 2; } };
+    g.scale.setScalar(1.45);
+    return { g, giro, asta, fatto: false, quando: -99, altezza(h) { h /= 1.45; giro.position.y = h; asta.scale.y = h; asta.position.y = h / 2; this.h = h; } };
   }
-  // il furgoncino: una sagoma estrusa di lato, quattro ruote, vetri, fari e un portellone. x è "avanti".
+  // il furgoncino: una sagoma estrusa di lato, quattro ruote, vetri, fari e portellone. x locale = "avanti".
   function furgone(padre, colore) {
-    const g = new THREE.Group(), corpo = new THREE.Group(); padre.add(g); g.add(corpo);
+    const g = new THREE.Group(), corpo = new THREE.Group(); g.userData.vivo = true; g.scale.setScalar(1.55); padre.add(g); g.add(corpo);
     metti(corpo, prisma([[-0.92, 0.2], [0.92, 0.2], [0.94, 0.52], [0.68, 0.61], [0.4, 1.05], [-0.92, 1.05]], [0.08, 0.1, 0.1, 0.05, 0.14, 0.12], 0.86, 0.06), colore);
     const vetro = vernice(PAL.vetro, 0.6), n = new THREE.Vector3(0.44, 0.28, 0).normalize();
-    const parabrezza = pannello(corpo, 0.66, 0.38, 0.07, vetro, [0.54 + n.x * 0.012, 0.835 + n.y * 0.012, 0]); parabrezza.lookAt(parabrezza.position.clone().add(n));
+    const pb = metti(corpo, rettangoloGeo(0.66, 0.38, 0.07), vetro, [0.54 + n.x * 0.012, 0.835 + n.y * 0.012, 0], null, false); pb.lookAt(pb.position.clone().add(n));
     for (const s of [1, -1]) {
       const rot = [0, s > 0 ? 0 : Math.PI, 0];
-      pannello(corpo, 0.3, 0.26, 0.05, vetro, [0.2, 0.83, s * 0.432], rot);
-      pannello(corpo, 1.5, 0.09, 0.03, PAL.crema, [-0.1, 0.44, s * 0.432], rot);
-      pannello(corpo, 0.46, 0.4, 0.05, PAL.crema, [-0.42, 0.78, s * 0.432], rot);
-      // un cono dipinto sulla fiancata
-      const c = new THREE.Group(); c.position.set(-0.42, 0.78, s * 0.44); c.rotation.y = rot[1]; corpo.add(c);
-      metti(c, new THREE.CircleGeometry(0.09, 20), vernice(PAL.accento), [0, 0.06, 0.002], null, false);
-      metti(c, new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.08, 0.02), new THREE.Vector2(0.08, 0.02), new THREE.Vector2(0, -0.16)])), vernice(PAL.cialda), [0, 0, 0.001], null, false);
+      metti(corpo, rettangoloGeo(0.3, 0.26, 0.05), vetro, [0.2, 0.83, s * 0.432], rot, false);
+      metti(corpo, rettangoloGeo(1.5, 0.09, 0.03), PAL.crema, [-0.1, 0.44, s * 0.432], rot, false);
+      metti(corpo, rettangoloGeo(0.46, 0.4, 0.05), PAL.crema, [-0.42, 0.78, s * 0.432], rot, false);
+      const c = new THREE.Group(); c.position.set(-0.42, 0.78, s * 0.44); c.rotation.y = rot[1]; corpo.add(c);       // un cono dipinto sulla fiancata
+      metti(c, new THREE.CircleGeometry(0.09, 20), PAL.accento, [0, 0.06, 0.002], null, false);
+      metti(c, new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.08, 0.02), new THREE.Vector2(0.08, 0.02), new THREE.Vector2(0, -0.16)])), PAL.cialda, [0, 0, 0.001], null, false);
     }
-    scatola(corpo, 0.09, 0.1, 0.82, PAL.ardesia, [0.93, 0.27, 0], 0.03); scatola(corpo, 0.09, 0.1, 0.82, PAL.ardesia, [-0.92, 0.25, 0], 0.03);
+    metti(corpo, scatolaGeo(0.09, 0.1, 0.82, 0.03), PAL.ardesia, [0.93, 0.27, 0]); metti(corpo, scatolaGeo(0.09, 0.1, 0.82, 0.03), PAL.ardesia, [-0.92, 0.25, 0]);
     const fari = luminosa('#fff3d6', '#fff0c8'); for (const s of [1, -1]) metti(corpo, new THREE.CylinderGeometry(0.065, 0.065, 0.04, 14), fari, [0.945, 0.42, s * 0.28], [0, 0, Math.PI / 2]);
-    pannello(corpo, 0.72, 0.62, 0.05, PAL.scuro, [-0.923, 0.64, 0], [0, -Math.PI / 2, 0]);
+    metti(corpo, rettangoloGeo(0.72, 0.62, 0.05), PAL.scuro, [-0.923, 0.64, 0], [0, -Math.PI / 2, 0], false);
     const portellone = new THREE.Group(); portellone.position.set(-0.94, 1.0, 0); corpo.add(portellone);
-    scatola(portellone, 0.05, 0.74, 0.76, colore, [0, -0.37, 0], 0.025); scatola(portellone, 0.02, 0.2, 0.44, PAL.vetro, [-0.02, -0.2, 0], 0.01);
+    metti(portellone, scatolaGeo(0.05, 0.74, 0.76, 0.025), colore, [0, -0.37, 0]); metti(portellone, scatolaGeo(0.02, 0.2, 0.44, 0.01), PAL.vetro, [-0.02, -0.2, 0]);
     const ruote = [];
     for (const [x, z] of [[0.56, 0.37], [0.56, -0.37], [-0.56, 0.37], [-0.56, -0.37]]) {
       const w = new THREE.Group(); w.position.set(x, 0.2, z); g.add(w); ruote.push(w);
-      metti(w, new THREE.CylinderGeometry(0.2, 0.2, 0.17, 20), PAL.scuro, [0, 0, 0], [Math.PI / 2, 0, 0]);
+      metti(w, new THREE.CylinderGeometry(0.2, 0.2, 0.17, 18), PAL.scuro, [0, 0, 0], [Math.PI / 2, 0, 0]);
       metti(w, new THREE.CylinderGeometry(0.1, 0.1, 0.19, 12), PAL.crema, [0, 0, 0], [Math.PI / 2, 0, 0]);
       metti(w, new THREE.CylinderGeometry(0.028, 0.028, 0.2, 6), PAL.scuro, [0.055, 0, 0], [Math.PI / 2, 0, 0]);
     }
-    // le casse dentro (si vedono quando si alza il portellone)
-    const carico = scatola(corpo, 0.5, 0.36, 0.6, PAL.cartone, [-0.62, 0.42, 0], 0.03);
+    const carico = new THREE.Group(); corpo.add(carico);
+    metti(carico, scatolaGeo(0.5, 0.36, 0.6, 0.03), PAL.cartone, [-0.62, 0.42, 0]);
     return { g, corpo, portellone, ruote, fari, carico };
   }
   // sbuffi: palline bianche opache che si gonfiano, salgono e spariscono
   function sbuffi(padre, n) {
-    const m = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), vernice(PAL.fumo, 0.95), n); m.castShadow = true; m.frustumCulled = false; padre.add(m);
+    const m = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), vernice(PAL.fumo, 0.95), n); m.castShadow = true; m.frustumCulled = false; m.userData.vivo = true; padre.add(m);
     const o = new THREE.Object3D();
     return { m, set(i, at, eta, opz) {
       const s = eta <= 0 || eta >= 1 ? 1e-4 : opz.size * liscio(0, 0.3, eta) * (1 - liscio(0.55, 1, eta)) * (0.7 + 0.5 * eta);
       o.position.set(at[0] + (opz.drift || 0) * eta * eta, at[1] + opz.rise * eta, at[2] + (opz.driftZ || 0) * eta); o.scale.setScalar(Math.max(s, 1e-4)); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
     } };
   }
-  // percorso del furgone: accelera per `a` del tempo, va a velocità costante, frena per `b`
-  const trap = (u, a, b) => { u = clamp(u); const v = 1 / (1 - a / 2 - b / 2); return u < a ? v * u * u / (2 * a) : u < 1 - b ? v * (u - a / 2) : 1 - v * (1 - u) * (1 - u) / (2 * b); };
-  // un saltello da un punto all'altro: [x, y, z, schiacciamento]
   const saltello = (u, da, a, alt) => { u = clamp(u); const e = easeInOut(u); return [da[0] + (a[0] - da[0]) * e, alt * Math.sin(Math.PI * u), da[1] + (a[1] - da[1]) * e]; };
 
   /* ---------------------------------------------------------------
      COSTRUZIONE DELLA SCENA
      --------------------------------------------------------------- */
-  const O = {};                                                     // tutto ciò che si anima
   function costruisci() {
     scena = new THREE.Scene();
     scena.background = new THREE.Color(PAL.sfondo);
-    camera = new THREE.PerspectiveCamera(20, 16 / 9, 1, 200);
+    scena.fog = new THREE.Fog(PAL.sfondo, 1e4, 2e4);
+    camera = new THREE.PerspectiveCamera(20, 16 / 9, 5, 400);
 
     // luce: un sole caldo e morbido davanti a sinistra, un cielo freddo che riempie
-    O.ambiente = ambiente();
-    O.sole = new THREE.DirectionalLight('#ffe3c0', 3.0);
-    O.sole.position.set(-9, 13, 9); O.sole.castShadow = true;
-    const c = O.sole.shadow.camera; c.left = -8.5; c.right = 8.5; c.top = 8.5; c.bottom = -8.5; c.near = 1; c.far = 50;
-    O.sole.shadow.mapSize.setScalar(2048); O.sole.shadow.bias = -0.0004; O.sole.shadow.normalBias = 0.025; O.sole.shadow.radius = 4;
+    ambiente();
+    O.sole = new THREE.DirectionalLight('#ffe3c0', 3.0); O.sole.castShadow = true;
+    const c = O.sole.shadow.camera; c.left = -17; c.right = 17; c.top = 17; c.bottom = -17; c.near = 1; c.far = 90;
+    O.sole.shadow.mapSize.setScalar(2048); O.sole.shadow.bias = -0.0005; O.sole.shadow.normalBias = 0.03; O.sole.shadow.radius = 4;
     scena.add(O.sole, O.sole.target);
     O.cielo = new THREE.HemisphereLight('#bcd3ff', '#9db39a', 0.9); scena.add(O.cielo);
-    O.lunetta = new THREE.DirectionalLight('#a9c0ff', 0.0); O.lunetta.position.set(6, 10, -4); scena.add(O.lunetta);
+    O.lunetta = new THREE.DirectionalLight('#a9c0ff', 0); O.lunetta.position.set(12, 20, -8); scena.add(O.lunetta);
 
-    // la carta su cui poggia il plastico, con l'ombra della piastrella dipinta (sempre morbida e pulita)
-    O.carta = metti(scena, new THREE.PlaneGeometry(300, 300), new THREE.MeshBasicMaterial({ color: PAL.sfondo }), [0, FLOOR, 0], [-Math.PI / 2, 0, 0], false);
-    O.carta.receiveShadow = false;
-    O.ombraTile = metti(scena, new THREE.PlaneGeometry(TILE.w + 8, TILE.d + 8), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: texCanvas(512, 512, (ctx, W) => {
-      const sx = W / (TILE.w + 8), sz = W / (TILE.d + 8); ctx.filter = 'blur(26px)'; ctx.fillStyle = 'rgba(38,62,92,0.55)'; ctx.beginPath(); ctx.roundRect(4 * sx, 4 * sz, TILE.w * sx, TILE.d * sz, 50); ctx.fill();
-    }) }), [1.4, FLOOR + 0.02, -0.8], [-Math.PI / 2, 0, 0], false);
+    // la carta su cui poggia il plastico, con l'ombra della piastrella dipinta (sempre morbida)
+    const FLOOR = -PIASTRA.spessore - 3.2;
+    O.carta = metti(scena, new THREE.PlaneGeometry(600, 600), new THREE.MeshBasicMaterial({ color: PAL.sfondo }), [0, FLOOR, 0], [-Math.PI / 2, 0, 0], false);
+    O.ombraTile = metti(scena, new THREE.PlaneGeometry(PIASTRA.w + 12, PIASTRA.d + 12), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: texCanvas(512, 512, (ctx, W) => {
+      const sx = W / (PIASTRA.w + 12), sz = W / (PIASTRA.d + 12); ctx.filter = 'blur(22px)'; ctx.fillStyle = 'rgba(38,62,92,0.5)'; ctx.beginPath(); ctx.roundRect(6 * sx, 6 * sz, PIASTRA.w * sx, PIASTRA.d * sz, 40); ctx.fill();
+    }) }), [2.6, FLOOR + 0.02, -1.4], [-Math.PI / 2, 0, 0], false);
 
-    // il mondo sulla piastrella (oscilla piano tutto insieme)
-    O.mondo = new THREE.Group(); scena.add(O.mondo);
-    O.terra = piastrella(O.mondo);
-    const L = O.terra;
-    const texStrada = texCanvas(256, 128, (ctx, W, H) => { ctx.fillStyle = PAL.strada; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#f3ead8'; ctx.fillRect(40, H / 2 - 5, 120, 10); ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fillRect(0, 12, W, 5); ctx.fillRect(0, H - 17, W, 5); });
-    texStrada.wrapS = THREE.RepeatWrapping;
-    O.strada = nastro(L, STRADA, 1.14, texStrada, 0.8);
-    const distX = (x, da, a) => { let lo = da, hi = a; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (O.strada.getPointAt(m / O.strada.len).x < x) lo = m; else hi = m; } return lo; };
-    O.s0 = distX(FURGONE_PARTENZA, 0, 3); O.s1 = distX(FURGONE_ARRIVO, O.strada.len - 5, O.strada.len);
+    // il mondo: un perno che oscilla piano, e dentro la città spostata al centro
+    O.perno = new THREE.Group(); scena.add(O.perno);
+    const L = O.L = new THREE.Group(); L.position.set(-PIASTRA.cx, 0, -PIASTRA.cy); O.perno.add(L);
+    costruisciCitta(L, O);
 
-    costruisciFornitore(L);
-    costruisciGelateria(L);
-    costruisciCasse(L);
-    costruisciTodi(L);
-    costruisciPaesaggio(L);
-
-    // il furgoncino, color accento (è lui che porta il gelato), e il suo fumo
+    // i due furgoncini color accento: quello che viaggia e quello che aspetta al fornitore
     O.furgone = furgone(L, PAL.accento);
-    O.fumo = sbuffi(L, 18);
-    O.scia = [];                                                    // sbuffi lasciati dal furgone (posizione e istante)
+    O.furgoneFermo = furgone(L, PAL.accento);
+    O.fumo = sbuffi(L, 20);
+    O.scia = [];
+    O.casseVolanti = [0, 1, 2].map(() => { const c = new THREE.Group(); c.userData.vivo = true; c.visible = false; L.add(c); metti(c, scatolaGeo(0.58, 0.4, 0.44, 0.035), PAL.cartone); metti(c, scatolaGeo(0.1, 0.406, 0.446, 0.01), PAL.crema); return c; });
 
     // i cartelli delle tre tappe
-    O.cartelli = CARTELLI.map((s, i) => { const o = cartello(L, s.parola, i + 1); o.g.position.set(s.at[0], 0, s.at[1]); o.altezza(s.h); return o; });
+    O.cartelli = CARTELLI.map((s, i) => { const o = cartello(L, s.parola, i + 1); o.g.position.set(s.at[0], s.at[2], s.at[1]); o.altezza(s.h); return o; });
 
-    // i clienti: una piccola riserva di omini a piolo riutilizzati
-    const colori = [PAL.ardesia, PAL.senape, PAL.foglie[1], PAL.crema, PAL.cartone, '#8a7fb0', '#5f8fae'];
+    // i clienti, i ragazzi della scuola, il gelataio-mascotte
+    const colori = [PAL.ardesia, PAL.senape, PAL.foglie[1], '#e8dcc8', PAL.cartone, '#8a7fb0', '#5f8fae'];
     const capelli = [PAL.tronco, '#3a2c25', '#d9b26a', null, '#5a3b2c', '#2b2b33', null];
-    O.clienti = Array.from({ length: 12 }, (_, i) => { const p = piolo(L, colori[i % colori.length], capelli[i % capelli.length]); p.visible = false; p.userData.cono = cono(p.userData.corpo, 1); p.userData.cono.position.set(0.16, 0.5, 0.08); return p; });
+    O.clienti = Array.from({ length: 14 }, (_, i) => { const p = piolo(L, colori[i % colori.length], capelli[(i + 2) % capelli.length]); p.visible = false; p.userData.cono = cono(p.userData.corpo); p.userData.cono.position.set(0.16, 0.5, 0.08); return p; });
+    O.ragazzi = Array.from({ length: 8 }, (_, i) => { const p = piolo(L, [PAL.ardesia, '#5f8fae', PAL.senape, '#8a7fb0'][i % 4], capelli[i % capelli.length] || PAL.tronco, 0.95); metti(p.userData.corpo, geo().zaino, [PAL.accento, PAL.foglie[0], PAL.senape, PAL.ardesia][(i + 1) % 4], [0, 0.32, -0.17]); p.visible = false; return p; });
+    O.gelataio = mascotte(L);
+    O.passante = piolo(L, PAL.foglie[1], PAL.tronco); O.passante.position.set(4.0, 0.25, 7.5); O.passante.userData.corpo.rotation.x = 0.05;   // seduto sulla panchina
 
-    // la pioggia: trattini sottili che cadono, e pozzanghere lucide che si allargano
-    const NP = 260;
-    O.gocce = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.008, 0.008, 0.28, 4), new THREE.MeshBasicMaterial({ color: '#dbe7f2', transparent: true, opacity: 0.55 }), NP);
-    O.gocce.frustumCulled = false; O.gocce.visible = false; L.add(O.gocce);
-    const rg = rng(99); O.goccePos = Array.from({ length: NP }, () => [rg.range(-TILE.w / 2 + 0.3, TILE.w / 2 - 0.3), rg.range(0, 1), rg.range(-TILE.d / 2 + 0.3, TILE.d / 2 - 0.3), rg.range(0.8, 1.2)]);
+    // la pioggia: trattini sottili che cadono; pozzanghere lucide che si allargano
+    const NP = 420;
+    O.gocce = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.01, 0.01, 0.34, 4), new THREE.MeshBasicMaterial({ color: '#dbe7f2', transparent: true, opacity: 0.55, fog: false }), NP);
+    O.gocce.frustumCulled = false; O.gocce.visible = false; O.gocce.userData.vivo = true; L.add(O.gocce);
+    const rg = rng(99), quota = (x, y) => (y < -1 ? 0 : x > 7 && x < 17.6 && y < 2.4 ? Z3 : x > 2.2 && x < 17.6 && y < 5.4 ? Z2 : 0);
+    O.goccePos = Array.from({ length: NP }, () => { const x = rg.range(PIASTRA.x0 + 0.4, PIASTRA.x1 - 0.4), y = rg.range(PIASTRA.y0 + 0.4, PIASTRA.y1 - 0.4); return [x, rg(), y, rg.range(0.85, 1.2), quota(x, y)]; });
     const matPozza = new THREE.MeshStandardMaterial({ color: PAL.acqua, roughness: 0.06, metalness: 0.1, envMapIntensity: 1.6, transparent: true, opacity: 0.9 });
-    O.pozze = [[-0.9, -1.9, 0.55], [1.85, 0.4, 0.4], [3.2, 2.9, 0.5], [-3.2, 0.6, 0.45], [0.2, 2.3, 0.38], [5.0, 1.9, 0.35]].map(([x, z, s]) => {
-      const m = metti(L, loft(anello(s * 2.2, s * 1.4, s * 0.65, 6), [[0, 0.058, 0]]), matPozza, [x, 0, z], [0, hash(x, z) * 3, 0], false);
-      m.userData.s = s; m.scale.setScalar(0.001); return m;
-    });
-    O.matPozza = matPozza;
+    O.pozze = POZZE.map(([x, y, z, s]) => { const m = metti(L, loft(anello(s * 2.4, s * 1.5, s * 0.7, 6), [[0, 0.06, 0]]), matPozza, [x, z, y], [0, hash(x, y) * 3, 0], false); m.userData.vivo = true; m.scale.setScalar(0.001); return m; });
 
-    // nuvole: gruppi di palline bianche sospese sopra la piastrella
-    O.nuvole = [[-0.9, 3.3, -2.9, 0.6], [2.5, 3.5, -3.1, 0.65]].map(([x, y, z, s], i) => {
-      const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(0.001); L.add(g); g.userData = { x, s };
+    // nuvole: grappoli di palline sospesi sopra la città
+    O.nuvole = [[0.8, -2.0, 5.0, 0.85], [8.0, -2.6, 5.3, 1.0], [14.6, -2.5, 5.1, 0.9], [20.3, 1.5, 4.6, 0.7]].map(([x, y, z, s], i) => {
+      const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(0.001); g.userData = { vivo: true, x, s }; L.add(g);
       const rn = rng(40 + i);
-      for (let k = 0; k < 6; k++) { const m = metti(g, new THREE.SphereGeometry(1, 16, 12), vernice('#ffffff', 0.95), [rn.range(-1, 1), rn.range(-0.1, 0.3), rn.range(-0.5, 0.5)], null, true); m.scale.setScalar(rn.range(0.45, 0.8)); m.receiveShadow = false; }
+      for (let k = 0; k < 7; k++) { const m = metti(g, new THREE.SphereGeometry(1, 14, 10), '#ffffff', [rn.range(-1.3, 1.3), rn.range(-0.1, 0.35), rn.range(-0.6, 0.6)], null, true); m.scale.setScalar(rn.range(0.5, 0.9)); m.receiveShadow = false; }
       return g;
     });
+    O.matNuvola = vernice('#ffffff', 0.95); O.matNuvolaScura = vernice('#9aa1ad', 0.95);
+    // il fulmine: una saetta di bastoncini luminosi
+    O.fulmine = new THREE.Group(); O.fulmine.userData.vivo = true; O.fulmine.visible = false; L.add(O.fulmine);
+    const matF = new THREE.MeshBasicMaterial({ color: '#fff6c8', fog: false }); let px = 0, py = 0;
+    for (let i = 0; i < 7; i++) { const nx = px + (hash(i * 3) - 0.5) * 0.9, ny = py - 1.0; const a = new THREE.Vector3(px, py, 0), b = new THREE.Vector3(nx, ny, 0);
+      const m = metti(O.fulmine, new THREE.CylinderGeometry(0.05, 0.05, a.distanceTo(b), 5), matF, [(px + nx) / 2, (py + ny) / 2, 0], null, false); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); px = nx; py = ny; }
+
+    // uccellini e farfalle (col sole)
+    O.uccelli = Array.from({ length: 6 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
+      for (const s of [-1, 1]) { const a = new THREE.Group(); g.add(a); metti(a, scatolaGeo(0.34, 0.03, 0.08, 0.012), PAL.scuro, [s * 0.17, 0, 0], null, false); ali.push(a); } g.userData.ali = ali; return g; });
+    O.farfalle = Array.from({ length: 3 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
+      for (const s of [-1, 1]) { const a = new THREE.Group(); g.add(a); metti(a, new THREE.CircleGeometry(0.08, 10), new THREE.MeshStandardMaterial({ color: [PAL.accento, PAL.senape, '#b9a6e0'][i], side: THREE.DoubleSide, roughness: 0.8 }), [s * 0.07, 0, 0], [-Math.PI / 2, 0, 0], false); ali.push(a); } g.userData.ali = ali; return g; });
+
+    // tutto ciò che è fermo viene fuso in poche mesh
+    fondi(L);
   }
   // l'ambiente per i riflessi (pozzanghere, vetri): un cielo a gradiente costruito in codice, niente HDRI
   function ambiente() {
@@ -438,162 +228,28 @@ const Diorama = (() => {
     })));
     const pm = new THREE.PMREMGenerator(R), t = pm.fromScene(es, 0.02, 0.1, 200).texture; pm.dispose();
     scena.environment = t; scena.environmentIntensity = 0.4;
-    return t;
   }
-
-  // TAPPA 1: il fornitore. Un capannone con il tetto a denti di sega, la saracinesca e il comignolo.
-  function costruisciFornitore(L) {
-    const F = new THREE.Group(); F.position.set(FORN.x, 0, FORN.z); L.add(F);
-    metti(F, loft(anello(FORN.w + 0.24, FORN.d + 0.24, 0.16), [...bordino(0.05, 0.12), [0, 0, Math.PI / 2]]), PAL.ardesia);
-    scatola(F, FORN.w, FORN.h, FORN.d, PAL.crema, [0, FORN.h / 2 + 0.08, 0], 0.09);
-    contatto(L, FORN.w + 1.4, FORN.d + 1.4, [FORN.x + 0.2, 0, FORN.z + 0.2], 0.45);
-    O.vetriFornitore = luminosa(PAL.vetro, '#ffe2a8');
-    for (let i = -1; i <= 1; i++) {
-      metti(F, prisma([[-0.52, 0], [0.52, 0], [0.52, 0.56]], [0.05, 0.07, 0.08], FORN.d + 0.12, 0.05), PAL.ardesia, [i * 1.0, FORN.h + 0.06, 0]);
-      pannello(F, FORN.d - 0.5, 0.26, 0.05, O.vetriFornitore, [i * 1.0 + 0.525, FORN.h + 0.34, 0], [0, Math.PI / 2, 0]);
-    }
-    // la saracinesca sul lato che guarda la strada (+x)
-    const fx = FORN.w / 2, dz = 0.1;
-    scatola(F, 0.12, 1.24, 1.5, PAL.senape, [fx, 0.7, dz], 0.05);
-    pannello(F, 1.26, 1.04, 0.04, PAL.scuro, [fx + 0.062, 0.64, dz], [0, Math.PI / 2, 0]);
-    const lamelle = texCanvas(64, 64, (ctx) => { ctx.fillStyle = '#e9dcc4'; ctx.fillRect(0, 0, 64, 64); ctx.fillStyle = 'rgba(90,70,50,0.35)'; ctx.fillRect(0, 0, 64, 9); ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(0, 9, 64, 6); }, [1, 7]);
-    const geo = new THREE.PlaneGeometry(1.26, 1.04); geo.translate(0, -0.52, 0);
-    O.saracinesca = metti(F, geo, new THREE.MeshStandardMaterial({ map: lamelle, roughness: 0.7 }), [fx + 0.068, 1.16, dz], [0, Math.PI / 2, 0], false); O.lamelle = lamelle;
-    scatola(F, 0.2, 0.2, 1.54, PAL.senape, [fx + 0.03, 1.26, dz], 0.06);
-    // la facciata: due finestre e un pacco dipinto
-    const zf = FORN.d / 2;
-    O.finestreFornitore = [finestra(F, 0.5, 0.42, [-0.95, 0.98, zf + 0.01]), finestra(F, 0.5, 0.42, [-0.2, 0.98, zf + 0.01])];
-    pannello(F, 0.78, 0.78, 0.12, PAL.ardesia, [0.75, 0.85, zf + 0.004]); scatola(F, 0.44, 0.36, 0.03, PAL.cartone, [0.75, 0.83, zf + 0.012], 0.02); scatola(F, 0.09, 0.365, 0.034, PAL.crema, [0.75, 0.83, zf + 0.012], 0.01);
-    metti(F, new THREE.CylinderGeometry(0.13, 0.15, 0.8, 14), PAL.ardesia, [-1.15, FORN.h + 0.6, 0.85]); metti(F, new THREE.CylinderGeometry(0.17, 0.17, 0.07, 14), PAL.crema, [-1.15, FORN.h + 1.0, 0.85]);
-    O.comignolo = [FORN.x - 1.15, FORN.h + 1.08, FORN.z + 0.85];
-    // pacchi in attesa vicino al muro
-    for (const [x, z, r, s] of [[-5.0, -0.25, 0.3, 1], [-4.55, -0.15, -0.15, 1.1], [-4.8, 0, 0.1, 0.9]]) {
-      const p = new THREE.Group(); p.position.set(x, 0.16 * s, z); p.rotation.y = r; p.scale.setScalar(s); L.add(p);
-      scatola(p, 0.42, 0.32, 0.36, PAL.cartone, [0, 0, 0], 0.035); scatola(p, 0.1, 0.326, 0.366, PAL.crema, [0, 0, 0], 0.01);
-    }
-    O.magazziniere = piolo(L, PAL.ardesia, null);
-    metti(O.magazziniere.userData.corpo, new THREE.SphereGeometry(0.17, 16, 8, 0, 7, 0, 1.5), PAL.senape, [0, 0.6, 0]);
-    O.magazziniere.position.set(-2.3, 0, -1.1); O.magazziniere.rotation.y = -0.6;
-  }
-
-  // TAPPA 3: la gelateria. Tenda a strisce, bancone, vetrina luminosa con i coni, porta scorrevole, cono sul tetto.
-  function costruisciGelateria(L) {
-    const G = new THREE.Group(); G.position.set(GEL.x, 0, GEL.z); L.add(G);
-    metti(G, loft(anello(GEL.w + 0.26, GEL.d + 0.26, 0.16), [...bordino(0.05, 0.1), [0, 0, Math.PI / 2]]), PAL.sasso[1]);
-    scatola(G, GEL.w, GEL.h, GEL.d, PAL.crema, [0, GEL.h / 2 + 0.06, 0], 0.09);
-    contatto(L, GEL.w + 1.5, GEL.d + 1.5, [GEL.x + 0.2, 0, GEL.z + 0.15], 0.45);
-    scatola(G, GEL.w + 0.22, 0.14, GEL.d + 0.22, PAL.ardesia, [0, GEL.h + 0.13, 0], 0.06);   // il tetto piatto
-    const zf = GEL.d / 2;
-    // la vetrina luminosa: mostra quanti coni restano
-    O.texConi = texCanvas(512, 256);
-    O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texConi, emissiveMap: O.texConi, emissive: '#ffffff', emissiveIntensity: 0.55, roughness: 0.5 });
-    scatola(G, 1.22, 0.66, 0.07, PAL.crema, [-0.55, 1.0, zf + 0.01], 0.03);
-    pannello(G, 1.1, 0.55, 0.04, O.matVetrina, [-0.55, 1.0, zf + 0.05]);
-    // la porta scorrevole a destra
-    O.vanoPorta = luminosa(PAL.scuro, '#ffca7a');
-    scatola(G, 0.7, 1.02, 0.07, PAL.ardesia, [0.75, 0.57, zf + 0.01], 0.03);
-    pannello(G, 0.56, 0.9, 0.04, O.vanoPorta, [0.75, 0.52, zf + 0.05]);
-    O.porta = scatola(G, 0.56, 0.9, 0.05, PAL.menta, [0.75, 0.52, zf + 0.08], 0.025);
-    metti(O.porta, new THREE.SphereGeometry(0.03, 8, 6), PAL.crema, [-0.2, 0, 0.035]);
-    O.finestreGel = [finestra(G, 0.42, 0.36, [GEL.w / 2 + 0.01, 0.85, -0.3], Math.PI / 2, PAL.crema)];
-    // la tenda a strisce: accento e crema, leggermente inclinata
-    const tenda = new THREE.Group(); tenda.position.set(0, GEL.h - 0.05, zf + 0.02); tenda.rotation.x = 0.42; G.add(tenda);
-    const n = 9, lw = (GEL.w + 0.1) / n;
-    for (let i = 0; i < n; i++) scatola(tenda, lw + 0.005, 0.04, 0.48, i % 2 ? PAL.crema : PAL.accento, [-(GEL.w + 0.1) / 2 + lw * (i + 0.5), 0, 0.24], 0.015);
-    for (let i = 0; i < n; i++) metti(tenda, new THREE.CylinderGeometry(lw / 2, lw / 2, 0.05, 12, 1, false, 0, Math.PI), vernice(i % 2 ? PAL.crema : PAL.accento), [-(GEL.w + 0.1) / 2 + lw * (i + 0.5), -0.02, 0.48], [Math.PI / 2, 0, 0]);
-    // il bancone con le vaschette
-    scatola(G, 1.3, 0.42, 0.36, PAL.crema, [-0.55, 0.25, zf + 0.25], 0.05);
-    scatola(G, 1.38, 0.06, 0.42, PAL.ardesia, [-0.55, 0.48, zf + 0.25], 0.02);
-    [PAL.accento, PAL.crema, PAL.cioccolato, PAL.menta].forEach((c, i) => metti(G, new THREE.SphereGeometry(0.11, 14, 10), c, [-1.0 + i * 0.3, 0.53, zf + 0.25]).scale.set(1, 0.55, 0.9));
-    // il cono gelato sul tetto: l'insegna
-    O.conone = new THREE.Group(); O.conone.position.set(-0.3, GEL.h + 0.2, -0.1); G.add(O.conone);
-    metti(O.conone, new THREE.ConeGeometry(0.28, 0.8, 18), PAL.cialda, [0, 0.42, 0], [Math.PI, 0, 0]);
-    metti(O.conone, new THREE.SphereGeometry(0.34, 20, 14), PAL.accento, [0, 0.92, 0]);
-    metti(O.conone, new THREE.SphereGeometry(0.1, 12, 8), PAL.crema, [0.12, 1.22, 0.08]);
-    // il cartellino "GELATO FINITO!" appeso sotto la tenda: si gira quando i coni finiscono
-    O.finito = new THREE.Group(); O.finito.position.set(0.75, 1.33, zf + 0.42); O.finito.scale.setScalar(1.35); G.add(O.finito);
-    metti(O.finito, new THREE.CylinderGeometry(0.008, 0.008, 0.22, 6), PAL.scuro, [-0.22, 0.12, 0]); metti(O.finito, new THREE.CylinderGeometry(0.008, 0.008, 0.22, 6), PAL.scuro, [0.22, 0.12, 0]);
-    O.finitoCarta = new THREE.Group(); O.finito.add(O.finitoCarta);
-    scatola(O.finitoCarta, 0.74, 0.3, 0.04, PAL.crema, [0, 0, 0], 0.03);
-    const scritta = (testo, bg, fg) => new THREE.MeshStandardMaterial({ roughness: 0.8, map: texCanvas(512, 200, (ctx, W, H) => { ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H); ctx.fillStyle = fg; ctx.font = FONT.replace('160px', testo.length > 8 ? '74px' : '96px'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(testo, W / 2, H / 2 + 6); }) });
-    pannello(O.finitoCarta, 0.68, 0.25, 0.025, scritta('APERTO', '#ece8df', PAL.ardesia), [0, 0, 0.022]);
-    pannello(O.finitoCarta, 0.68, 0.25, 0.025, scritta('GELATO FINITO!', PAL.scuro, PAL.accento), [0, 0, -0.022], [0, Math.PI, 0]);
-    // il lampione davanti
-    const lamp = new THREE.Group(); lamp.position.set(1.85, 0, 2.0); L.add(lamp);
-    metti(lamp, new THREE.CylinderGeometry(0.04, 0.055, 1.25, 8), PAL.ardesia, [0, 0.625, 0]); metti(lamp, new THREE.CylinderGeometry(0.1, 0.07, 0.07, 10), PAL.ardesia, [0, 1.27, 0]);
-    O.bulbo = luminosa('#fff4dd', PAL.lampada); metti(lamp, new THREE.SphereGeometry(0.13, 14, 10), O.bulbo, [0, 1.42, 0]);
-    O.luceLampione = new THREE.PointLight(PAL.lampada, 0, 5, 2); O.luceLampione.position.set(1.85, 1.42, 2.0); L.add(O.luceLampione);
-    O.luceNegozio = new THREE.PointLight('#ffb866', 0, 4, 2); O.luceNegozio.position.set(GEL.x - 0.3, 1.0, GEL.z + zf + 0.7); L.add(O.luceNegozio);
-    O.gelataio = piolo(L, PAL.crema, PAL.tronco);
-    metti(O.gelataio.userData.corpo, new THREE.CylinderGeometry(0.11, 0.13, 0.12, 14), '#ffffff', [0, 0.73, 0]);   // il cappellino bianco
-    O.gelataio.position.set(GEL.x - 0.55, 0.06, GEL.z + zf + 0.02);
-    disegnaVetrina();
-  }
-  function disegnaVetrina() {
+  function disegnaConi() {
     if (!O.texConi) return;                                         // la scena non è ancora pronta: si disegna alla costruzione
-    const n = Math.max(0, Math.round(stato.coni)), finiti = stato.finito || n <= 0;
+    const n = Math.max(0, Math.round(stato.coni)), finiti = stato.finito || n <= 0, pochi = !finiti && n <= stato.coniMax * 0.25;
+    const colNum = finiti ? '#ff8a9e' : pochi ? '#ffd27a' : '#fff6e6';
     O.texConi.ridisegna((ctx, W, H) => {
       ctx.fillStyle = '#2a2433'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(58, 120); ctx.lineTo(118, 120); ctx.lineTo(88, 214); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = PAL.accento; ctx.beginPath(); ctx.arc(88, 100, 36, 0, 7); ctx.fill();
+      for (let i = 0; i < 3; i++) { const x = 70 + i * 64; ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(x - 24, 130); ctx.lineTo(x + 24, 130); ctx.lineTo(x, 214); ctx.fill(); ctx.fillStyle = [PAL.accento, PAL.pistacchio, '#fff1dc'][i]; ctx.beginPath(); ctx.arc(x, 112, 28, 0, 7); ctx.fill(); }
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = finiti ? '#ff8a9e' : '#fff6e6'; ctx.font = FONT.replace('160px', finiti ? '96px' : '150px');
-      ctx.fillText(finiti ? '0' : String(n), 320, 112);
-      ctx.font = FONT.replace('160px', '46px'); ctx.fillStyle = finiti ? '#ff8a9e' : '#c9bfd6'; ctx.fillText(finiti ? 'FINITI' : 'CONI', 320, 204);
+      ctx.fillStyle = colNum; ctx.font = fontPx(150); ctx.fillText(finiti ? '0' : String(n), 380, 112);
+      ctx.font = fontPx(44); ctx.fillStyle = finiti ? '#ff8a9e' : '#c9bfd6'; ctx.fillText(finiti ? 'FINITI' : 'CONI', 380, 208);
     });
-  }
-
-  // il magazzino: una pila di casse accanto alla gelateria, che cresce e cala con i kg
-  function costruisciCasse(L) {
-    const G = new THREE.Group(); G.position.set(CASSE.x, 0, CASSE.z); L.add(G);
-    scatola(G, 1.2, 0.08, 1.0, PAL.sasso[1], [0, 0.04, 0], 0.03);                    // il pallet
-    contatto(L, 1.8, 1.5, [CASSE.x + 0.1, 0, CASSE.z + 0.1], 0.35);
-    const posti = [[-0.32, 0, -0.24], [0.32, 0, -0.24], [-0.32, 0, 0.24], [0.32, 0, 0.24], [-0.32, 1, -0.24], [0.32, 1, -0.24], [-0.32, 1, 0.24], [0.32, 1, 0.24], [0, 2, 0], [0, 3, 0]];
-    O.casse = posti.map(([x, l, z], i) => {
-      const c = new THREE.Group(); c.position.set(x, 0.08 + 0.2 + l * 0.4, z); c.rotation.y = (hash(i) - 0.5) * 0.25; G.add(c);
-      scatola(c, 0.58, 0.4, 0.44, PAL.cartone, [0, 0, 0], 0.035); scatola(c, 0.1, 0.406, 0.446, PAL.crema, [0, 0, 0], 0.01);
-      c.userData = { visibile: true, da: 0, base: c.position.y };
-      return c;
+    O.texDisplay.ridisegna((ctx, W, H) => {
+      ctx.fillStyle = '#23283e'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(30, 90); ctx.lineTo(80, 90); ctx.lineTo(55, 180); ctx.fill();
+      ctx.fillStyle = PAL.accento; ctx.beginPath(); ctx.arc(55, 78, 28, 0, 7); ctx.fill();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = finiti ? '#ff5a6e' : pochi ? '#ffc94a' : '#7cf0a0';
+      ctx.font = fontPx(120); ctx.fillText(String(finiti ? 0 : n), 215, 100);
+      ctx.font = fontPx(30); ctx.fillStyle = '#aeb6d0'; ctx.fillText(finiti ? 'FINITI!' : 'CONI', 215, 190);
     });
-  }
-
-  // un richiamo a Todi: il Tempio della Consolazione in miniatura e una torre merlata
-  function costruisciTodi(L) {
-    const T = new THREE.Group(); T.position.set(4.9, 0, -2.75); L.add(T);
-    contatto(L, 2.4, 2.4, [5.0, 0, -2.65], 0.45);
-    scatola(T, 0.95, 1.1, 0.95, PAL.travertino, [0, 0.55, 0], 0.06);
-    for (const [x, z] of [[0.48, 0], [-0.48, 0], [0, 0.48], [0, -0.48]]) {
-      metti(T, new THREE.CylinderGeometry(0.34, 0.34, 0.72, 20), PAL.travertino, [x, 0.36, z]);
-      metti(T, new THREE.SphereGeometry(0.34, 20, 10, 0, 7, 0, Math.PI / 2), PAL.cupola, [x, 0.72, z]);
-    }
-    metti(T, new THREE.CylinderGeometry(0.4, 0.4, 0.32, 24), PAL.travertino, [0, 1.26, 0]);
-    metti(T, new THREE.SphereGeometry(0.42, 24, 12, 0, 7, 0, Math.PI / 2), PAL.cupola, [0, 1.42, 0]).scale.y = 1.15;
-    metti(T, new THREE.CylinderGeometry(0.07, 0.07, 0.18, 10), PAL.travertino, [0, 1.98, 0]);
-    metti(T, new THREE.SphereGeometry(0.075, 10, 8), PAL.cupola, [0, 2.09, 0]);
-    // la torre merlata
-    const tw = new THREE.Group(); tw.position.set(1.0, 0, -3.25); L.add(tw);
-    contatto(L, 1.3, 1.3, [1.1, 0, -3.15], 0.4);
-    scatola(tw, 0.7, 1.9, 0.7, '#d8c39c', [0, 0.95, 0], 0.05);
-    for (const [x, z] of [[-0.25, 0.25], [0.25, 0.25], [-0.25, -0.25], [0.25, -0.25], [0, 0.25], [0.25, 0], [-0.25, 0], [0, -0.25]]) scatola(tw, 0.16, 0.2, 0.16, '#d8c39c', [x, 2.0, z], 0.03);
-    O.finestraTorre = finestra(tw, 0.16, 0.28, [0, 1.4, 0.36], 0, '#e9d9b8');
-  }
-
-  // il paesaggio: alberi a lecca-lecca, cipressi, cespugli, fiori, una panchina
-  function costruisciPaesaggio(L) {
-    for (const [x, z, s, tipo] of [[-5.6, -3.2, 0.9, 'cipresso'], [-1.4, -3.3, 1.0, 'cipresso'], [-0.6, -3.35, 0.8, 'cipresso'], [2.5, -3.2, 1.05, 'tondo'], [3.6, -3.4, 0.8, 'cipresso'], [6.0, -3.0, 0.9, 'gommina'],
-      [-5.7, 1.2, 1.0, 'tondo'], [-4.9, 2.6, 0.9, 'gommina'], [-5.6, 3.3, 0.75, 'chiaro'], [-1.9, 3.3, 0.85, 'tondo'], [-0.6, 0.75, 0.75, 'gommina'], [6.0, 3.4, 0.7, 'chiaro'], [-2.6, 1.3, 0.7, 'tondo']]) albero(L, x, z, s, tipo);
-    for (const [x, z, s] of [[2.3, 1.45, 0.28], [6.0, 1.1, 0.3], [-2.9, -0.05, 0.26], [2.6, -0.3, 0.26], [-3.7, 3.3, 0.32], [0.9, 3.55, 0.26], [4.4, 3.65, 0.3], [-1.0, 1.4, 0.28]]) {
-      metti(L, new THREE.SphereGeometry(1, 14, 10), PAL.foglie[x > 3 ? 0 : 2], [x, s * 0.55, z]).scale.set(s * 1.25, s, s * 1.1);
-      contatto(L, s * 3.2, s * 3, [x + 0.05, 0, z + 0.05], 0.3);
-    }
-    const fiori = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), vernice('#ffffff', 0.8), 72), fr = rng(21), o = new THREE.Object3D();
-    fiori.receiveShadow = true; L.add(fiori);
-    [[-4.1, 3.4], [-1.0, 3.6], [-0.4, 2.0], [2.6, 1.7], [2.8, 3.7], [5.1, 3.6], [-1.7, 0.4], [0.9, -2.9], [4.2, -1.6], [-5.8, -0.1], [-3.9, 1.0], [0.1, 1.2]].forEach(([x, z], c) => {
-      for (let i = 0; i < 6; i++) { const a = fr.range(0, 6.3), d = fr.range(0.05, 0.38), s = fr.range(0.035, 0.055); o.position.set(x + Math.cos(a) * d, s * 0.7, z + Math.sin(a) * d); o.scale.set(s, s * 0.7, s); o.updateMatrix(); fiori.setMatrixAt(c * 6 + i, o.matrix); fiori.setColorAt(c * 6 + i, new THREE.Color(fr.pick(['#fff7ea', '#fff7ea', PAL.senape, '#f7c9c0']))); }
-    });
-    const panca = new THREE.Group(); panca.position.set(-3.1, 0, 3.2); panca.rotation.y = 0.15; L.add(panca);
-    scatola(panca, 0.85, 0.06, 0.28, PAL.cartone, [0, 0.24, 0], 0.025); scatola(panca, 0.85, 0.2, 0.06, PAL.cartone, [0, 0.42, 0.13], 0.025); for (const x of [-0.32, 0.32]) scatola(panca, 0.07, 0.24, 0.26, PAL.ardesia, [x, 0.12, 0], 0.02);
-    O.passante = piolo(L, PAL.foglie[1], PAL.tronco); O.passante.position.set(-3.0, 0.2, 3.05); O.passante.rotation.y = 0.2;   // seduto sulla panchina
+    const k = Math.ceil(6 * Math.max(0, finiti ? 0 : n) / Math.max(1, stato.coniMax));
+    O.coniBanco.forEach((c, i) => { c.visible = i < k; });
   }
 
   /* ---------------------------------------------------------------
@@ -601,23 +257,23 @@ const Diorama = (() => {
      --------------------------------------------------------------- */
   function creaPost() {
     post = new THREE.ShaderMaterial({
-      uniforms: { tCol: { value: null }, res: { value: new THREE.Vector2(1, 1) }, fuoco: { value: 0.5 }, fascia: { value: 0.17 }, sfoc: { value: 5.5 }, vign: { value: 0.2 }, sat: { value: 1.08 }, con: { value: 1.03 }, esposizione: { value: 1 } },
+      uniforms: { tCol: { value: null }, res: { value: new THREE.Vector2(1, 1) }, fuoco: { value: 0.5 }, fascia: { value: 0.2 }, sfoc: { value: 6 }, vign: { value: 0.2 }, sat: { value: 1.08 }, con: { value: 1.03 }, esposizione: { value: 1 }, lampo: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
       fragmentShader: `
-        uniform sampler2D tCol; uniform vec2 res; uniform float fuoco, fascia, sfoc, vign, sat, con, esposizione; varying vec2 vUv;
+        uniform sampler2D tCol; uniform vec2 res; uniform float fuoco, fascia, sfoc, vign, sat, con, esposizione, lampo; varying vec2 vUv;
         const vec2 DISCO[12] = vec2[12](vec2(-0.326,-0.406), vec2(-0.840,-0.074), vec2(-0.696,0.457), vec2(-0.203,0.621), vec2(0.962,-0.195), vec2(0.473,-0.480),
                                         vec2(0.519,0.767), vec2(0.185,-0.893), vec2(0.507,0.064), vec2(0.896,0.412), vec2(-0.322,-0.933), vec2(-0.792,-0.598));
         void main(){
-          // quanto è lontano dalla fascia a fuoco: nitido dentro, sempre più sfocato verso il bordo vicino e quello lontano
-          float d = abs(vUv.y - fuoco), r = smoothstep(fascia, fascia + 0.32, d) * sfoc;
+          // distanza dalla fascia a fuoco: nitido dentro, sempre più sfocato verso il bordo vicino e quello lontano
+          float d = abs(vUv.y - fuoco), r = smoothstep(fascia, fascia + 0.3, d) * sfoc * res.y / 900.0;
           vec3 c = texture2D(tCol, vUv).rgb;
           if (r > 0.35) {
-            vec3 acc = c; float w = 1.0; float ang = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831;
+            vec3 acc = c; float ang = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831;
             mat2 rot = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
-            for (int i = 0; i < 12; i++) { acc += texture2D(tCol, vUv + rot * DISCO[i] * r / res).rgb; w += 1.0; }
-            c = acc / w;
+            for (int i = 0; i < 12; i++) acc += texture2D(tCol, vUv + rot * DISCO[i] * r / res).rgb;
+            c = acc / 13.0;
           }
-          c *= esposizione;
+          c = c * esposizione + lampo * vec3(0.5, 0.52, 0.6);
           float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
           c = max(mix(vec3(l), c, sat), 0.0);
           c = max((c - 0.18) * con + 0.18, 0.0);
@@ -639,15 +295,42 @@ const Diorama = (() => {
   }
 
   /* ---------------------------------------------------------------
-     DIMENSIONI E QUALITÀ (si abbassa da sola se gli fps scendono)
+     DIMENSIONI, INQUADRATURA E QUALITÀ (si abbassa da sola se gli fps scendono)
      --------------------------------------------------------------- */
-  let W = 1, H = 1, pr = 1;
-  const QUALITA = { alta: { pr: 1.5, ombre: 2048, post: true }, media: { pr: 1, ombre: 1024, post: true }, bassa: { pr: 0.75, ombre: 1024, post: false } };
+  let W = 1, H = 1;
+  const QUALITA = { alta: { pr: 1.5, ombre: 2048, post: true }, media: { pr: 1, ombre: 2048, post: true }, bassa: { pr: 0.75, ombre: 1024, post: false } };
+  const CAM = { az: 14 * Math.PI / 180, el: 31 * Math.PI / 180, dist: 60, mira: new THREE.Vector3(0, 1.2, 0.6) };
+  // piazza la camera; d = distanza
+  function piazzaCamera(az, el, d) {
+    const m = CAM.mira;
+    camera.position.set(m.x + d * Math.sin(az) * Math.cos(el), m.y + d * Math.sin(el), m.z + d * Math.cos(az) * Math.cos(el));
+    camera.lookAt(m);
+  }
+  // cerca la distanza a cui tutta la piastrella (con le torri) sta nell'inquadratura: teleobiettivo, piastrella che riempie
+  function inquadra() {
+    const pts = [], k = PIASTRA.r * 0.3, f = 1.25 + k;
+    for (const [x, y] of [[PIASTRA.x0 + k, PIASTRA.y0 + k], [PIASTRA.x1 - k, PIASTRA.y0 + k], [PIASTRA.x0 + k, PIASTRA.y1 - k], [PIASTRA.x1 - k, PIASTRA.y1 - k]]) pts.push(new THREE.Vector3(x - PIASTRA.cx, 0.3, y - PIASTRA.cy));
+    for (const [x, y] of [[PIASTRA.x0 + f, PIASTRA.y1 - f], [PIASTRA.x1 - f, PIASTRA.y1 - f], [PIASTRA.x0 + f, PIASTRA.y0 + f], [PIASTRA.x1 - f, PIASTRA.y0 + f]]) pts.push(new THREE.Vector3(x - PIASTRA.cx, -PIASTRA.spessore - 0.2, y - PIASTRA.cy));
+    pts.push(new THREE.Vector3(11.1 - PIASTRA.cx, Z3 + 5.0, -0.1 - PIASTRA.cy), new THREE.Vector3(-1.95 - PIASTRA.cx, 4.6, -2.35 - PIASTRA.cy));
+    let d = 60, box; const v = new THREE.Vector3();
+    camera.clearViewOffset();
+    const misura = () => {
+      piazzaCamera(CAM.az, CAM.el, d); camera.updateMatrixWorld();
+      const b = [1e9, -1e9, 1e9, -1e9]; for (const p of pts) { v.copy(p).project(camera); b[0] = Math.min(b[0], v.x); b[1] = Math.max(b[1], v.x); b[2] = Math.min(b[2], v.y); b[3] = Math.max(b[3], v.y); }
+      return b;
+    };
+    for (let it = 0; it < 6; it++) { box = misura(); d *= Math.max((box[1] - box[0]) / 2 / 0.95, (box[3] - box[2]) / 2 / 0.9); }
+    box = misura();
+    CAM.dist = d;
+    // sposta l'inquadratura perché la piastrella stia al centro (la mira resta la stessa)
+    CAM.offset = [(box[0] + box[1]) / 2 * W / 2, -(box[2] + box[3]) / 2 * H / 2];
+    camera.setViewOffset(W, H, CAM.offset[0], CAM.offset[1], W, H);
+  }
   function ridimensiona() {
     const r = contenitore.getBoundingClientRect(); W = Math.max(2, Math.round(r.width)); H = Math.max(2, Math.round(r.height));
-    const q = QUALITA[stato.qualita]; pr = Math.min(window.devicePixelRatio || 1, q.pr);
+    const q = QUALITA[stato.qualita], pr = Math.min(window.devicePixelRatio || 1, q.pr);
     R.setPixelRatio(pr); R.setSize(W, H, false);
-    camera.aspect = W / H; camera.updateProjectionMatrix();
+    camera.aspect = W / H; camera.updateProjectionMatrix(); inquadra();
     if (q.post) creaTarget(Math.round(W * pr), Math.round(H * pr));
   }
   function impostaQualita(q) {
@@ -663,7 +346,7 @@ const Diorama = (() => {
     fps.campioni.push(dt); if (fps.campioni.length > 60) fps.campioni.shift();
     fps.valore = fps.campioni.length / fps.campioni.reduce((a, b) => a + b, 0);
     // se resta sotto i 50 fps per un paio di secondi, scende di un gradino
-    if (fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2) { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
+    if (fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2 && stato.qualita !== 'bassa') { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
     else fps.lento = Math.max(0, fps.lento - dt);
   }
 
@@ -672,86 +355,83 @@ const Diorama = (() => {
      --------------------------------------------------------------- */
   const col = (hex) => new THREE.Color(hex);
   const C = { soleCaldo: col('#ffb978'), soleMezzodi: col('#fff1dc'), soleLuna: col('#9fb0ff'), cielo: col('#bcd3ff'), cieloSera: col('#a9b8f5'), cieloNotte: col('#6a78a0'), cieloGrigio: col('#c8d0d8'),
-    sfondo: col(PAL.sfondo), sera: col(PAL.sera), notte: col(PAL.notte), pioggia: col(PAL.pioggia), nuvole: col(PAL.nuvole), tmp: col('#ffffff'), tmp2: col('#ffffff') };
-  const furgoneStato = { s: 0, sPrec: 0, v: 0, vPrec: 0, beccheggio: 0, ritorno: -1, ultimoAttivo: false, visibile: true };
+    sfondo: col(PAL.sfondo), sera: col(PAL.sera), notte: col(PAL.notte), pioggia: col(PAL.pioggia), nuvole: col(PAL.nuvole), tmp: col('#fff'), tmp2: col('#fff') };
+  const V1 = new THREE.Vector3(), V2 = new THREE.Vector3(), O3 = new THREE.Object3D();
+  const oraDelGiorno = () => (stato.ora >= 32 ? stato.ora - 24 : stato.ora);
   function aggiorna(t, dt) {
     // --- meteo: le quantità si avvicinano piano al valore richiesto (niente scatti)
-    const obPioggia = stato.meteo === 'pioggia' ? 1 : 0, obNuvole = stato.meteo === 'sole' ? 0 : 1;
-    stato.meteoK.pioggia += (obPioggia - stato.meteoK.pioggia) * Math.min(1, dt * 1.5);
-    stato.meteoK.nuvole += (obNuvole - stato.meteoK.nuvole) * Math.min(1, dt * 1.5);
-    const kp = stato.meteoK.pioggia, kn = stato.meteoK.nuvole;
+    const kStep = Math.min(1, dt * 1.5 * Math.max(1, stato.speed));
+    stato.meteoK.pioggia += ((stato.meteo === 'pioggia' ? 1 : 0) - stato.meteoK.pioggia) * kStep;
+    stato.meteoK.nuvole += ((stato.meteo === 'sole' ? 0 : 1) - stato.meteoK.nuvole) * kStep;
+    const kp = stato.meteoK.pioggia, kn = stato.meteoK.nuvole, nebbia = kn * (1 - kp);
 
-    // --- ora: il sole sale e scende davanti a sinistra, si scalda verso sera; poi la notte
-    const h = stato.ora, p = clamp((h - 8) / 12), notte = h <= 20 ? 0 : h < 31 ? liscio(20, 21, h) : 1 - liscio(31, 32, h);
+    // --- ora: il sole sale e scende davanti a sinistra e si scalda verso sera; poi la notte
+    const h = oraDelGiorno(), p = clamp((h - 8) / 12), notte = h <= 20 ? 0 : h < 31 ? liscio(20, 21, h) : 1 - liscio(31, 32, h);
     const alto = Math.sin(Math.PI * p);
-    O.sole.position.set(-11 + 5 * p, 6 + 9 * alto, 10 - 3 * p);
+    O.sole.position.set(-22 + 10 * p, 10 + 18 * alto, 20 - 6 * p);
     C.tmp.copy(C.soleCaldo).lerp(C.soleMezzodi, Math.pow(alto, 0.7));
     O.sole.color.copy(C.tmp).lerp(C.soleLuna, notte);
-    O.sole.intensity = lerp(lerp(3.2, 1.1, kn), 0.25, notte) * (0.75 + 0.25 * alto);
+    O.sole.intensity = lerp(lerp(3.2, 1.0, kn), 0.25, notte) * (0.75 + 0.25 * alto);
     O.cielo.color.copy(C.cielo).lerp(C.cieloSera, liscio(0.7, 1, p)).lerp(C.cieloGrigio, kn * 0.6).lerp(C.cieloNotte, notte);
-    O.cielo.intensity = lerp(lerp(0.9, 1.35, kn), 0.45, notte);
+    O.cielo.intensity = lerp(lerp(0.9, 1.35, kn), 0.5, notte);
     O.lunetta.intensity = 0.6 * notte;
     O.sole.shadow.radius = lerp(3, 9, kn);                          // col cielo coperto le ombre si allargano
-    C.tmp2.copy(C.sfondo).lerp(C.sera, liscio(0.75, 1, p)).lerp(C.nuvole, kn * (1 - kp)).lerp(C.pioggia, kp).lerp(C.notte, notte);
+    C.tmp2.copy(C.sfondo).lerp(C.sera, liscio(0.75, 1, p)).lerp(C.nuvole, nebbia).lerp(C.pioggia, kp).lerp(C.notte, notte);
     scena.background.copy(C.tmp2); O.carta.material.color.copy(C.tmp2);
+    // la nebbia del cielo coperto: fitta sulla città alta (più lontana), leggera davanti
+    scena.fog.color.copy(C.tmp2).lerp(C.tmp.set('#eef1f5'), 0.5 * (1 - notte));
+    scena.fog.near = nebbia > 0.02 ? CAM.dist - 3 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 20 + 60 * (1 - nebbia) : 2e4;
     scena.environmentIntensity = lerp(0.4, 0.15, notte);
     post.uniforms.esposizione.value = lerp(1, 0.92, kp);
     post.uniforms.sat.value = lerp(1.08, 0.9, kp);
 
     // --- le lampadine prendono il sopravvento la sera
     const luci = liscio(19.2, 20.4, h) * (h < 31.5 ? 1 : 1 - liscio(31.5, 32, h));
-    O.bulbo.emissiveIntensity = 5 * luci; O.luceLampione.intensity = 4 * luci;
-    const negozioChiuso = luci > 0.5;
-    O.vanoPorta.emissiveIntensity = negozioChiuso ? 1.6 * luci : 0.4;
-    O.luceNegozio.intensity = 1.4 * luci;
-    O.finestreGel.forEach((m) => { m.emissiveIntensity = 3 * luci; });
-    O.finestreFornitore.forEach((m, i) => { m.emissiveIntensity = (0.4 + 2.4 * luci) * (i ? 1 : 0.8); });
+    O.bulbi.emissiveIntensity = 5 * luci; O.matAlone.opacity = 0.85 * luci; O.luceLampione.intensity = 6 * luci;
+    O.finestreAccese.emissiveIntensity = 2.6 * luci;
+    O_finestra().emissiveIntensity = 2.2 * luci;
     O.vetriFornitore.emissiveIntensity = 0.3 + 1.4 * luci;
-    O.finestraTorre.emissiveIntensity = 2.5 * luci;
-    O.matVetrina.emissiveIntensity = 0.55 + 0.9 * luci;
-    O.fari = O.furgone.fari; O.fari.emissiveIntensity = 2.6 * Math.max(luci, kp * 0.6, furgoneStato.v > 0.05 ? 0.4 : 0);
-    // la porta scorre: aperta di giorno, chiusa di notte
-    const apertura = 1 - liscio(20, 20.6, h) + liscio(31.4, 32, h);
-    O.porta.position.x = 0.75 - 0.5 * clamp(apertura);
+    O.matVetrina.emissiveIntensity = 0.5 + 0.9 * luci; O.matDisplay.emissiveIntensity = 0.6 + 0.8 * luci;
+    O.luceNegozio.intensity = 3 * luci;
+    O.furgone.fari.emissiveIntensity = 2.6 * Math.max(luci, kp * 0.6, Math.abs(furgoneStato.v) > 0.05 ? 0.4 : 0);
+
+    // --- apertura e chiusura: la sera il gelataio porta dentro il bancone, entra e chiude la porta
+    const chiusura = h < 8.5 ? 1 - seg(h, 8.05, 8.5) : h >= 20 ? seg(h, 20, 20.8) : 0;
+    const bx = lerp(BANCO.x, GEL.porta - 1.1, easeInOut(seg(chiusura, 0, 0.6)));
+    O.bancone.position.set(bx, 0, lerp(BANCO.y, 7.95, seg(chiusura, 0.4, 0.7)));
+    O.bancone.visible = chiusura < 0.75; O.bancone.scale.setScalar(Math.max(0.001, 1 - seg(chiusura, 0.55, 0.75)));
+    O.vanoPorta.emissiveIntensity = chiusura > 0.5 ? 1.6 * luci : 0.25;
+    O.porta.position.x = GEL.porta - 0.82 * (1 - seg(chiusura, 0.85, 1));     // aperta di giorno, chiusa la notte
+    aggiornaGelataio(t, chiusura);
 
     // --- l'oscillazione lenta della piastrella e la "respirazione" della camera (niente giro completo)
-    const th = (-6 + 4 * Math.sin(t * 0.07)) * Math.PI / 180;
-    O.mondo.rotation.y = th; O.ombraTile.rotation.z = th;
-    const az = (-4 + 2 * Math.sin(t * 0.05)) * Math.PI / 180, el = (27 + 1.2 * Math.sin(t * 0.09)) * Math.PI / 180, dist = 25.5 + 0.4 * Math.sin(t * 0.11);
-    const aim = [0.35, 0.35, 0.1];
-    // se la scena è stretta e alta, la camera si allontana un po' per tenere tutta la piastrella
-    const adatta = Math.max(1, 1.78 / camera.aspect);
-    camera.position.set(aim[0] + dist * adatta * Math.sin(az) * Math.cos(el), aim[1] + dist * adatta * Math.sin(el), aim[2] + dist * adatta * Math.cos(az) * Math.cos(el));
-    camera.lookAt(aim[0], aim[1], aim[2]);
+    const th = (2.5 * Math.sin(t * 0.07)) * Math.PI / 180;
+    O.perno.rotation.y = th; O.ombraTile.rotation.z = th;
+    piazzaCamera(CAM.az + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * (1 + 0.012 * Math.sin(t * 0.11)));
+    O.sole.target.position.set(0, 0, 0);
 
-    // --- il furgone
-    aggiornaFurgone(t, dt, luci);
-
-    // --- sbuffi dal comignolo del fornitore (non si ferma mai) e scia del furgone
-    for (let i = 0; i < 6; i++) { const eta = ((t + 10) / 2.4 + i / 6) % 1; O.fumo.set(i, O.comignolo, eta, { size: 0.24, rise: 1.4, drift: 0.6, driftZ: -0.12 + 0.1 * hash(i, Math.floor((t + 10) / 2.4 + i / 6)) }); }
-    for (let i = 0; i < 12; i++) {
-      const sb = O.scia[i];
-      if (!sb) { O.fumo.set(6 + i, [0, -5, 0], 0, { size: 0, rise: 0 }); continue; }
-      O.fumo.set(6 + i, sb.at, (t - sb.t0) / 0.8, { size: 0.12, rise: 0.4, drift: 0 });
-    }
+    // --- il furgone, il fumo del comignolo e la scia
+    aggiornaFurgone(t, dt);
+    for (let i = 0; i < 6; i++) { const eta = ((t + 10) / 2.4 + i / 6) % 1; O.fumo.set(i, O.comignolo, eta, { size: 0.26, rise: 1.6, drift: 0.7, driftZ: -0.15 + 0.12 * hash(i, Math.floor((t + 10) / 2.4 + i / 6)) }); }
+    for (let i = 0; i < 14; i++) { const sb = O.scia[i]; if (!sb) { O.fumo.set(6 + i, [0, -50, 0], 0, { size: 0, rise: 0 }); continue; } O.fumo.set(6 + i, sb.at, (t - sb.t0) / 0.8, { size: 0.17, rise: 0.5 }); }
     O.fumo.m.instanceMatrix.needsUpdate = true;
 
-    // --- il cono sul tetto ruota piano; il gelataio dondola
+    // --- il cono sul tetto ruota piano; la bandiera sventola
     O.conone.rotation.y = t * 0.6;
-    O.gelataio.visible = apertura > 0.5;
-    O.gelataio.userData.corpo.rotation.z = Math.sin(t * 2.2) * 0.04;
-    O.magazziniere.userData.corpo.rotation.x = Math.max(0, Math.sin(t * 1.3)) * 0.12;
+    const bp = O.bandiera.geometry.attributes.position, base = O.bandiera.userData.base;
+    for (let i = 0; i < bp.count; i++) { const x = base[i * 3]; bp.setZ(i, Math.sin(t * 4 - x * 7) * 0.05 * (x / 0.66)); }
+    bp.needsUpdate = true; O.bandiera.geometry.computeVertexNormals();
 
     // --- cartelli: guardano l'obiettivo e si girano al colore accento quando la loro tappa è fatta
-    const ore = stato.camion.ore, attivo = stato.camion.attivo;
-    const fatti = [attivo, attivo && ore >= 1.5 && ore < 24, stato.venduto];
+    const cs = stato.camion;
+    const fatti = [cs.attivo, cs.attivo && cs.ore >= 1.5 && cs.ore < 22, stato.venduto];
     O.cartelli.forEach((s, i) => {
       if (fatti[i] !== s.fatto) { s.fatto = fatti[i]; s.quando = tGioco; }
-      const wp = s.g.getWorldPosition(V1), f = tGioco - s.quando;
+      const wp = s.g.getWorldPosition(V1), f = (tGioco - s.quando) / Math.max(1, stato.speed / 2);
       s.g.rotation.y = Math.atan2(camera.position.x - wp.x, camera.position.z - wp.z) - th;
       const k = molla(f, 2.0, 0.5);
-      s.giro.rotation.x = -0.3 + Math.PI * (s.fatto ? k : 1 - k);
-      s.giro.position.y = CARTELLI[i].h + (f > 0 && f < 1.5 ? Math.exp(-f * 7) * Math.sin(f * 14) * 0.16 : 0);
+      s.giro.rotation.x = -0.25 + Math.PI * (s.fatto ? k : 1 - k);
+      s.giro.position.y = s.h + (f > 0 && f < 1.5 ? Math.exp(-f * 7) * Math.sin(f * 14) * 0.12 : 0);
     });
     // il cartellino "GELATO FINITO!" si gira
     const ff = tGioco - (O.finito.userData.quando ?? -99), kf = molla(ff, 1.8, 0.45);
@@ -767,103 +447,173 @@ const Diorama = (() => {
       c.scale.setScalar(Math.max(1e-3, s)); c.visible = s > 0.01; c.position.y = c.userData.base + (vuole ? (1 - u) * 0.4 : 0);
     });
 
-    // --- clienti ed eventi
+    // --- persone
     aggiornaClienti(t);
+    aggiornaRagazzi(t, h);
 
-    // --- pioggia: gocce che cadono, pozzanghere che si allargano lucide
+    // --- pioggia, pozzanghere, fulmini
     O.gocce.visible = kp > 0.02;
     if (O.gocce.visible) {
-      const o = O3; O.gocce.material.opacity = 0.55 * kp;
-      O.goccePos.forEach(([x, f, z, v], i) => { const y = 5.5 - ((t * 4.2 * v + f * 5.5) % 5.5); o.position.set(x + y * 0.06, y, z); o.rotation.set(0, 0, 0.06); o.scale.setScalar(1); o.updateMatrix(); O.gocce.setMatrixAt(i, o.matrix); });
+      O.gocce.material.opacity = 0.55 * kp;
+      O.goccePos.forEach(([x, f, y, v, zb], i) => { const z = zb + 9 - ((t * 7 * v + f * 9) % 9); O3.position.set(x + (z - zb) * 0.05, z, y); O3.rotation.set(0, 0, 0.05); O3.updateMatrix(); O.gocce.setMatrixAt(i, O3.matrix); });
       O.gocce.instanceMatrix.needsUpdate = true;
     }
-    stato.bagnato = clamp((stato.bagnato || 0) + (kp > 0.5 ? dt * 0.35 : -dt * 0.15));
-    O.pozze.forEach((m, i) => { const s = Math.max(0.001, liscio(0.05 + i * 0.08, 0.6 + i * 0.06, stato.bagnato)); m.scale.set(s, 1, s); m.visible = s > 0.01; });
-    O.terra.userData.matErba.roughness = lerp(0.95, 0.75, kp);
+    stato.bagnato = clamp(stato.bagnato + (kp > 0.5 ? dt * 0.35 : -dt * 0.15) * Math.max(1, stato.speed));
+    O.pozze.forEach((m, i) => { const s = Math.max(0.001, liscio(0.05 + i * 0.06, 0.55 + i * 0.05, stato.bagnato)); m.scale.set(s, 1, s); m.visible = s > 0.01; });
+    O.L.userData.matErba.roughness = lerp(0.95, 0.75, kp);
+    const kf2 = Math.floor(t / 2.6), ph = (t / 2.6) % 1, lampo = kp > 0.6 && ph < 0.09 && hash(kf2) > 0.3;
+    O.fulmine.visible = lampo && ph < 0.06;
+    if (lampo) O.fulmine.position.set(lerp(1, 19, hash(kf2, 2)), 7.2, lerp(-2.5, 1.5, hash(kf2, 5)));
+    post.uniforms.lampo.value = lampo ? (ph < 0.045 ? 1 - ph / 0.045 : 0) * 0.35 : 0;
 
-    // --- nuvole: compaiono col cielo coperto e passano piano
-    O.nuvole.forEach((g, i) => { const s = Math.max(0.001, kn * g.userData.s); g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.05 + i) * 0.8;
-      g.children.forEach((m) => { m.material = vernice(kp > 0.5 ? '#c9ced6' : '#ffffff', 0.95); }); });
+    // --- nuvole: compaiono col cielo coperto e passano piano (scure col temporale)
+    const matN = kp > 0.5 ? O.matNuvolaScura : O.matNuvola;
+    O.nuvole.forEach((g, i) => { const s = Math.max(0.001, kn * g.userData.s); g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.05 + i) * 1.2;
+      if (g.userData.mat !== matN) { g.userData.mat = matN; g.children.forEach((m) => { m.material = matN; }); } });
 
-    // --- la fascia a fuoco segue la gelateria (o il furgone quando viaggia)
-    const soggetto = V2.set(GEL.x - 0.4, 0.6, GEL.z + 0.6);
-    if (attivo && ore < 20) { const fp = O.furgone.g.position; soggetto.lerp(V3.set(fp.x, 0.5, fp.z), 0.55); }
-    O.mondo.localToWorld(soggetto); soggetto.project(camera);
+    // --- fiori: col sole sbocciano, col maltempo si chiudono
+    const sboccioVuole = stato.meteo === 'sole' && notte < 0.5 ? 1 : 0.25;
+    const sb = stato.sboccio + (sboccioVuole - stato.sboccio) * Math.min(1, dt * 0.8 * Math.max(1, stato.speed));
+    if (Math.abs(sb - stato.sboccio) > 0.002 || !O.fiori.userData.pronti) {
+      stato.sboccio = sb; O.fiori.userData.pronti = true;
+      O.fioriPos.forEach(([x, y, z], i) => { const s = (0.03 + 0.05 * sb) * (0.8 + 0.4 * hash(i, 3)); O3.position.set(x, z + 0.2 + s * 0.3, y); O3.rotation.set(0, 0, 0); O3.scale.set(s, s * 0.7, s); O3.updateMatrix(); O.fiori.setMatrixAt(i, O3.matrix); });
+      O.fiori.instanceMatrix.needsUpdate = true;
+    }
+
+    // --- uccellini e farfalle col bel tempo
+    const bello = (1 - kn) * (1 - notte) > 0.5;
+    O.uccelli.forEach((g, i) => {
+      g.visible = bello; if (!bello) return;
+      const a = t * 0.18 + i * 1.05, r = 6 + (i % 3) * 1.6;
+      g.position.set(PIASTRA.cx + Math.cos(a) * r, 6.8 + (i % 2) * 0.8 + Math.sin(t * 1.3 + i) * 0.25, PIASTRA.cy - 1 + Math.sin(a) * r * 0.55);
+      g.rotation.y = -a; const ali = Math.sin(t * 9 + i * 2) * 0.5; g.userData.ali[0].rotation.z = ali; g.userData.ali[1].rotation.z = -ali;
+    });
+    O.farfalle.forEach((g, i) => {
+      g.visible = bello; if (!bello) return;
+      g.position.set(3 + i * 1.3 + Math.sin(t * 0.7 + i) * 0.6, 0.6 + Math.sin(t * 2 + i) * 0.2, 6.6 + Math.cos(t * 0.9 + i) * 0.6);
+      g.rotation.y = t * 0.8 + i; const ali = Math.abs(Math.sin(t * 14 + i)) * 1.1; g.userData.ali[0].rotation.z = ali; g.userData.ali[1].rotation.z = -ali;
+    });
+
+    // --- la fascia a fuoco segue la gelateria (e il furgone quando viaggia)
+    const soggetto = V2.set(GEL.x + 1.5, 1.2, GEL.y + 2.4);
+    if (stato.camion.attivo && stato.camion.ore > 1.5 && stato.camion.ore < 21) { const fp = O.furgone.g.position; soggetto.lerp(V1.set(fp.x, 0.6, fp.z), 0.5); }
+    O.L.localToWorld(soggetto); soggetto.project(camera);
     post.uniforms.fuoco.value += ((soggetto.y * 0.5 + 0.5) - post.uniforms.fuoco.value) * Math.min(1, dt * 2);
   }
-  const V1 = new THREE.Vector3(), V2 = new THREE.Vector3(), V3 = new THREE.Vector3(), O3 = new THREE.Object3D();
 
-  // il furgone: carica al fornitore, viaggia per la strada, si ferma alla gelateria; poi riparte e torna a casa
-  function aggiornaFurgone(t, dt, luci) {
-    const F = O.furgone, cs = stato.camion, fs = furgoneStato, Lr = O.strada.len;
-    // fine consegna: era attivo e ora non più → riparte dalla gelateria e sparisce dal bordo
+  // il furgone: carica al fornitore, viaggia giù per la strada, si ferma alla gelateria e scarica; poi riparte e fa il giro
+  const furgoneStato = { s: 0, v: 0, vPrec: 0, beccheggio: 0, ritorno: -1, ultimoAttivo: false, ultimaScia: -9, ritornoT: 3 };
+  const angolo = (a) => -a;                                         // dalla direzione isometrica alla rotazione three (asse y)
+  function posa(F, punto, extraZ = 0) { F.g.position.set(punto.x, 0.05 + extraZ, punto.y); F.g.rotation.y = angolo(punto.ang); }
+  function aggiornaFurgone(t, dt) {
+    const F = O.furgone, cs = stato.camion, fs = furgoneStato;
     if (fs.ultimoAttivo && !cs.attivo) fs.ritorno = tGioco;
     if (cs.attivo) fs.ritorno = -1;
     fs.ultimoAttivo = cs.attivo;
-    let s, portellone = 0, visibile = true;
+    let portellone = 0, punto, percorsoS = 0, via = null;
     if (cs.attivo) {
       const ore = cs.ore;
-      portellone = 1 - seg(ore, 1.0, 1.6);                         // alle 0–1 h carica, poi chiude
-      s = O.s0 + (O.s1 - O.s0) * trap(seg(ore, 2, 20), 0.22, 0.3);
-      if (ore >= 22) portellone = seg(ore, 22, 23);                  // arrivato: apre per scaricare
+      portellone = ore < 1.6 ? 1 - seg(ore, 1.0, 1.6) : ore >= 22 ? seg(ore, 22, 22.6) : 0;
+      percorsoS = ANDATA.len * trap(seg(ore, 2, 21), 0.15, 0.25); punto = ANDATA.a(percorsoS); via = ANDATA;
+      if (ore < 1.2) punto.ang = lerp(Math.PI, 0, liscio(0.1, 1.0, ore));                 // gira sul posto davanti al fornitore
     } else if (fs.ritorno >= 0) {
-      const u = (tGioco - fs.ritorno) / 1.6;
-      s = O.s1 + (Lr - O.s1 + 0.6) * Math.pow(clamp(u), 2);
-      if (u >= 1) visibile = false;
-      if (u >= 1.25) { fs.ritorno = -1; }
-    } else s = O.s0;                                               // parcheggiato davanti al fornitore
-    // velocità e accelerazione dal movimento (per beccheggio e rollio: il furgone "pesa")
-    fs.v = dt > 0 ? (s - fs.s) / dt : 0; const acc = dt > 0 ? (fs.v - fs.vPrec) / dt : 0; fs.vPrec = fs.v;
-    if (Math.abs(s - fs.s) > 0.02 && fs.v > 0.05) {
-      const dove = Math.min(0.999, s / Lr); if (!fs.ultimaScia || tGioco - fs.ultimaScia > 0.12) {
-        fs.ultimaScia = tGioco; const p = O.strada.getPointAt(dove), tg = O.strada.getTangentAt(dove);
-        O.scia.push({ at: [p.x - tg.x * 0.98, 0.25, p.z - tg.z * 0.98], t0: t }); if (O.scia.length > 12) O.scia.shift();
-      }
+      const u = (tGioco - fs.ritorno) / fs.ritornoT;
+      percorsoS = RITORNO.len * Math.min(0.42, 0.42 * trap(u, 0.3, 0.05)); punto = RITORNO.a(percorsoS); via = RITORNO;
+      if (u >= 1) fs.ritorno = -1;
     }
-    fs.s = s;
-    const u = clamp(s / Lr, 0, 0.9999), p = O.strada.getPointAt(Math.min(u, 0.9999)), tg = O.strada.getTangentAt(Math.min(u, 0.9999));
-    const extra = Math.max(0, s - Lr); p.addScaledVector(tg, extra);
-    F.g.position.set(p.x, 0.045, p.z); F.g.rotation.y = Math.atan2(-tg.z, tg.x);
-    fs.beccheggio += (clamp(acc * 0.004, -0.09, 0.09) - fs.beccheggio) * Math.min(1, dt * 8);
-    const curva = O.strada.getTangentAt(Math.min(0.9999, u + 0.01)), piega = Math.atan2(-curva.z, curva.x) - F.g.rotation.y;
-    F.corpo.rotation.set(clamp(piega * Math.min(1, Math.abs(fs.v)) * 0.6, -0.1, 0.1), 0, fs.beccheggio);
-    F.corpo.position.y = Math.abs(Math.sin(s * 5.3)) * 0.008 * clamp(Math.abs(fs.v));
-    F.ruote.forEach((w) => { w.rotation.z = -s / 0.2; });
+    // il furgone che viaggia: visibile in andata e mentre se ne va (poi rimpicciolisce e sparisce)
+    F.g.visible = !!punto;
+    O.furgoneFermo.g.visible = !cs.attivo;
+    const uRit = fs.ritorno >= 0 ? (tGioco - fs.ritorno) / fs.ritornoT : 0;
+    // quello che aspetta al fornitore spunta con un balzo appena l'altro è partito per tornare
+    const pop = fs.ritorno >= 0 ? easeOutBack(clamp(uRit * 3)) : 1;
+    O.furgoneFermo.g.scale.setScalar(1.55 * Math.max(0.001, pop));
+    posa(O.furgoneFermo, { x: -1.6, y: 2.6, ang: Math.PI });
+    if (!punto) { fs.v = 0; fs.vPrec = 0; return; }
+    if (fs.ritorno >= 0) F.g.scale.setScalar(1.55 * Math.max(0.001, 1 - liscio(0.75, 1, uRit))); else F.g.scale.setScalar(1.55);
+    // velocità e accelerazione (per beccheggio e rollio: il furgone "pesa")
+    const v = dt > 0 ? (percorsoS - fs.s) / dt : 0; fs.v = Math.abs(percorsoS - fs.s) > 5 ? 0 : v;
+    const acc = dt > 0 ? (fs.v - fs.vPrec) / dt : 0; fs.vPrec = fs.v; fs.s = percorsoS;
+    posa(F, punto);
+    fs.beccheggio += (clamp(acc * 0.003, -0.08, 0.08) - fs.beccheggio) * Math.min(1, dt * 8);
+    const avanti = via.a(percorsoS + 0.6), piega = Math.atan2(Math.sin(avanti.ang - punto.ang), Math.cos(avanti.ang - punto.ang));
+    F.corpo.rotation.set(clamp(-piega * Math.min(1, Math.abs(fs.v) * 0.3) * 0.5, -0.1, 0.1), 0, fs.beccheggio);
+    F.corpo.position.y = Math.abs(Math.sin(percorsoS * 3.3)) * 0.01 * clamp(Math.abs(fs.v) * 0.3);
+    F.ruote.forEach((w) => { w.rotation.z = -percorsoS / (0.2 * 1.55); });
     F.portellone.rotation.z = -1.78 * portellone;
-    F.carico.visible = cs.attivo && cs.ore < 23.5;
-    F.g.visible = visibile;
+    F.carico.visible = cs.attivo && cs.ore < 22.8;
+    // sbuffi dietro quando si muove
+    if (Math.abs(fs.v) > 0.3 && tGioco - fs.ultimaScia > 0.1 / Math.max(1, stato.speed)) {
+      fs.ultimaScia = tGioco; const dx = Math.cos(punto.ang), dy = Math.sin(punto.ang);
+      O.scia.push({ at: [punto.x - dx * 1.5, 0.35, punto.y - dy * 1.5], t0: t }); if (O.scia.length > 14) O.scia.shift();
+    }
     // la saracinesca del fornitore si alza mentre carica
     const aperta = cs.attivo ? 1 - seg(cs.ore, 1.6, 2.6) : 0;
-    O.saracinesca.scale.y = Math.max(0.03, 1 - aperta * 0.96); O.lamelle.repeat.y = 7 * O.saracinesca.scale.y; O.lamelle.offset.y = -O.lamelle.repeat.y;
+    O.saracinesca.scale.y = Math.max(0.03, 1 - aperta * 0.96); O.lamelle.repeat.y = 7 * O.saracinesca.scale.y;
+    // le casse volano dal furgone alla pila del magazzino
+    O.casseVolanti.forEach((c, i) => {
+      const u = cs.attivo ? seg(cs.ore, 22.5 + i * 0.4, 23.5 + i * 0.15) : 1;
+      c.visible = u > 0 && u < 1; if (!c.visible) return;
+      const dx = Math.cos(punto.ang), dy = Math.sin(punto.ang), da = [punto.x - dx * 1.6, punto.y - dy * 1.6], a = [CASSE.x, CASSE.y];
+      c.position.set(lerp(da[0], a[0], u), 0.8 + Math.sin(Math.PI * u) * 1.6 + (1.4 - 0.8) * u, lerp(da[1], a[1], u)); c.rotation.set(u * 3, u * 2, 0);
+    });
   }
 
-  // i clienti: arrivano saltellando al bancone; se serviti ripartono con un cono, se no se ne vanno a testa bassa
+  // il gelataio-mascotte: dondola, saltella quando vende, la sera spinge dentro il bancone ed entra
+  function aggiornaGelataio(t, chiusura) {
+    const g = O.gelataio, k = easeInOut(seg(chiusura, 0.5, 0.95));
+    const x = lerp(BANCO.x - 0.45, GEL.porta, k), y = lerp(8.55, 8.1, k);
+    const salto = Math.max(0, Math.sin(clamp((tGioco - (g.userData.vendita ?? -99)) / 0.35) * Math.PI)) * 0.3;
+    g.position.set(x, 0.1 + salto + Math.abs(Math.sin(t * 3)) * 0.02, y);
+    g.visible = chiusura < 0.97; g.scale.setScalar(1.15 * Math.max(0.001, 1 - seg(chiusura, 0.85, 0.97)));
+    g.rotation.y = chiusura > 0.5 ? -Math.PI / 2 * seg(chiusura, 0.5, 0.6) : 0.3;
+    g.userData.corpo.rotation.z = Math.sin(t * 2.2) * 0.05;
+    // la bocca: sorride, ma si gira all'ingiù se il gelato è finito
+    g.userData.bocca.rotation.z = stato.finito ? 0 : Math.PI; g.userData.bocca.position.y = stato.finito ? 0.76 : 0.8;
+  }
+
+  // i clienti: arrivano saltellando lungo il marciapiede fino al bancone; se serviti ripartono col cono, se no tornano indietro a testa bassa
   function aggiornaClienti(t) {
     for (let i = eventi.length - 1; i >= 0; i--) {
       const e = eventi[i], u = (t - e.t0) / e.dur, p = e.piolo, corpo = p.userData.corpo;
-      if (u >= 1) { p.visible = false; e.piolo.userData.libero = true; eventi.splice(i, 1); continue; }
+      if (u >= 1) { p.visible = false; eventi.splice(i, 1); continue; }
       p.visible = true;
-      const da = [CLIENTI.da[0], CLIENTI.da[1] + e.dz], banco = [CLIENTI.banco[0] + e.dx, CLIENTI.banco[1] + e.dz], via = e.servito ? [CLIENTI.via[0], CLIENTI.via[1] + e.dz] : da;
-      let pos, testa = 0, verso = 0, saltA = 0.14;
-      if (u < 0.45) {                                               // arriva saltellando
-        const k = u / 0.45, nS = 4, f = (k * nS) % 1, q = Math.floor(k * nS);
-        const a = [lerp(da[0], banco[0], q / nS), lerp(da[1], banco[1], q / nS)], b = [lerp(da[0], banco[0], (q + 1) / nS), lerp(da[1], banco[1], (q + 1) / nS)];
-        pos = saltello(f, a, b, saltA); verso = 0;
-      } else if (u < 0.6) {                                         // al bancone
-        pos = [banco[0], 0, banco[1]]; verso = -Math.PI / 2 * liscio(0.45, 0.5, u);
+      const da = [2.6, 8.95 + e.dz], banco = [14.6 + e.dx, 9.0 + e.dz], via = e.servito ? [19.0, 8.95 + e.dz] : da;
+      let pos, testa = 0, verso = 0;
+      const passi = (a, b, k, n, alt) => { const f = (k * n) % 1, q = Math.floor(k * n); return saltello(f, [lerp(a[0], b[0], q / n), lerp(a[1], b[1], q / n)], [lerp(a[0], b[0], (q + 1) / n), lerp(a[1], b[1], (q + 1) / n)], alt); };
+      if (u < 0.45) { pos = passi(da, banco, u / 0.45, 9, 0.16); verso = 0; }
+      else if (u < 0.6) {
+        pos = [banco[0], 0, banco[1]]; verso = Math.PI / 2 * liscio(0.45, 0.5, u);
         if (!e.servito) testa = liscio(0.52, 0.6, u);
-      } else {                                                      // riparte
+        if (e.servito && !e.venduto && u > 0.5) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
+      } else {
         const k = (u - 0.6) / 0.4;
-        if (e.servito) { const nS = 5, f = (k * nS) % 1, q = Math.floor(k * nS); const a = [lerp(banco[0], via[0], q / nS), lerp(banco[1], via[1], q / nS)], b = [lerp(banco[0], via[0], (q + 1) / nS), lerp(banco[1], via[1], (q + 1) / nS)]; pos = saltello(f, a, b, 0.2); verso = 0; }
+        if (e.servito) { pos = passi(banco, via, k, 6, 0.22); verso = 0; }
         else { pos = [lerp(banco[0], via[0], easeInOut(k)), 0, lerp(banco[1], via[1], easeInOut(k))]; verso = Math.PI; testa = 1; }
       }
-      p.position.set(pos[0], 0.02 + pos[1], pos[2]);
-      p.rotation.y = verso;
-      corpo.rotation.x = testa * 0.45;                              // a testa bassa
-      const comparsa = Math.min(liscio(0, 0.08, u), 1 - liscio(0.9, 1, u));
-      p.scale.setScalar(Math.max(1e-3, comparsa));
+      p.position.set(pos[0], 0.1 + pos[1], pos[2]);
+      p.rotation.y = verso + Math.PI / 2;                             // il corpo guarda verso +x quando cammina
+      corpo.rotation.x = testa * 0.45;
+      const comparsa = Math.min(liscio(0, 0.06, u), 1 - liscio(0.92, 1, u));
+      p.scale.setScalar(1.25 * Math.max(1e-3, comparsa));
       p.userData.cono.visible = e.servito && u > 0.55;
     }
+  }
+  // i ragazzi attraversano sulle strisce ed entrano a scuola; escono dopo pranzo
+  function aggiornaRagazzi(t, h) {
+    O.ragazzi.forEach((r, i) => {
+      const xs = 8.55 + (i % 3) * 0.25, entra = seg(h, 8.6 + i * 0.13, 9.6 + i * 0.13), esce = seg(h, 13.0 + i * 0.13, 14.0 + i * 0.13);
+      let k = -1, dir = 1;
+      if (entra > 0 && entra < 1) { k = entra; dir = 1; } else if (esce > 0 && esce < 1) { k = 1 - esce; dir = -1; }
+      r.visible = k >= 0; if (k < 0) return;
+      let x = xs, y = lerp(12.2, 8.7, seg(k, 0, 0.8));
+      if (k > 0.8) { x = lerp(xs, 8.8, seg(k, 0.8, 1)); y = lerp(8.7, 8.3, seg(k, 0.8, 1)); }
+      const hop = Math.abs(Math.sin(t * 9 + i)) * 0.08;
+      r.position.set(x, (y < 9.2 ? 0.1 : 0.05) + hop, y);
+      r.rotation.y = dir > 0 ? Math.PI : 0;
+      const a = Math.min(seg(12.2 - y, 0, 0.3), 1 - seg(k, 0.92, 1));
+      r.scale.setScalar(0.95 * Math.max(1e-3, a));
+    });
   }
 
   /* ---------------------------------------------------------------
@@ -887,41 +637,40 @@ const Diorama = (() => {
   return {
     async monta(el) {
       if (avviato) return;
-      contenitore = el;
+      avviato = true; contenitore = el;
       try { await document.fonts.load(FONT); } catch (e) { /* senza font si usa il ripiego */ }
       tela = document.createElement('canvas'); tela.className = 'diorama-tela'; tela.setAttribute('aria-hidden', 'true');
       el.prepend(tela);
       R = new THREE.WebGLRenderer({ canvas: tela, antialias: false, powerPreference: 'high-performance' });
-      R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFShadowMap;          // in r187 PCFSoftShadowMap è stato tolto: PCFShadowMap con shadow.radius fa le ombre morbide
+      R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFShadowMap;      // in r187 PCFSoftShadowMap non c'è più: PCFShadowMap con shadow.radius fa le ombre morbide
       R.toneMapping = THREE.NeutralToneMapping; R.toneMappingExposure = 1.0; R.outputColorSpace = THREE.SRGBColorSpace;
-      costruisci(); creaPost();
+      costruisci(); creaPost(); disegnaConi();
       ridimensiona(); new ResizeObserver(ridimensiona).observe(el);
-      avviato = true; ciclo();
+      ciclo();
     },
     setMeteo(m) { stato.meteo = m; },
     setOra(h) { stato.ora = h; },
     camion(attivo, kg, ore) { stato.camion.attivo = !!attivo; stato.camion.kg = kg || 0; stato.camion.ore = ore || 0; },
     cliente(servito, durataMs) {
       if (!O.clienti) return;
-      const libero = O.clienti.find((p) => p.userData.libero !== false && !eventi.some((e) => e.piolo === p));
+      const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
       if (!libero) return;
-      libero.userData.libero = false;
       const n = eventi.length;
-      eventi.push({ piolo: libero, servito, t0: tReale(), dur: Math.max(0.45, durataMs / 1000), dx: ((n % 3) - 1) * 0.28, dz: (n % 2) * 0.18 });
+      eventi.push({ piolo: libero, servito, t0: tReale(), dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 });
     },
-    setConi(n) { if (Math.round(n) !== Math.round(stato.coni)) { stato.coni = n; disegnaVetrina(); } },
-    setFinito(v) { if (!!v !== stato.finito) { stato.finito = !!v; if (O.finito) O.finito.userData.quando = tGioco; disegnaVetrina(); } },
+    setConi(n, max) { if (max) stato.coniMax = max; if (Math.round(n) !== Math.round(stato.coni) || max) { stato.coni = n; disegnaConi(); } },
+    setFinito(v) { if (!!v !== stato.finito) { stato.finito = !!v; if (O.finito) O.finito.userData.quando = tGioco; disegnaConi(); } },
     setVenduto(v) { stato.venduto = !!v; },
     setStock(kg, max) { stato.stock = kg; if (max) stato.stockMax = max; },
     nuovoGiorno() { stato.venduto = false; if (stato.finito) this.setFinito(false); },
     setSpeed(s) { stato.speed = s; },
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
     forzaQualita(q) { impostaQualita(q); fps.campioni = []; },
-    // dove si trova la gelateria sullo schermo (in %), per mettere i cartellini dei guadagni
+    // dove si trova qualcosa sullo schermo (in %), per mettere i cartellini dei guadagni nel DOM
     posizioneSchermo(cosa = 'gelateria') {
-      if (!O.mondo) return [50, 50];
-      const v = cosa === 'casse' ? V1.set(CASSE.x, 1.2, CASSE.z) : cosa === 'fornitore' ? V1.set(FORN.x, 2, FORN.z) : V1.set(GEL.x - 0.3, 2.2, GEL.z);
-      O.mondo.localToWorld(v); v.project(camera);
+      if (!O.L) return [50, 50];
+      const v = cosa === 'casse' ? V1.set(CASSE.x, 1.8, CASSE.y) : cosa === 'fornitore' ? V1.set(FORN.x + 1.3, 2.6, FORN.y + 1.4) : V1.set(GEL.x + 1.6, 3.4, GEL.y + 1.3);
+      O.L.localToWorld(v.set(v.x, v.y, v.z)); v.project(camera);
       return [(v.x * 0.5 + 0.5) * 100, (0.5 - v.y * 0.5) * 100];
     },
   };
