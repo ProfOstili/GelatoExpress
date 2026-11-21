@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prova Diorama 3D</title>
+<!--
+  PROVA della scena della simulazione in stile "Tiny Diorama" (three.js, tempo reale).
+  Sorgente: impacchettato in prova-diorama.html da strumenti/build.py (three.js e font incorporati, funziona offline).
+  I pulsanti chiamano gli stessi agganci che userà il gioco: setMeteo, setOra, camion, cliente, setFinito, setStock.
+-->
+<style>
+@font-face{font-family:"Fredoka";src:url("@DATA:assets/fonts/Fredoka.woff2@") format("woff2");font-weight:300 700;font-display:block}
+:root{--bg:#e9eef2;--card:#fff;--ink:#272b36;--soft:#5f6878;--line:#d6dde4;--pink:#ff6fa5;--font:"Fredoka","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px}
+.wrap{max-width:1300px;margin:0 auto;padding:10px 16px 24px;display:flex;flex-direction:column;gap:10px}
+h1{margin:0;font-weight:600;font-size:clamp(20px,2.4vw,28px);text-align:center}
+h1 span{color:var(--pink)}
+/* la scena: la tela 3D sotto, i pezzi del gioco (HUD, cartellini) sopra, nel DOM */
+#scene{position:relative;aspect-ratio:16/9;max-height:72vh;width:100%;border-radius:20px;overflow:hidden;background:#b4d2de;box-shadow:0 10px 30px rgba(39,43,54,.15)}
+#scene .diorama-tela{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+.hud span{background:rgba(255,255,255,.92);border-radius:99px;padding:4px 12px;font-weight:600;box-shadow:0 2px 8px rgba(39,43,54,.12)}
+.hud .fps{margin-left:auto;font-variant-numeric:tabular-nums}
+.floater{position:absolute;transform:translate(-50%,-50%);background:#fff;border-radius:10px;padding:3px 10px;font-weight:600;box-shadow:0 3px 10px rgba(39,43,54,.18);
+  animation:sale 1.3s ease-out forwards;pointer-events:none;white-space:nowrap}
+@keyframes sale{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}100%{opacity:0;transform:translate(-50%,-260%) scale(1)}}
+.pannello{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.gruppo{background:var(--card);border-radius:16px;padding:10px 12px;box-shadow:0 2px 0 var(--line)}
+.gruppo h2{margin:0 0 8px;font-size:15px;font-weight:600;color:var(--soft);text-transform:uppercase;letter-spacing:.5px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--font);font-weight:600;font-size:15px;border:0;border-radius:12px;padding:8px 14px;background:#eef1f4;color:var(--ink);cursor:pointer}
+.btn:hover{background:#e2e7ec}
+.btn.on{background:var(--ink);color:#fff}
+.btn.rosa{background:var(--pink);color:#fff}
+input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
+.nota{color:var(--soft);font-size:14px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Prova <span>Tiny Diorama</span> — scena della simulazione</h1>
+
+  <div id="scene">
+    <div class="hud">
+      <span id="s-day">📅 Giorno 1</span><span id="s-clock">🕗 10:00</span><span id="s-cash">💰 €120</span>
+      <span class="fps" id="fps">— fps</span>
+    </div>
+  </div>
+
+  <div class="pannello">
+    <div class="gruppo"><h2>Meteo</h2><div class="bar" id="b-meteo">
+      <button class="btn on" data-m="sole">☀️ Sole</button><button class="btn" data-m="nuvoloso">☁️ Nuvoloso</button><button class="btn" data-m="pioggia">🌧️ Pioggia</button>
+    </div></div>
+    <div class="gruppo"><h2>Ora del giorno</h2><div class="bar">
+      <input type="range" id="ora" min="8" max="32" step="0.1" value="10" aria-label="Ora del giorno"><span id="ora-txt">10:00</span>
+      <button class="btn" id="b-giornata">▶ Giornata</button>
+    </div></div>
+    <div class="gruppo"><h2>Camion</h2><div class="bar">
+      <button class="btn" id="b-ordina">📦 Ordina 30 kg</button><button class="btn" id="b-arriva">🏁 Arriva</button>
+    </div><p class="nota" id="camion-txt">fermo al fornitore</p></div>
+    <div class="gruppo"><h2>Clienti</h2><div class="bar">
+      <button class="btn" id="b-servito">🍦 Servito</button><button class="btn" id="b-perso">😞 Non servito</button>
+      <button class="btn" id="b-finito">🚫 Gelato finito</button>
+    </div></div>
+    <div class="gruppo"><h2>Magazzino e vendite</h2><div class="bar">
+      <button class="btn" id="b-meno">− 10 kg</button><button class="btn" id="b-piu">+ 10 kg</button><span id="stock-txt">40 kg</span>
+      <button class="btn" id="b-venduto">✔ Venduto</button>
+    </div></div>
+    <div class="gruppo"><h2>Velocità e qualità</h2><div class="bar" id="b-speed">
+      <button class="btn on" data-s="1">1×</button><button class="btn" data-s="2">2×</button><button class="btn" data-s="4">4×</button>
+      <button class="btn" data-q="alta">alta</button><button class="btn" data-q="media">media</button><button class="btn" data-q="bassa">bassa</button>
+    </div><p class="nota" id="q-txt">qualità automatica</p></div>
+  </div>
+</div>
+
+<script>/*@JS:vendor/three.min.js@*/</script>
+<script>/*@JS:src/diorama/diorama.js@*/</script>
+<script>
+// ---- pagina di prova: imita i pezzi del gioco che useranno gli agganci ----
+const $ = (s) => document.querySelector(s);
+let speed = 1;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms / speed));
+function tween(ms, fn) { return new Promise((r) => { let t = 0, last = performance.now(); (function f(now) { t += (now - last) * speed; last = now; const p = Math.min(1, t / ms); fn(p); p < 1 ? requestAnimationFrame(f) : r(); })(last); }); }
+function floater(text, xPct, yPct, color) {
+  const el = document.createElement('div'); el.className = 'floater'; el.textContent = text; el.style.left = xPct + '%'; el.style.top = yPct + '%'; if (color) el.style.color = color;
+  $('#scene').appendChild(el); setTimeout(() => el.remove(), 1300);
+}
+const hh = (h) => String(Math.floor(h) % 24).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60) % 60).padStart(2, '0');
+function setClock(h) { Diorama.setOra(h); $('#s-clock').textContent = (h >= 20 ? '🌙 ' : '🕗 ') + hh(h); $('#ora').value = h; $('#ora-txt').textContent = hh(h); }
+
+Diorama.monta($('#scene'));
+
+// meteo
+document.querySelectorAll('#b-meteo .btn').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-meteo .btn').forEach((x) => x.classList.toggle('on', x === b)); Diorama.setMeteo(b.dataset.m); });
+// ora
+$('#ora').oninput = (e) => setClock(+e.target.value);
+$('#b-giornata').onclick = async () => { await tween(12000, (p) => setClock(8 + 24 * p)); setClock(10); };
+// camion: un viaggio dura 24 ore di gioco (qui 8 secondi a 1×)
+let viaggio = null;
+$('#b-ordina').onclick = async () => {
+  if (viaggio) return;
+  const kg = 30; viaggio = true; $('#camion-txt').textContent = 'ordinato: ' + kg + ' kg';
+  const pos = Diorama.posizioneSchermo('fornitore'); floater('📦 ordine ' + kg + ' kg', pos[0], pos[1]);
+  await tween(8000, (p) => { const ore = 24 * p; Diorama.camion(true, kg, ore); $('#camion-txt').textContent = ore < 22 ? '🚚 ' + kg + ' kg · arriva tra ' + Math.ceil(24 - ore) + ' h' : '🚚 arrivato!'; });
+  arriva(kg);
+};
+$('#b-arriva').onclick = () => { if (!viaggio) { Diorama.camion(true, 30, 23.5); setTimeout(() => arriva(30), 600 / speed); } };
+let stock = 40;
+function arriva(kg) {
+  Diorama.camion(false); viaggio = null; $('#camion-txt').textContent = 'consegnato, torna al fornitore';
+  stock = Math.min(100, stock + kg); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg';
+  const p = Diorama.posizioneSchermo('casse'); floater('+' + kg + ' kg', p[0], p[1], '#3f866c');
+}
+// clienti
+let coni = 12, cassa = 120;
+Diorama.setConi(coni);
+function cliente(servito) {
+  Diorama.cliente(servito, 2600 / speed);
+  if (servito && coni > 0) {
+    coni--; Diorama.setConi(coni); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
+    setTimeout(() => { const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c'); }, 1400 / speed);
+    if (coni === 0) Diorama.setFinito(true);
+  }
+}
+$('#b-servito').onclick = () => cliente(true);
+$('#b-perso').onclick = () => cliente(false);
+let finito = false;
+$('#b-finito').onclick = () => { finito = !finito; Diorama.setFinito(finito); if (!finito) { coni = 12; Diorama.setConi(coni); } else { coni = 0; Diorama.setConi(0); } };
+// magazzino
+$('#b-meno').onclick = () => { stock = Math.max(0, stock - 10); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg'; };
+$('#b-piu').onclick = () => { stock = Math.min(100, stock + 10); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg'; };
+Diorama.setStock(stock, 100);
+let venduto = false;
+$('#b-venduto').onclick = () => { venduto = !venduto; Diorama.setVenduto(venduto); };
+// velocità e qualità
+document.querySelectorAll('#b-speed .btn[data-s]').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-speed .btn[data-s]').forEach((x) => x.classList.toggle('on', x === b)); speed = +b.dataset.s; Diorama.setSpeed(speed); });
+document.querySelectorAll('#b-speed .btn[data-q]').forEach((b) => b.onclick = () => { Diorama.forzaQualita(b.dataset.q); });
+// contatore fps
+setInterval(() => { $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; $('#q-txt').textContent = 'qualità: ' + Diorama.qualita; }, 500);
+setClock(10);
+</script>
+</body>
+</html>
