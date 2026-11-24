@@ -240,8 +240,8 @@ window.Diorama = (() => {
       [6.9, 8.0, 1.6, 2.7, 4.1], [10.7, 13.3, 1.9, 2.9, 4.2], [6.5, 11.1, 5.2, 8.6, 5.5], [12.8, 17.6, 5.2, 8.2, 4.9]];
     // alza la nuvola (x, y = pianta, z = quota, s = grandezza) finché sta tutta sopra gli edifici che ha sotto, anche quando scorre di lato
     const sopraGliEdifici = (x, y, z, s, scorre) => {
-      const mx = 2.3 * s + scorre, my = 1.6 * s;
-      for (const [x0, x1, y0, y1, cima] of EDIFICI) if (x + mx > x0 && x - mx < x1 && y + my > y0 && y - my < y1) z = Math.max(z, cima + 1.1 * s + 0.25);
+      const mx = 2.5 * s + scorre + 0.3, my = 1.9 * s + 0.3;
+      for (const [x0, x1, y0, y1, cima] of EDIFICI) if (x + mx > x0 && x - mx < x1 && y + my > y0 && y - my < y1) z = Math.max(z, cima + 1.6 * s + 0.6);     // con margine abbondante
       return z;
     };
     // nuvole: grappoli di palline sospesi sopra la città
@@ -255,7 +255,7 @@ window.Diorama = (() => {
     O.matNuvola = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.95, fog: false });
     O.matNuvolaScura = new THREE.MeshStandardMaterial({ color: '#5f6672', roughness: 0.95, fog: false, emissive: '#8b93a4', emissiveIntensity: 0 });
     // i nuvoloni neri del temporale: ce ne sono molti di più, e compaiono solo quando piove
-    O.nuvoloni = [[-2.4, -0.6, 4.4, 0.9], [3.5, -3.2, 5.6, 1.1], [5.6, 2.4, 4.7, 0.8], [10.8, -3.4, 6.2, 1.15], [11.6, 3.6, 5.2, 0.85], [17.6, -3.0, 5.8, 1.05], [19.6, 6.0, 4.5, 0.8], [-1.6, 8.8, 4.3, 0.75]].map(([x, y, z, s], i) => {
+    O.nuvoloni = [[-2.4, -0.6, 4.4, 0.9], [3.5, -3.2, 5.6, 1.1], [0.4, 5.6, 4.6, 0.8], [10.8, -3.4, 6.2, 1.15], [11.6, 3.6, 5.2, 0.85], [17.6, -3.0, 5.8, 1.05], [19.6, 6.0, 4.5, 0.8], [-1.6, 8.8, 4.3, 0.75]].map(([x, y, z, s], i) => {
       z = sopraGliEdifici(x, y, z, s, 1.0);
       const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(0.001); g.visible = false; g.userData = { vivo: true, x, s }; L.add(g);
       const rn = rng(70 + i);
