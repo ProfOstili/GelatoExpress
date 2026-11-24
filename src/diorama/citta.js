@@ -10,7 +10,7 @@ const PIASTRA = { x0: -3.6, x1: 21.3, y0: -3.0, y1: 12.0, r: 1.3, spessore: 2.6 
 PIASTRA.w = PIASTRA.x1 - PIASTRA.x0; PIASTRA.d = PIASTRA.y1 - PIASTRA.y0;
 PIASTRA.cx = (PIASTRA.x0 + PIASTRA.x1) / 2; PIASTRA.cy = (PIASTRA.y0 + PIASTRA.y1) / 2;
 const ANELLO = { xS: 1.2, xD: 20.1, yF: 10.35, cy: 9.15, yB: -2.0, cyB: -0.8, r: 1.2, w: 0.95 };   // linea di mezzo della strada
-const GEL = { x: 13.0, y: 5.4, w: 4.4, d: 2.6, h: 2.8, porta: 16.6 };
+const GEL = { x: 13.0, y: 5.4, w: 4.4, d: 2.6, h: 2.8, porta: 16.35 };
 const FORN = { x: -3.3, y: -1.3, w: 2.7, d: 2.9, h: 1.55 };
 const CASSE = { x: 18.35, y: 6.95 };
 const BANCO = { x: 13.5, y: 8.1 };
@@ -480,8 +480,10 @@ function gelateria(L, O) {
   metti(O.bancone, scatolaGeo(2.2, 0.8, 0.5, 0.05), PAL.menta, [1.1, 0.5, 0.25]);
   metti(O.bancone, scatolaGeo(2.3, 0.07, 0.56, 0.02), PAL.ardesia, [1.1, 0.93, 0.25]);
   [PAL.accento, PAL.pistacchio, PAL.cioccolato, PAL.crema].forEach((c, i) => metti(O.bancone, new THREE.SphereGeometry(0.17, 14, 10), c, [0.3 + i * 0.53, 0.98, 0.25]).scale.set(1, 0.5, 0.8));
-  O.coniBanco = [];
-  for (let i = 0; i < 6; i++) { const c = new THREE.Group(); c.position.set(0.2 + i * 0.36, 0.62, 0.53); O.bancone.add(c); metti(c, new THREE.ConeGeometry(0.06, 0.18, 10), PAL.cialda, [0, 0, 0], [Math.PI, 0, 0]); metti(c, new THREE.SphereGeometry(0.07, 10, 8), [PAL.accento, PAL.pistacchio, PAL.crema][i % 3], [0, 0.11, 0]); O.coniBanco.push(c); }
+  // i pacchi della consegna: il furgone li lascia davanti alla porta, la mattina il gelataio li porta dentro
+  O.posPacchi = [[16.95, 8.62, 0], [17.4, 8.62, 0], [17.18, 9.0, 0], [17.06, 8.78, 1], [17.36, 8.86, 1]];
+  O.pacchi = O.posPacchi.map(() => { const c = new THREE.Group(); c.userData.vivo = true; c.visible = false; L.add(c);
+    metti(c, scatolaGeo(0.42, 0.32, 0.36, 0.035), PAL.cartone, [0, 0.16, 0]); metti(c, scatolaGeo(0.08, 0.326, 0.366, 0.01), PAL.crema, [0, 0.16, 0]); return c; });
   // le luci del negozio
   O.luceNegozio = new THREE.PointLight('#ffb866', 0, 6, 2); O.luceNegozio.position.set(14.6, 1.4, fy + 1.0); L.add(O.luceNegozio);
 }
@@ -519,7 +521,7 @@ function fornitore(L, finestra, O) {
 
 /* ---------- il verde: giardino della scuola, cipressi, alberi, fiori, panchina ---------- */
 function albero(L, x, y, z, s, tipo) {
-  const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(s); L.add(g);
+  const g = new THREE.Group(); g.position.set(x, z, y); g.scale.set(s, s * 1.45, s); L.add(g);          // alberi slanciati
   metti(g, new THREE.CylinderGeometry(0.06, 0.09, 0.6, 8), PAL.tronco, [0, 0.3, 0]);
   if (tipo === 'cipresso') metti(g, new THREE.LatheGeometry([[0, 0.3], [0.26, 0.38], [0.3, 0.7], [0.22, 1.4], [0.1, 1.95], [0, 2.05]].map(([a, b]) => new THREE.Vector2(a, b)), 14), PAL.foglie[1]);
   else if (tipo === 'gommina') metti(g, new THREE.LatheGeometry([[0, 0.38], [0.4, 0.4], [0.5, 0.52], [0.47, 0.72], [0.3, 1.2], [0.1, 1.68], [0, 1.75]].map(([a, b]) => new THREE.Vector2(a, b)), 16), PAL.foglie[1]);
@@ -528,6 +530,12 @@ function albero(L, x, y, z, s, tipo) {
     metti(g, new THREE.SphereGeometry(0.3, 14, 10), PAL.foglie[tipo === 'chiaro' ? 2 : 0], [0.3, 0.74, 0.22]);
   }
   contatto(L, x + 0.12 * s, y + 0.1 * s, z, 1.2 * s, 1.2 * s, 0.35);
+}
+// vero se il punto (x, y) sta ad almeno m dalla linea di mezzo della strada ad anello (e dal vialetto del fornitore)
+function lontanoDallaStrada(x, y, m) {
+  if (x < 0.8 && x > -3.2 && Math.abs(y - 2.6) < m - 0.15) return false;
+  for (const p of STRADA_ANELLO.pts) if (Math.hypot(p[0] - x, p[1] - y) < m) return false;
+  return true;
 }
 function verde(L, O) {
   // il giardino della scuola
@@ -539,7 +547,7 @@ function verde(L, O) {
     [-3.0, 4.4, 0, 0.9, 'cipresso'], [-2.2, 5.2, 0, 0.7, 'tondo'], [-3.0, 9.6, 0, 0.9, 'tondo'], [-1.0, 10.9, 0, 0.7, 'chiaro'], [-2.4, 11.0, 0, 0.65, 'gommina'],
     [-3.1, -2.4, 0, 0.8, 'cipresso'], [-0.6, -2.5, 0, 0.75, 'cipresso'], [20.8, -2.5, 0, 0.7, 'cipresso'], [18.4, 3.2, 0, 0.6, 'gommina'],
     [0.0, 6.5, 0, 0.6, 'tondo'], [-0.2, 8.4, 0, 0.55, 'chiaro'],
-  ]) albero(L, x, y, z, s, t);
+  ]) if (z > 0 || lontanoDallaStrada(x, y, 0.95 + 0.55 * s)) albero(L, x, y, z, s, t);
   for (const [x, y, s] of [[-1.3, 7.4, 0.3], [-2.9, 7.0, 0.26], [0.0, -0.3, 0.26], [19.2, 1.4, 0.28], [6.3, 7.5, 0.24], [2.6, 7.5, 0.24]]) {
     metti(L, new THREE.SphereGeometry(1, 14, 10), PAL.foglie[2], [x, s * 0.55, y]).scale.set(s * 1.25, s, s * 1.1);
     contatto(L, x + 0.05, y + 0.05, 0, s * 3.2, s * 3, 0.3);
@@ -553,13 +561,12 @@ function verde(L, O) {
   for (let i = 0; i < 18; i++) fiori.push([2.7 + fr() * 3.4, 6.2 + fr() * 1.55, 0]);
   for (let i = 0; i < 7; i++) fiori.push([2.6 + fr() * 1.2, 4.2 + fr() * 0.9, Z2]);
   for (let i = 0; i < 10; i++) fiori.push([-3.2 + fr() * 2.6, 6.0 + fr() * 3.2, 0]);
-  for (let i = 0; i < 6; i++) fiori.push([17.9 + fr() * 0.9, 9.6 + fr() * 1.0, 0]);
   // fiori sul bordo della strada: ciuffi sul lato esterno dell'anello
   for (let s = 0.5; s < STRADA_ANELLO.len; s += 1.15) {
     const p = STRADA_ANELLO.a(s), nx = Math.sin(p.ang), ny = -Math.cos(p.ang);
     const sgn = Math.hypot(p.x + nx - PIASTRA.cx, p.y + ny - PIASTRA.cy) > Math.hypot(p.x - PIASTRA.cx, p.y - PIASTRA.cy) ? 1 : -1;
     for (let k = 0; k < 3; k++) { const o = 1.2 + fr() * 0.35, x = p.x + sgn * nx * o + (fr() - 0.5) * 0.4, y = p.y + sgn * ny * o + (fr() - 0.5) * 0.4;
-      if (x > PIASTRA.x0 + 0.35 && x < PIASTRA.x1 - 0.35 && y > PIASTRA.y0 + 0.35 && y < PIASTRA.y1 - 0.35 && !(x < 0.6 && y > 1.7 && y < 3.5)) fiori.push([x, y, 0]); }
+      if (x > PIASTRA.x0 + 0.35 && x < PIASTRA.x1 - 0.35 && y > PIASTRA.y0 + 0.35 && y < PIASTRA.y1 - 0.35 && !(x < 0.6 && y > 1.7 && y < 3.5) && lontanoDallaStrada(x, y, 1.1)) fiori.push([x, y, 0]); }
   }
   O.fiori = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), vernice('#ffffff', 0.8), fiori.length);
   O.fiori.userData.vivo = true; O.fiori.receiveShadow = true; L.add(O.fiori);

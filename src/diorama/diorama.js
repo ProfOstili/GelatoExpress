@@ -16,7 +16,7 @@ window.Diorama = (() => {
      --------------------------------------------------------------- */
   const stato = {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
-    camion: { attivo: false, kg: 0, ore: 0 }, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
+    camion: { attivo: false, kg: 0, ore: 0 }, pacchi: ['via', 'via', 'via', 'via', 'via'], coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
     speed: 1, qualita: 'alta',
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
@@ -165,7 +165,7 @@ window.Diorama = (() => {
     O.furgoneFermo = furgone(L, PAL.accento);
     O.fumo = sbuffi(L, 20);
     O.scia = [];
-    O.casseVolanti = [0, 1, 2].map(() => { const c = new THREE.Group(); c.userData.vivo = true; c.visible = false; L.add(c); metti(c, scatolaGeo(0.58, 0.4, 0.44, 0.035), PAL.cartone); metti(c, scatolaGeo(0.1, 0.406, 0.446, 0.01), PAL.crema); return c; });
+    O.casseVolanti = [0, 1, 2, 3, 4].map(() => { const c = new THREE.Group(); c.userData.vivo = true; c.visible = false; L.add(c); metti(c, scatolaGeo(0.42, 0.32, 0.36, 0.035), PAL.cartone); metti(c, scatolaGeo(0.08, 0.326, 0.366, 0.01), PAL.crema); return c; });
 
     // i clienti, i ragazzi della scuola, il gelataio-mascotte
     const colori = [PAL.ardesia, PAL.senape, PAL.foglie[1], '#e8dcc8', PAL.cartone, '#8a7fb0', '#5f8fae'];
@@ -257,8 +257,6 @@ window.Diorama = (() => {
       ctx.fillStyle = colNum; ctx.font = fontPx(finiti ? 92 : 170); ctx.fillText(finiti ? 'FINITI!' : String(n), 330, finiti ? 128 : 112);
       if (!finiti) { ctx.font = fontPx(42); ctx.fillStyle = '#c9bfd6'; ctx.fillText(n === 1 ? 'CONO' : 'CONI', 330, 222); }
     });
-    const k = Math.ceil(6 * Math.max(0, finiti ? 0 : n) / Math.max(1, stato.coniMax));
-    O.coniBanco.forEach((c, i) => { c.visible = i < k; });
   }
 
   /* ---------------------------------------------------------------
@@ -416,14 +414,8 @@ window.Diorama = (() => {
     O.luceNegozio.intensity = 3 * luci;
     O.furgone.fari.emissiveIntensity = 2.6 * Math.max(luci, kp * 0.6, Math.abs(furgoneStato.v) > 0.05 ? 0.4 : 0);
 
-    // --- apertura e chiusura: la sera il gelataio porta dentro il bancone, entra e chiude la porta
-    const chiusura = h < 8.5 ? 1 - seg(h, 8.05, 8.5) : h >= 20 ? seg(h, 20, 20.8) : 0;
-    const bx = lerp(BANCO.x, GEL.porta - 1.1, easeInOut(seg(chiusura, 0, 0.6)));
-    O.bancone.position.set(bx, 0, lerp(BANCO.y, 7.95, seg(chiusura, 0.4, 0.7)));
-    O.bancone.visible = chiusura < 0.75; O.bancone.scale.setScalar(Math.max(0.001, 1 - seg(chiusura, 0.55, 0.75)));
-    O.vanoPorta.emissiveIntensity = chiusura > 0.5 ? 1.6 * luci : 0.25;
-    O.porta.position.x = GEL.porta - 0.82 * (1 - seg(chiusura, 0.85, 1));     // aperta di giorno, chiusa la notte
-    aggiornaGelataio(t, chiusura);
+    // --- apertura e chiusura della gelateria (porta, gelataio, pacchi, bancone)
+    aggiornaNegozio(t, h, luci);
 
     // --- l'oscillazione lenta della piastrella e la "respirazione" della camera (niente giro completo)
     const th = (2.5 * Math.sin(t * 0.07)) * Math.PI / 180;
@@ -531,7 +523,12 @@ window.Diorama = (() => {
   function posa(F, punto, extraZ = 0) { F.g.position.set(punto.x, 0.05 + extraZ, punto.y); F.g.rotation.y = angolo(punto.ang); }
   function aggiornaFurgone(t, dt) {
     const F = O.furgone, cs = stato.camion, fs = furgoneStato;
-    if (fs.ultimoAttivo && !cs.attivo) fs.ritorno = tGioco;
+    if (fs.ultimoAttivo && !cs.attivo) {
+      fs.ritorno = tGioco;
+      // se il furgone era già arrivato, i pacchi sono a terra davanti alla porta anche se l'animazione è stata saltata
+      if (fs.oreUltime >= 22) stato.pacchi.forEach((v, i) => { if (v !== 'fuori') { stato.pacchi[i] = 'fuori'; (O.pacchiArrivo ??= [])[i] = tGioco; } });
+    }
+    if (cs.attivo) fs.oreUltime = cs.ore;
     if (cs.attivo) fs.ritorno = -1;
     fs.ultimoAttivo = cs.attivo;
     let portellone = 0, punto, percorsoS = 0, via = null;
@@ -574,23 +571,106 @@ window.Diorama = (() => {
     // la saracinesca del fornitore si alza mentre carica
     const aperta = cs.attivo ? 1 - seg(cs.ore, 1.6, 2.6) : 0;
     O.saracinesca.scale.y = Math.max(0.03, 1 - aperta * 0.96); O.lamelle.repeat.y = 7 * O.saracinesca.scale.y;
-    // le casse volano dal furgone alla pila del magazzino
+    // i pacchi volano dal furgone davanti alla porta della gelateria (domattina il gelataio li porta dentro)
     O.casseVolanti.forEach((c, i) => {
-      const u = cs.attivo ? seg(cs.ore, 22.5 + i * 0.4, 23.5 + i * 0.15) : 1;
+      const u = cs.attivo ? seg(cs.ore, 22.4 + i * 0.3, 23.2 + i * 0.15) : 1;
+      if (u >= 1 && cs.attivo && stato.pacchi[i] !== 'fuori' && cs.ore >= 22.4) { stato.pacchi[i] = 'fuori'; (O.pacchiArrivo ??= [])[i] = tGioco; }
       c.visible = u > 0 && u < 1; if (!c.visible) return;
-      const dx = Math.cos(punto.ang), dy = Math.sin(punto.ang), da = [punto.x - dx * 1.6, punto.y - dy * 1.6], a = [CASSE.x, CASSE.y];
-      c.position.set(lerp(da[0], a[0], u), 0.8 + Math.sin(Math.PI * u) * 1.6 + (1.4 - 0.8) * u, lerp(da[1], a[1], u)); c.rotation.set(u * 3, u * 2, 0);
+      const dx = Math.cos(punto.ang), dy = Math.sin(punto.ang), da = [punto.x - dx * 1.6, punto.y - dy * 1.6], [ax, ay, al] = O.posPacchi[i];
+      c.position.set(lerp(da[0], ax, u), lerp(0.8, 0.26 + al * 0.32, u) + Math.sin(Math.PI * u) * 1.4, lerp(da[1], ay, u)); c.rotation.set(u * 3, u * 2, 0);
     });
   }
 
-  // il gelataio-mascotte: dondola, saltella quando vende, la sera spinge dentro il bancone ed entra
-  function aggiornaGelataio(t, chiusura) {
-    const g = O.gelataio, k = easeInOut(seg(chiusura, 0.5, 0.95));
-    const x = lerp(BANCO.x - 0.45, GEL.porta, k), y = lerp(8.55, 8.1, k);
-    const salto = Math.max(0, Math.sin(clamp((tGioco - (g.userData.vendita ?? -99)) / 0.35) * Math.PI)) * 0.3;
-    g.position.set(x, 0.1 + salto + Math.abs(Math.sin(t * 3)) * 0.02, y);
-    g.visible = chiusura < 0.97; g.scale.setScalar(1.15 * Math.max(0.001, 1 - seg(chiusura, 0.85, 0.97)));
-    g.rotation.y = chiusura > 0.5 ? -Math.PI / 2 * seg(chiusura, 0.5, 0.6) : 0.3;
+  /* ---------------------------------------------------------------
+     LA GELATERIA CHE APRE E CHIUDE
+     Mattina, in quest'ordine: apre la porta (scorre a destra), esce il gelataio, porta dentro i pacchi
+     uno alla volta, porta fuori il bancone, torna a chiudere la porta, si rimette a fianco del bancone.
+     Sera: va alla porta, la apre, spinge dentro il bancone, entra e chiude.
+     Le durate sono in secondi di gioco (seguono la velocità 1×, 2×, 4×).
+     --------------------------------------------------------------- */
+  const negozio = { stato: 'aperto', seq: null, verso: null, promessa: null, risolvi: null };
+  const N = { porta: 0, gx: 0, gy: 0, gs: 1, gr: 0.3, gh: 0, bx: BANCO.x, by: BANCO.y, bs: 1, carico: -1, spinge: false };
+  const DENTRO = () => [GEL.porta, 7.75], SOGLIA = () => [GEL.porta, 8.45], FIANCO = [BANCO.x - 0.45, 8.55];
+  const passo = (dur, fn) => ({ dur, fn });
+  // cammina saltellando da a ad b (u da 0 a 1), girandosi nella direzione del passo
+  function cammina(a, b, u) {
+    const e = easeInOut(u); N.gx = lerp(a[0], b[0], e); N.gy = lerp(a[1], b[1], e);
+    N.gh = Math.abs(Math.sin(u * Math.PI * Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) * 2.5)))) * 0.08;
+    if (Math.hypot(b[0] - a[0], b[1] - a[1]) > 0.05) N.gr = Math.atan2(b[0] - a[0], b[1] - a[1]);
+  }
+  function posaRiposo(st) {
+    Object.assign(N, { carico: -1, spinge: false, gh: 0, porta: 0 });
+    if (st === 'aperto') Object.assign(N, { gx: FIANCO[0], gy: FIANCO[1], gs: 1, gr: 0.3, bx: BANCO.x, by: BANCO.y, bs: 1 });
+    else Object.assign(N, { gx: GEL.porta, gy: 7.75, gs: 0, gr: 0, bx: GEL.porta - 1.1, by: 7.75, bs: 0 });
+  }
+  function seqApertura() {
+    const P = GEL.porta, da = stato.pacchi.map((v, i) => (v === 'fuori' ? i : -1)).filter((i) => i >= 0), passi = [];
+    passi.push(passo(0.5, (u) => { N.porta = easeInOut(u); }));
+    passi.push(passo(0.5, (u) => { N.gs = Math.min(1, u * 2); cammina(DENTRO(), SOGLIA(), u); }));
+    for (const k of da) {
+      const [px, py] = O.posPacchi[k], vicino = [px - 0.45, py + 0.05];
+      passi.push(passo(0.45, (u) => cammina(SOGLIA(), vicino, u)));
+      passi.push(passo(0.55, (u) => { N.carico = k; cammina(vicino, SOGLIA(), u); }));
+      passi.push(passo(0.3, (u) => { cammina(SOGLIA(), DENTRO(), u); N.gs = 1 - 0.5 * u; if (u >= 1) { stato.pacchi[k] = 'portato'; N.carico = -1; } }));
+      passi.push(passo(0.3, (u) => { cammina(DENTRO(), SOGLIA(), u); N.gs = 0.5 + 0.5 * u; }));
+    }
+    passi.push(passo(0.35, (u) => { cammina(SOGLIA(), DENTRO(), u); N.gs = 1 - u; }));
+    passi.push(passo(0.7, (u) => { N.bx = P - 1.1; N.by = lerp(7.75, 8.1, easeInOut(u)); N.bs = 0.3 + 0.7 * u; }));
+    passi.push(passo(0.35, (u) => { N.gs = Math.min(1, u * 2); cammina(DENTRO(), [P + 1.4, 8.4], u); }));
+    passi.push(passo(1.2, (u) => { N.spinge = true; N.bx = lerp(P - 1.1, BANCO.x, easeInOut(u)); N.gx = N.bx + 2.5; N.gy = 8.4; N.gr = -Math.PI / 2; N.gh = Math.abs(Math.sin(u * Math.PI * 4)) * 0.05; if (u >= 1) N.spinge = false; }));
+    passi.push(passo(0.6, (u) => cammina([BANCO.x + 2.5, 8.4], SOGLIA(), u)));
+    passi.push(passo(0.5, (u) => { N.porta = 1 - easeInOut(u); N.gr = Math.PI; }));
+    passi.push(passo(0.8, (u) => { cammina(SOGLIA(), FIANCO, u); if (u >= 1) N.gr = 0.3; }));
+    return passi;
+  }
+  function seqChiusura() {
+    const P = GEL.porta;
+    return [
+      passo(0.6, (u) => cammina(FIANCO, SOGLIA(), u)),
+      passo(0.5, (u) => { N.porta = easeInOut(u); N.gr = Math.PI; }),
+      passo(0.5, (u) => cammina(SOGLIA(), [BANCO.x + 2.5, 8.4], u)),
+      passo(1.2, (u) => { N.bx = lerp(BANCO.x, P - 1.1, easeInOut(u)); N.gx = N.bx + 2.5; N.gy = 8.4; N.gr = -Math.PI / 2; N.gh = Math.abs(Math.sin(u * Math.PI * 4)) * 0.05; }),
+      passo(0.6, (u) => { N.by = lerp(8.1, 7.75, easeInOut(u)); N.bs = 1 - 0.7 * u; if (u >= 1) N.bs = 0; }),
+      passo(0.55, (u) => { cammina([P + 1.4, 8.4], DENTRO(), u); N.gs = 1 - u; }),
+      passo(0.5, (u) => { N.porta = 1 - easeInOut(u); }),
+    ];
+  }
+  function avviaNegozio(verso) {
+    if (negozio.stato === verso && !negozio.seq) return Promise.resolve();
+    if (negozio.seq && negozio.verso === verso) return negozio.promessa;
+    if (negozio.seq) return negozio.promessa.then(() => avviaNegozio(verso));          // finisce prima quella in corso
+    negozio.verso = verso; negozio.da = negozio.stato;
+    negozio.seq = { passi: verso === 'aperto' ? seqApertura() : seqChiusura(), t0: tGioco };
+    negozio.promessa = new Promise((r) => { negozio.risolvi = r; });
+    return negozio.promessa;
+  }
+  function aggiornaNegozio(t, h, luci) {
+    // da solo: apre di mattina e chiude la sera (se nessuno lo comanda)
+    if (!negozio.seq) {
+      if (h >= 8 && h < 20 && negozio.stato === 'chiuso') avviaNegozio('aperto');
+      else if ((h >= 20 || h < 8) && negozio.stato === 'aperto') avviaNegozio('chiuso');
+    }
+    if (negozio.seq) {
+      posaRiposo(negozio.da);
+      let tt = tGioco - negozio.seq.t0, finito = true;
+      for (const p of negozio.seq.passi) { p.fn(clamp(tt / p.dur)); if (tt < p.dur) { finito = false; break; } tt -= p.dur; }
+      if (finito) { negozio.stato = negozio.verso; negozio.seq = null; negozio.risolvi(); }
+    } else posaRiposo(negozio.stato);
+    // porta, bancone, pacchi
+    O.porta.position.x = GEL.porta + 0.7 * N.porta;                 // scorre verso destra
+    O.vanoPorta.emissiveIntensity = N.porta * (0.25 + 1.6 * luci);
+    O.bancone.position.set(N.bx, 0, N.by); O.bancone.visible = N.bs > 0.01; O.bancone.scale.setScalar(Math.max(0.001, N.bs));
+    O.pacchi.forEach((c, k) => {
+      const st = stato.pacchi[k];
+      c.visible = st === 'fuori' || N.carico === k;
+      if (N.carico === k) { c.position.set(N.gx + Math.sin(N.gr) * 0.25, 0.1 + N.gh + 0.75, N.gy + Math.cos(N.gr) * 0.25); c.scale.setScalar(Math.max(0.001, N.gs)); }
+      else if (st === 'fuori') { const [x, y, l] = O.posPacchi[k], u = clamp((tGioco - (O.pacchiArrivo?.[k] ?? -99)) / 0.3); c.position.set(x, 0.1 + l * 0.32, y); c.scale.setScalar(Math.max(0.001, easeOutBack(u))); }
+    });
+    // il gelataio
+    const g = O.gelataio, aperto = negozio.stato === 'aperto' && !negozio.seq;
+    const salto = aperto ? Math.max(0, Math.sin(clamp((tGioco - (g.userData.vendita ?? -99)) / 0.35) * Math.PI)) * 0.3 : 0;
+    g.position.set(N.gx, 0.1 + N.gh + salto + (aperto ? Math.abs(Math.sin(t * 3)) * 0.02 : 0), N.gy);
+    g.visible = N.gs > 0.01; g.scale.setScalar(1.15 * Math.max(0.001, N.gs)); g.rotation.y = N.gr;
     g.userData.corpo.rotation.z = Math.sin(t * 2.2) * 0.05;
     // la bocca: sorride, ma si gira all'ingiù se il gelato è finito
     g.userData.bocca.rotation.z = stato.finito ? 0 : Math.PI; g.userData.bocca.position.y = stato.finito ? 0.76 : 0.8;
@@ -690,6 +770,11 @@ window.Diorama = (() => {
     setStock(kg, max) { stato.stock = kg; if (max) stato.stockMax = max; },
     nuovoGiorno() { stato.venduto = false; if (stato.finito) this.setFinito(false); },
     setSpeed(s) { stato.speed = s; },
+    // la gelateria: apre o chiude con tutta la sequenza (restituiscono una promessa che si risolve alla fine)
+    apri() { return O.L ? avviaNegozio('aperto') : Promise.resolve(); },
+    chiudi() { return O.L ? avviaNegozio('chiuso') : Promise.resolve(); },
+    // pacchi già pronti davanti alla porta (consegnati la sera prima)
+    pacchiPronti(n = 5) { for (let i = 0; i < 5; i++) stato.pacchi[i] = i < n ? 'fuori' : 'via'; },
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
     vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; camera.near = pos ? 0.05 : 5; camera.updateProjectionMatrix(); if (pos) camera.clearViewOffset(); else inquadra(); },
     forzaQualita(q) { impostaQualita(q); fps.campioni = []; },

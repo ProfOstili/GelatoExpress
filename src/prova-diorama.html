@@ -164,8 +164,11 @@ $('#b-demo').onclick = async () => {
     $('#s-day').textContent = '📅 Giorno ' + g + ' ' + { sole: '☀️', nuvoloso: '☁️', pioggia: '🌧️' }[meteo];
     const orari = [9.0, 9.8, 10.6, 11.3, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 20.25];   // 11 clienti, solo 6 coni (l'ultimo arriva a negozio chiuso)
     let prossimo = 0, furgone = 'atteso';
-    await tween(26000, (p) => {
-      const h = 8 + 12 * p; setClock(h);
+    // la mattina: la gelateria apre (porta, gelataio, pacchi dentro, bancone fuori, porta chiusa)
+    if (g === 1) Diorama.pacchiPronti(5);
+    setClock(8); await Diorama.apri();
+    await tween(25000, (p) => {
+      const h = 8.5 + 11.5 * p; setClock(h);
       while (prossimo < orari.length && h >= orari[prossimo]) {
         const aperto = orari[prossimo] < 20;
         cliente(aperto && coni > 0); prossimo++;
@@ -174,7 +177,10 @@ $('#b-demo').onclick = async () => {
       if (h >= 12.5 && furgone === 'atteso') { furgone = 'viaggio'; const pos = Diorama.posizioneSchermo('fornitore'); floater('📦 ordine 30 kg', pos[0], pos[1]); }
       if (furgone === 'viaggio') { const ore = Math.min(24, (h - 12.5) / (19.25 - 12.5) * 24); Diorama.camion(true, 30, ore); $('#camion-txt').textContent = ore < 22 ? '🚚 30 kg · arriva tra ' + Math.max(1, Math.ceil(19.25 - h)) + ' h' : '🚚 arrivato!'; if (ore >= 24) { furgone = 'fatto'; arriva(30); } }
     });
+    // la sera: chiude (bancone dentro, gelataio dentro, porta chiusa); l'ultimo cliente arriva tardi e resta a bocca asciutta
+    const chiusa = Diorama.chiudi();
     while (prossimo < orari.length) { cliente(false); prossimo++; }
+    await chiusa;
     await tween(6000, (p) => setClock(20 + 12 * p));
   }
   setClock(10); demo = false; $('#b-demo').textContent = '🎬 Tre giornate: sole, nuvoloso, pioggia';
