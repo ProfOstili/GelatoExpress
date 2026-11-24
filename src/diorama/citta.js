@@ -243,11 +243,11 @@ function tempio(L, finestra) {
   }
   // paraste, cornicione, finestre del cubo
   for (const k of [-m, m - 0.14]) { blocco(L, cx + k, cy + m, z, 0.14, 0.04, hc, '#f4ebd9', 0.01); blocco(L, cx + m, cy + k, z, 0.04, 0.14, hc, '#e6dac4', 0.01); }
-  blocco(L, cx - m - 0.05, cy - m - 0.05, z + hc - 0.16, 2 * m + 0.1, 2 * m + 0.1, 0.16, '#f6eedd', 0.03);
+  blocco(L, cx - m - 0.05, cy - m - 0.05, z + hc - 0.175, 2 * m + 0.1, 2 * m + 0.1, 0.16, '#f6eedd', 0.03);   // il cornicione finisce appena sotto il tetto: niente sfarfallio
   for (const k of [-0.55, 0.55]) { finestra('y', cx + k, cy + m, z + 1.92, 0.2, 0.34, 11 + k); finestra('x', cx + m, cy + k, z + 1.92, 0.2, 0.34, 13 + k); }
   // balaustra, tamburo, cupola e lanterna
   for (let k = 0; k < 10; k++) { blocco(L, cx - m + 0.08 + k * 0.23, cy + m - 0.1, z + hc, 0.07, 0.07, 0.2, '#f6eedd', 0.02); blocco(L, cx + m - 0.1, cy - m + 0.08 + k * 0.23, z + hc, 0.07, 0.07, 0.2, '#e9dfcb', 0.02); }
-  blocco(L, cx - m, cy + m - 0.12, z + hc + 0.2, 2 * m, 0.1, 0.05, '#f6eedd', 0.02); blocco(L, cx + m - 0.12, cy - m, z + hc + 0.2, 0.1, 2 * m, 0.05, '#e9dfcb', 0.02);
+  blocco(L, cx - m, cy + m - 0.12, z + hc + 0.2, 2 * m, 0.1, 0.05, '#f6eedd', 0.02); blocco(L, cx + m - 0.12, cy - m, z + hc + 0.206, 0.1, 2 * m - 0.13, 0.05, '#e9dfcb', 0.02);
   metti(L, new THREE.CylinderGeometry(0.84, 0.84, 0.62, 24), col, [cx, z + hc + 0.31, cy]);
   for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; const f = metti(L, rettangoloGeo(0.12, 0.3, 0.05), O_finestra(), [cx + Math.sin(a) * 0.845, z + hc + 0.3, cy + Math.cos(a) * 0.845], null, false); f.rotation.y = a; }
   metti(L, new THREE.CylinderGeometry(0.9, 0.9, 0.06, 24), '#f6eedd', [cx, z + hc + 0.63, cy]);
@@ -406,16 +406,16 @@ function scuola(L, finestra, O) {
   // il logo della scuola, come un'insegna rotonda sulla terrazza del tetto
   const logo = new THREE.Group(); logo.position.set(cx, hc, y + 1.4); L.add(logo);
   for (const s of [-1, 1]) metti(logo, new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6), '#5b6075', [s * 0.32, 0.2, 0]);
-  O.matBordoLogo = new THREE.MeshStandardMaterial({ color: '#6e9f38', roughness: 0.6, emissive: '#a6f06a', emissiveIntensity: 0 });
+  O.matBordoLogo = vernice('#6e9f38', 0.6);
   metti(logo, new THREE.CylinderGeometry(0.62, 0.62, 0.08, 32), O.matBordoLogo, [0, 0.95, 0], [Math.PI / 2, 0, 0]);
   const img = typeof document !== 'undefined' && document.getElementById('logo-scuola');
   const texLogo = new THREE.Texture(); texLogo.colorSpace = THREE.SRGBColorSpace;
   if (img) { const pronto = () => { texLogo.image = img; texLogo.needsUpdate = true; }; if (img.complete && img.naturalWidth) pronto(); else img.addEventListener('load', pronto); }
   O.matLogo = new THREE.MeshStandardMaterial({ map: texLogo, emissiveMap: texLogo, emissive: '#ffffff', emissiveIntensity: 0, roughness: 0.8 });
   metti(logo, new THREE.CircleGeometry(0.56, 32), img ? O.matLogo : vernice('#ffffff'), [0, 0.95, 0.045], null, false);
-  // l'alone della retroilluminazione, dietro il disco
-  O.aloneLogo = new THREE.Sprite(new THREE.SpriteMaterial({ map: texCanvas(128, 128, (ctx, W) => { const g = ctx.createRadialGradient(W / 2, W / 2, W * 0.28, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(255,248,215,0.95)'); g.addColorStop(1, 'rgba(255,248,215,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); }), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false }));
-  O.aloneLogo.position.set(0, 0.95, -0.12); O.aloneLogo.scale.setScalar(2.1); O.aloneLogo.userData.vivo = true; logo.add(O.aloneLogo);
+  // l'anello luminoso intorno al logo (ring light): di notte si accende e lo illumina
+  O.matAnello = new THREE.MeshStandardMaterial({ color: '#e9e6df', roughness: 0.4, emissive: '#fff4dc', emissiveIntensity: 0 });
+  metti(logo, new THREE.TorusGeometry(0.71, 0.05, 12, 56), O.matAnello, [0, 0.95, 0.02], null, false);
   metti(logo, new THREE.CircleGeometry(0.56, 32), '#ffffff', [0, 0.95, -0.045], [0, Math.PI, 0], false);
   // la bandiera italiana: asta che sporge dal balcone verso la strada
   const asta = new THREE.Vector3(cx + 0.55, 1.5, yc + 0.3), cima = new THREE.Vector3(cx + 0.55, 2.55, yc + 1.05);
@@ -436,14 +436,12 @@ function gelateria(L, O) {
   blocco(L, x - 0.02, fy - 0.03, 0, w + 0.04, 0.06, 0.3, '#e9d7b8', 0.02); blocco(L, x + w - 0.03, y - 0.02, 0, 0.06, d + 0.04, 0.3, '#d9c6a6', 0.02);
   blocco(L, x - 0.15, y - 0.15, h, w + 0.3, d + 0.3, 0.25, PAL.accento, 0.08);                         // il tetto rosa
   // la vetrina: coni e vaschette dipinti, la sera si accende
-  O.texVetrina = texCanvas(370, 236, (ctx, W, H) => {
-    ctx.fillStyle = '#2a2433'; ctx.fillRect(0, 0, W, H);
-    [PAL.accento, PAL.pistacchio, '#fff1dc', PAL.cioccolato].forEach((c, i) => { const x = 57 + i * 85;
-      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(x - 22, 120); ctx.lineTo(x + 22, 120); ctx.lineTo(x, 200); ctx.fill();
-      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, 104, 26, 0, 7); ctx.fill(); });
-    ctx.fillStyle = '#fff6e6'; ctx.font = fontPx(40); ctx.textAlign = 'center'; ctx.fillText('GELATI', W / 2, 52);
+  O.texVetrina = texCanvas(512, 326, (ctx, W, H) => {
+    ctx.fillStyle = '#16141b'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(W * 0.1, 0); ctx.lineTo(W * 0.32, 0); ctx.lineTo(W * 0.12, H); ctx.lineTo(-W * 0.1, H); ctx.fill();   // un riflesso sul vetro
+    ctx.fillStyle = '#ffffff'; ctx.font = fontGrassetto(118); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('GELATO', W / 2, H / 2 + 6);
   });
-  O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texVetrina, emissiveMap: O.texVetrina, emissive: '#ffffff', emissiveIntensity: 0.4, roughness: 0.5 });
+  O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texVetrina, emissiveMap: O.texVetrina, emissive: '#ffffff', emissiveIntensity: 0.4, roughness: 0.25 });
   blocco(L, 13.2, fy - 0.02, 0.92, 2.0, 0.08, 1.32, PAL.crema, 0.04);
   sulMuro(L, 'y', 14.2, fy + 0.06, 1.575, 1.8, 1.15, O.matVetrina, 0.05);
   // il contatore dei coni: un'insegna luminosa sul tetto, ben visibile
@@ -457,8 +455,12 @@ function gelateria(L, O) {
   O.vanoPorta = luminosa(PAL.scuro, '#ffca7a');
   sulMuro(L, 'y', GEL.porta, fy + 0.005, 0, 0, 0, PAL.ardesia, 0, arcoGeo(0.9, 1.98));
   sulMuro(L, 'y', GEL.porta, fy + 0.012, 0, 0, 0, O.vanoPorta, 0, arcoGeo(0.75, 1.85));
-  O.porta = metti(L, scatolaGeo(0.72, 1.55, 0.05, 0.02), PAL.porta, [GEL.porta, 0.78, fy + 0.07]); O.porta.userData.vivo = true;
-  metti(O.porta, new THREE.SphereGeometry(0.035, 8, 6), PAL.senape, [-0.24, 0, 0.035]);
+  // la porta ha la stessa forma ad arco del vano
+  const formaPorta = new THREE.Shape(); formaPorta.moveTo(-0.37, 0); formaPorta.lineTo(0.37, 0); formaPorta.lineTo(0.37, 1.47); formaPorta.absarc(0, 1.47, 0.37, 0, Math.PI); formaPorta.lineTo(-0.37, 0);
+  const geoPorta = new THREE.ExtrudeGeometry(formaPorta, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 2, curveSegments: 16 }); geoPorta.translate(0, 0, -0.015);
+  O.porta = metti(L, geoPorta, PAL.porta, [GEL.porta, 0, fy + 0.07]); O.porta.userData.vivo = true;
+  metti(O.porta, new THREE.SphereGeometry(0.035, 8, 6), PAL.senape, [-0.24, 0.95, 0.04]);
+  metti(O.porta, scatolaGeo(0.5, 0.04, 0.02, 0.01), '#7a5236', [0, 0.95 - 0.35, 0.03]); metti(O.porta, scatolaGeo(0.5, 0.04, 0.02, 0.01), '#7a5236', [0, 0.95 + 0.4, 0.03]);
   // la tenda a strisce: accento e crema
   const tenda = new THREE.Group(); tenda.position.set(x, 2.6, fy); L.add(tenda);
   const n = 12, lw = w / n, falda = Math.hypot(0.5, 0.3), inc = Math.atan2(0.3, 0.5);
