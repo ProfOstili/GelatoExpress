@@ -402,11 +402,24 @@ function gelateria(L, O) {
   blocco(L, x, y, 0, w, d, h, PAL.crema, 0.06);
   blocco(L, x - 0.02, fy - 0.03, 0, w + 0.04, 0.06, 0.3, '#e9d7b8', 0.02); blocco(L, x + w - 0.03, y - 0.02, 0, 0.06, d + 0.04, 0.3, '#d9c6a6', 0.02);
   blocco(L, x - 0.15, y - 0.15, h, w + 0.3, d + 0.3, 0.25, PAL.accento, 0.08);                         // il tetto rosa
-  // la vetrina: mostra quanti coni restano (e la sera si accende)
-  O.texConi = texCanvas(512, 256);
-  O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texConi, emissiveMap: O.texConi, emissive: '#ffffff', emissiveIntensity: 0.5, roughness: 0.5 });
+  // la vetrina: coni e vaschette dipinti, la sera si accende
+  O.texVetrina = texCanvas(512, 236, (ctx, W, H) => {
+    ctx.fillStyle = '#2a2433'; ctx.fillRect(0, 0, W, H);
+    [PAL.accento, PAL.pistacchio, '#fff1dc', PAL.cioccolato, PAL.accento, PAL.menta].forEach((c, i) => { const x = 50 + i * 82;
+      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(x - 22, 120); ctx.lineTo(x + 22, 120); ctx.lineTo(x, 200); ctx.fill();
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, 104, 26, 0, 7); ctx.fill(); });
+    ctx.fillStyle = '#fff6e6'; ctx.font = fontPx(40); ctx.textAlign = 'center'; ctx.fillText('GELATI', W / 2, 52);
+  });
+  O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texVetrina, emissiveMap: O.texVetrina, emissive: '#ffffff', emissiveIntensity: 0.4, roughness: 0.5 });
   blocco(L, 13.2, fy - 0.02, 0.92, 2.7, 0.08, 1.32, PAL.crema, 0.04);
   sulMuro(L, 'y', 14.55, fy + 0.06, 1.575, 2.5, 1.15, O.matVetrina, 0.05);
+  // il contatore dei coni: un'insegna luminosa sul tetto, ben visibile
+  O.texConi = texCanvas(512, 256);
+  O.matConi = new THREE.MeshStandardMaterial({ map: O.texConi, emissiveMap: O.texConi, emissive: '#ffffff', emissiveIntensity: 0.6, roughness: 0.5 });
+  const ins = new THREE.Group(); ins.position.set(14.3, h + 0.25, y + 1.75); ins.rotation.x = -0.12; L.add(ins);
+  for (const s of [-0.75, 0.75]) metti(ins, new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8), PAL.ardesia, [s, 0.22, -0.05]);
+  metti(ins, scatolaGeo(2.0, 1.05, 0.14, 0.07), PAL.ardesia, [0, 0.95, 0]);
+  metti(ins, rettangoloGeo(1.84, 0.9, 0.06), O.matConi, [0, 0.95, 0.075], null, false);
   // la porta che scorre (aperta di giorno, chiusa di notte)
   O.vanoPorta = luminosa(PAL.scuro, '#ffca7a');
   sulMuro(L, 'y', GEL.porta, fy + 0.005, 0, 0, 0, PAL.ardesia, 0, arcoGeo(0.9, 1.98));
@@ -422,15 +435,10 @@ function gelateria(L, O) {
     metti(tenda, new THREE.CylinderGeometry(lw / 2, lw / 2, 0.04, 12, 1, false, 0, Math.PI), c, [lw * (i + 0.5), -0.31, 0.5], [Math.PI / 2, 0, Math.PI / 2]);
   }
   // il cono gelato sul tetto: l'insegna, gira piano
-  O.conone = new THREE.Group(); O.conone.position.set(x + 2.2, h + 0.25, y + 1.3); O.conone.userData.vivo = true; L.add(O.conone);
+  O.conone = new THREE.Group(); O.conone.position.set(x + 3.75, h + 0.25, y + 1.0); O.conone.userData.vivo = true; L.add(O.conone);
   metti(O.conone, new THREE.ConeGeometry(0.34, 1.0, 18), PAL.cialda, [0, 0.52, 0], [Math.PI, 0, 0]);
   metti(O.conone, new THREE.SphereGeometry(0.42, 20, 14), PAL.accento, [0, 1.12, 0]);
   metti(O.conone, new THREE.SphereGeometry(0.11, 12, 8), '#e2465e', [0.05, 1.56, 0.05]);
-  // il display luminoso sul fianco: si legge quanti coni restano
-  O.texDisplay = texCanvas(340, 220);
-  O.matDisplay = new THREE.MeshStandardMaterial({ map: O.texDisplay, emissiveMap: O.texDisplay, emissive: '#ffffff', emissiveIntensity: 0.6, roughness: 0.5 });
-  blocco(L, x + w - 0.02, 5.75, 1.0, 0.08, 1.7, 1.15, PAL.ardesia, 0.05);
-  sulMuro(L, 'x', x + w + 0.06, 6.6, 1.575, 1.55, 1.0, O.matDisplay, 0.06);
   // il cartellino APERTO / GELATO FINITO! appeso sotto la tenda: si gira quando i coni finiscono
   O.finito = new THREE.Group(); O.finito.position.set(GEL.porta, 2.02, fy + 0.42); O.finito.userData.vivo = true; L.add(O.finito);
   for (const s of [-1, 1]) metti(O.finito, new THREE.CylinderGeometry(0.008, 0.008, 0.3, 6), PAL.scuro, [s * 0.36, 0.15, 0]);
@@ -475,7 +483,7 @@ function fornitore(L, finestra, O) {
   metti(L, new THREE.CylinderGeometry(0.13, 0.15, 0.8, 14), PAL.ardesia, [x + 0.35, h + 0.6, y + 0.5]); metti(L, new THREE.CylinderGeometry(0.17, 0.17, 0.07, 14), PAL.crema, [x + 0.35, h + 1.0, y + 0.5]);
   O.comignolo = [x + 0.35, h + 1.08, y + 0.5];                     // coordinate three
   // pacchi in attesa vicino al muro
-  for (const [px, py, r, s] of [[-3.25, 2.05, 0.3, 1], [-2.8, 2.15, -0.15, 1.1], [-3.05, 1.9, 0.1, 0.9]]) {
+  for (const [px, py, r, s] of [[-3.15, 3.95, 0.3, 1], [-2.7, 4.05, -0.15, 1.1], [-2.95, 3.75, 0.1, 0.9]]) {
     const p = new THREE.Group(); p.position.set(px, 0.16 * s, py); p.rotation.y = r; p.scale.setScalar(s); L.add(p);
     metti(p, scatolaGeo(0.42, 0.32, 0.36, 0.035), PAL.cartone); metti(p, scatolaGeo(0.1, 0.326, 0.366, 0.01), PAL.crema);
   }
@@ -518,6 +526,13 @@ function verde(L, O) {
   for (let i = 0; i < 7; i++) fiori.push([2.6 + fr() * 1.2, 4.2 + fr() * 0.9, Z2]);
   for (let i = 0; i < 10; i++) fiori.push([-3.2 + fr() * 2.6, 6.0 + fr() * 3.2, 0]);
   for (let i = 0; i < 6; i++) fiori.push([17.9 + fr() * 0.9, 9.6 + fr() * 1.0, 0]);
+  // fiori sul bordo della strada: ciuffi sul lato esterno dell'anello
+  for (let s = 0.5; s < STRADA_ANELLO.len; s += 1.15) {
+    const p = STRADA_ANELLO.a(s), nx = Math.sin(p.ang), ny = -Math.cos(p.ang);
+    const sgn = Math.hypot(p.x + nx - PIASTRA.cx, p.y + ny - PIASTRA.cy) > Math.hypot(p.x - PIASTRA.cx, p.y - PIASTRA.cy) ? 1 : -1;
+    for (let k = 0; k < 3; k++) { const o = 1.2 + fr() * 0.35, x = p.x + sgn * nx * o + (fr() - 0.5) * 0.4, y = p.y + sgn * ny * o + (fr() - 0.5) * 0.4;
+      if (x > PIASTRA.x0 + 0.35 && x < PIASTRA.x1 - 0.35 && y > PIASTRA.y0 + 0.35 && y < PIASTRA.y1 - 0.35 && !(x < 0.6 && y > 1.7 && y < 3.5)) fiori.push([x, y, 0]); }
+  }
   O.fiori = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), vernice('#ffffff', 0.8), fiori.length);
   O.fiori.userData.vivo = true; O.fiori.receiveShadow = true; L.add(O.fiori);
   O.fioriPos = fiori;

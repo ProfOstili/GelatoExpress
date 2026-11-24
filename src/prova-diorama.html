@@ -68,7 +68,6 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
     </div></div>
     <div class="gruppo"><h2>Magazzino e vendite</h2><div class="bar">
       <button class="btn" id="b-meno">− 10 kg</button><button class="btn" id="b-piu">+ 10 kg</button><span id="stock-txt">40 kg</span>
-      <button class="btn" id="b-venduto">✔ Venduto</button>
     </div></div>
     <div class="gruppo"><h2>Velocità e qualità</h2><div class="bar" id="b-speed">
       <button class="btn on" data-s="1">1×</button><button class="btn" data-s="2">2×</button><button class="btn" data-s="4">4×</button>
@@ -142,8 +141,6 @@ $('#b-finito').onclick = () => { finito = !finito; Diorama.setFinito(finito); if
 $('#b-meno').onclick = () => { stock = Math.max(0, stock - 10); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg'; };
 $('#b-piu').onclick = () => { stock = Math.min(100, stock + 10); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg'; };
 Diorama.setStock(stock, 100);
-let venduto = false;
-$('#b-venduto').onclick = () => { venduto = !venduto; Diorama.setVenduto(venduto); };
 // velocità e qualità
 document.querySelectorAll('#b-speed .btn[data-s]').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-speed .btn[data-s]').forEach((x) => x.classList.toggle('on', x === b)); speed = +b.dataset.s; Diorama.setSpeed(speed); });
 document.querySelectorAll('#b-speed .btn[data-q]').forEach((b) => b.onclick = () => { Diorama.forzaQualita(b.dataset.q); });

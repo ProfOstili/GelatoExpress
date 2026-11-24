@@ -25,15 +25,8 @@ window.Diorama = (() => {
   let tGioco = 0, ultimoT = 0;                                      // orologio che segue la velocità (1×, 2×, 4×)
   const eventi = [];                                                // clienti in arrivo
 
-  // i cartelli delle tre tappe (coordinate isometriche + altezza dell'asta)
-  const CARTELLI = [
-    { parola: 'ORDINATO', at: [-1.95, -2.35, 0], h: 3.3 },
-    { parola: 'IN VIAGGIO', at: [-1.55, 6.45, 0], h: 2.1 },
-    { parola: 'VENDUTO', at: [16.7, 4.45, Z2], h: 2.85 },
-  ];
-
   /* ---------------------------------------------------------------
-     MATTONCINI CHE SI MUOVONO: omini a piolo, il gelataio, cartelli, furgone, sbuffi
+     MATTONCINI CHE SI MUOVONO: omini a piolo, ombrelli, il gelataio, furgone, sbuffi, faccine
      --------------------------------------------------------------- */
   let GEO = null;
   const geo = () => GEO ??= {
@@ -48,7 +41,33 @@ window.Diorama = (() => {
     metti(corpo, geo().corpo, colore); metti(corpo, geo().testa, PAL.pelle, [0, 0.58, 0]);
     if (capelli) metti(corpo, geo().capelli, capelli, [0, 0.59, -0.012], [-0.35, 0, 0]);
     g.userData.corpo = corpo;
+    // l'ombrello, aperto solo quando piove
+    const om = new THREE.Group(); om.position.set(0.13, 0, 0.05); om.visible = false; corpo.add(om);
+    metti(om, new THREE.CylinderGeometry(0.012, 0.012, 0.62, 5), PAL.scuro, [0, 0.72, 0]);
+    metti(om, new THREE.SphereGeometry(0.36, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), [PAL.ardesia, PAL.senape, PAL.foglie[1], '#8a7fb0', '#5f8fae'][Math.floor(hash(colore.length + (capelli || '').length + O.ombrelli.length) * 5)], [-0.13, 1.02, -0.05]).scale.y = 0.5;
+    g.userData.ombrello = om; O.ombrelli.push(om);
     return g;
+  }
+  // le faccine che volano via: occhi a cuore se contento, arrabbiata se resta senza gelato
+  function faccina(tipo) {
+    return texCanvas(128, 128, (ctx) => {
+      ctx.fillStyle = tipo === 'cuori' ? '#ffd34d' : '#ff7a59'; ctx.beginPath(); ctx.arc(64, 64, 58, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.beginPath(); ctx.arc(64, 70, 52, 0.2, Math.PI - 0.2); ctx.fill();
+      ctx.strokeStyle = '#5a2d1a'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      if (tipo === 'cuori') {
+        ctx.fillStyle = '#ff3d6e';
+        for (const x of [42, 86]) { ctx.beginPath(); ctx.moveTo(x, 66); ctx.bezierCurveTo(x - 26, 48, x - 12, 28, x, 42); ctx.bezierCurveTo(x + 12, 28, x + 26, 48, x, 66); ctx.fill(); }
+        ctx.beginPath(); ctx.arc(64, 78, 24, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+      } else {
+        ctx.fillStyle = '#5a2d1a'; for (const x of [44, 84]) { ctx.beginPath(); ctx.arc(x, 58, 7, 0, 7); ctx.fill(); }
+        ctx.beginPath(); ctx.moveTo(28, 38); ctx.lineTo(54, 48); ctx.moveTo(100, 38); ctx.lineTo(74, 48); ctx.stroke();
+        ctx.beginPath(); ctx.arc(64, 104, 22, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke();
+      }
+    });
+  }
+  function emetti(tipo, x, y, z) {
+    const f = O.faccine.find((q) => !q.visible); if (!f) return;
+    f.material = tipo === 'cuori' ? O.matCuori : O.matRabbia; f.visible = true; f.userData = { vivo: true, t0: tReale(), x, y, z, fase: hash(x, z) * 6 };
   }
   function cono(padre) {
     const g = new THREE.Group(); padre.add(g);
@@ -68,39 +87,12 @@ window.Diorama = (() => {
     g.userData = { vivo: true, corpo, bocca };
     return g;
   }
-  // il cartello di una tappa: cartoncino su un'asta che guarda l'obiettivo. Lato grigio = "non ancora",
-  // lato color accento = "fatto": si gira ruotando `giro` di PI intorno a x, con una molla.
-  function cartello(padre, parola, numero) {
-    const g = new THREE.Group(), giro = new THREE.Group(); g.userData.vivo = true; padre.add(g); g.add(giro);
-    const PX = 380, SP = 0.05, m = document.createElement('canvas').getContext('2d'); m.font = FONT; m.letterSpacing = SP * 160 + 'px';
-    const capPx = m.measureText('H').actualBoundingBoxAscent || 112, k = 0.3 * PX / capPx, textW = m.measureText(parola).width * k / PX;
-    const bh = 0.62, moneta = 0.4, bw = textW + moneta * 2 + 0.34, tx = -bw / 2 + moneta * 2 + 0.08;
-    const faccia = (bg, fg) => new THREE.MeshStandardMaterial({ roughness: 0.8, map: texCanvas(Math.round(bw * PX), Math.round(bh * PX), (ctx, W, Hh) => {
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, Hh); ctx.fillStyle = fg; ctx.font = fontPx(160 * k); ctx.letterSpacing = SP * 160 * k + 'px'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText(parola, (tx + bw / 2) * PX, Hh / 2 + 0.15 * PX);
-    }) });
-    const disco = (bg, fg) => new THREE.MeshStandardMaterial({ roughness: 0.8, map: texCanvas(256, 256, (ctx) => {
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, 256, 256); ctx.fillStyle = fg; ctx.font = fontPx(190); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-      const mm = ctx.measureText(String(numero)); ctx.fillText(String(numero), 128, 128 + (mm.actualBoundingBoxAscent || 130) / 2);
-    }) });
-    metti(giro, scatolaGeo(bw, bh, 0.1, 0.05), PAL.crema);
-    metti(giro, new THREE.CylinderGeometry(moneta + 0.07, moneta + 0.07, 0.16, 32), PAL.crema, [-bw / 2 + moneta, 0, 0], [Math.PI / 2, 0, 0]);
-    for (const [lato, bg, fg, cbg, cfg] of [[1, '#ece8df', '#7d8996', '#aab3bd', '#f4f1ea'], [-1, PAL.accento, '#fff6e6', '#fff6e6', PAL.accento]]) {
-      const s = new THREE.Group(); s.rotation.x = lato > 0 ? 0 : Math.PI; giro.add(s);
-      metti(s, rettangoloGeo(bw - 0.09, bh - 0.09, 0.03), faccia(bg, fg), [0, 0, 0.052], null, false);
-      metti(s, new THREE.CircleGeometry(moneta, 32), disco(cbg, cfg), [-bw / 2 + moneta, 0, 0.082], null, false);
-    }
-    const asta = metti(g, new THREE.CylinderGeometry(0.05, 0.06, 1, 10), PAL.crema, [0, 0, -0.1]);
-    metti(g, new THREE.CylinderGeometry(0.13, 0.15, 0.08, 14), PAL.ardesia, [0, 0.04, -0.1]);
-    g.scale.setScalar(1.45);
-    return { g, giro, asta, fatto: false, quando: -99, altezza(h) { h /= 1.45; giro.position.y = h; asta.scale.y = h; asta.position.y = h / 2; this.h = h; } };
-  }
   // il furgoncino: una sagoma estrusa di lato, quattro ruote, vetri, fari e portellone. x locale = "avanti".
   function furgone(padre, colore) {
     const g = new THREE.Group(), corpo = new THREE.Group(); g.userData.vivo = true; g.scale.setScalar(1.55); padre.add(g); g.add(corpo);
     metti(corpo, prisma([[-0.92, 0.2], [0.92, 0.2], [0.94, 0.52], [0.68, 0.61], [0.4, 1.05], [-0.92, 1.05]], [0.08, 0.1, 0.1, 0.05, 0.14, 0.12], 0.86, 0.06), colore);
     const vetro = vernice(PAL.vetro, 0.6), n = new THREE.Vector3(0.44, 0.28, 0).normalize();
-    const pb = metti(corpo, rettangoloGeo(0.66, 0.38, 0.07), vetro, [0.54 + n.x * 0.012, 0.835 + n.y * 0.012, 0], null, false); pb.lookAt(pb.position.clone().add(n));
+    metti(corpo, scatolaGeo(0.4, 0.035, 0.7, 0.015), vetro, [0.54 + n.x * 0.01, 0.83 + n.y * 0.01, 0], [0, 0, Math.atan2(0.44, -0.28) - Math.PI], false);   // parabrezza: lastra sulla falda del muso
     for (const s of [1, -1]) {
       const rot = [0, s > 0 ? 0 : Math.PI, 0];
       metti(corpo, rettangoloGeo(0.3, 0.26, 0.05), vetro, [0.2, 0.83, s * 0.432], rot, false);
@@ -165,6 +157,7 @@ window.Diorama = (() => {
     // il mondo: un perno che oscilla piano, e dentro la città spostata al centro
     O.perno = new THREE.Group(); scena.add(O.perno);
     const L = O.L = new THREE.Group(); L.position.set(-PIASTRA.cx, 0, -PIASTRA.cy); O.perno.add(L);
+    O.ombrelli = [];
     costruisciCitta(L, O);
 
     // i due furgoncini color accento: quello che viaggia e quello che aspetta al fornitore
@@ -173,9 +166,6 @@ window.Diorama = (() => {
     O.fumo = sbuffi(L, 20);
     O.scia = [];
     O.casseVolanti = [0, 1, 2].map(() => { const c = new THREE.Group(); c.userData.vivo = true; c.visible = false; L.add(c); metti(c, scatolaGeo(0.58, 0.4, 0.44, 0.035), PAL.cartone); metti(c, scatolaGeo(0.1, 0.406, 0.446, 0.01), PAL.crema); return c; });
-
-    // i cartelli delle tre tappe
-    O.cartelli = CARTELLI.map((s, i) => { const o = cartello(L, s.parola, i + 1); o.g.position.set(s.at[0], s.at[2], s.at[1]); o.altezza(s.h); return o; });
 
     // i clienti, i ragazzi della scuola, il gelataio-mascotte
     const colori = [PAL.ardesia, PAL.senape, PAL.foglie[1], '#e8dcc8', PAL.cartone, '#8a7fb0', '#5f8fae'];
@@ -214,6 +204,15 @@ window.Diorama = (() => {
     O.farfalle = Array.from({ length: 3 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
       for (const s of [-1, 1]) { const a = new THREE.Group(); g.add(a); metti(a, new THREE.CircleGeometry(0.08, 10), new THREE.MeshStandardMaterial({ color: [PAL.accento, PAL.senape, '#b9a6e0'][i], side: THREE.DoubleSide, roughness: 0.8 }), [s * 0.07, 0, 0], [-Math.PI / 2, 0, 0], false); ali.push(a); } g.userData.ali = ali; return g; });
 
+    // le faccine (sprite sempre davanti a tutto)
+    O.matCuori = new THREE.SpriteMaterial({ map: faccina('cuori'), depthTest: false, depthWrite: false, fog: false });
+    O.matRabbia = new THREE.SpriteMaterial({ map: faccina('rabbia'), depthTest: false, depthWrite: false, fog: false });
+    O.faccine = Array.from({ length: 14 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
+    // i banchi di nebbia del cielo coperto: coprono la parte alta del plastico e scorrono piano
+    const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(246,248,252,0.95)'); g.addColorStop(0.5, 'rgba(246,248,252,0.6)'); g.addColorStop(1, 'rgba(246,248,252,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
+    O.matNebbia = new THREE.SpriteMaterial({ map: texNebbia, transparent: true, depthWrite: false, fog: false, opacity: 0 });
+    const rb = rng(55);
+    O.banchi = Array.from({ length: 12 }, () => { const sp = new THREE.Sprite(O.matNebbia); sp.userData = { vivo: true, x: rb.range(-2, 22), y: rb.range(-2.5, 3.6), z: rb.range(2.6, 6.2), v: rb.range(0.25, 0.6), w: rb.range(7, 11) }; sp.scale.set(sp.userData.w, sp.userData.w * 0.36, 1); sp.renderOrder = 5; L.add(sp); return sp; });
     // tutto ciò che è fermo viene fuso in poche mesh
     fondi(L);
   }
@@ -235,18 +234,11 @@ window.Diorama = (() => {
     const colNum = finiti ? '#ff8a9e' : pochi ? '#ffd27a' : '#fff6e6';
     O.texConi.ridisegna((ctx, W, H) => {
       ctx.fillStyle = '#2a2433'; ctx.fillRect(0, 0, W, H);
-      for (let i = 0; i < 3; i++) { const x = 70 + i * 64; ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(x - 24, 130); ctx.lineTo(x + 24, 130); ctx.lineTo(x, 214); ctx.fill(); ctx.fillStyle = [PAL.accento, PAL.pistacchio, '#fff1dc'][i]; ctx.beginPath(); ctx.arc(x, 112, 28, 0, 7); ctx.fill(); }
+      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(60, 120); ctx.lineTo(132, 120); ctx.lineTo(96, 230); ctx.fill();
+      ctx.fillStyle = PAL.accento; ctx.beginPath(); ctx.arc(96, 96, 44, 0, 7); ctx.fill();
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = colNum; ctx.font = fontPx(150); ctx.fillText(finiti ? '0' : String(n), 380, 112);
-      ctx.font = fontPx(44); ctx.fillStyle = finiti ? '#ff8a9e' : '#c9bfd6'; ctx.fillText(finiti ? 'FINITI' : 'CONI', 380, 208);
-    });
-    O.texDisplay.ridisegna((ctx, W, H) => {
-      ctx.fillStyle = '#23283e'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(30, 90); ctx.lineTo(80, 90); ctx.lineTo(55, 180); ctx.fill();
-      ctx.fillStyle = PAL.accento; ctx.beginPath(); ctx.arc(55, 78, 28, 0, 7); ctx.fill();
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = finiti ? '#ff5a6e' : pochi ? '#ffc94a' : '#7cf0a0';
-      ctx.font = fontPx(120); ctx.fillText(String(finiti ? 0 : n), 215, 100);
-      ctx.font = fontPx(30); ctx.fillStyle = '#aeb6d0'; ctx.fillText(finiti ? 'FINITI!' : 'CONI', 215, 190);
+      ctx.fillStyle = colNum; ctx.font = fontPx(finiti ? 92 : 170); ctx.fillText(finiti ? 'FINITI!' : String(n), 330, finiti ? 128 : 112);
+      if (!finiti) { ctx.font = fontPx(42); ctx.fillStyle = '#c9bfd6'; ctx.fillText(n === 1 ? 'CONO' : 'CONI', 330, 222); }
     });
     const k = Math.ceil(6 * Math.max(0, finiti ? 0 : n) / Math.max(1, stato.coniMax));
     O.coniBanco.forEach((c, i) => { c.visible = i < k; });
@@ -257,15 +249,15 @@ window.Diorama = (() => {
      --------------------------------------------------------------- */
   function creaPost() {
     post = new THREE.ShaderMaterial({
-      uniforms: { tCol: { value: null }, res: { value: new THREE.Vector2(1, 1) }, fuoco: { value: 0.5 }, fascia: { value: 0.2 }, sfoc: { value: 6 }, vign: { value: 0.2 }, sat: { value: 1.08 }, con: { value: 1.03 }, esposizione: { value: 1 }, lampo: { value: 0 } },
+      uniforms: { tCol: { value: null }, res: { value: new THREE.Vector2(1, 1) }, fuoco: { value: 0.5 }, fascia: { value: 0.12 }, sfoc: { value: 6 }, riflessi: { value: 0 }, aspetto: { value: 1.8 }, vign: { value: 0.2 }, sat: { value: 1.08 }, con: { value: 1.03 }, esposizione: { value: 1 }, lampo: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
       fragmentShader: `
-        uniform sampler2D tCol; uniform vec2 res; uniform float fuoco, fascia, sfoc, vign, sat, con, esposizione, lampo; varying vec2 vUv;
+        uniform sampler2D tCol; uniform vec2 res; uniform float fuoco, fascia, sfoc, vign, sat, con, esposizione, lampo, riflessi, aspetto; varying vec2 vUv;
         const vec2 DISCO[12] = vec2[12](vec2(-0.326,-0.406), vec2(-0.840,-0.074), vec2(-0.696,0.457), vec2(-0.203,0.621), vec2(0.962,-0.195), vec2(0.473,-0.480),
                                         vec2(0.519,0.767), vec2(0.185,-0.893), vec2(0.507,0.064), vec2(0.896,0.412), vec2(-0.322,-0.933), vec2(-0.792,-0.598));
         void main(){
-          // distanza dalla fascia a fuoco: nitido dentro, sempre più sfocato verso il bordo vicino e quello lontano
-          float d = abs(vUv.y - fuoco), r = smoothstep(fascia, fascia + 0.3, d) * sfoc * res.y / 900.0;
+          // tilt-shift solo verso il bordo vicino (in basso): la parte alta resta nitida
+          float d = fuoco - vUv.y, r = smoothstep(fascia, fascia + 0.3, d) * sfoc * res.y / 900.0;
           vec3 c = texture2D(tCol, vUv).rgb;
           if (r > 0.35) {
             vec3 acc = c; float ang = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831;
@@ -274,6 +266,18 @@ window.Diorama = (() => {
             c = acc / 13.0;
           }
           c = c * esposizione + lampo * vec3(0.5, 0.52, 0.6);
+          // riflessi del sole sull'obiettivo: un bagliore caldo in alto a sinistra e qualche cerchio lungo la diagonale
+          if (riflessi > 0.001) {
+            vec2 sp = vec2(-0.02, 1.04), asp = vec2(aspetto, 1.0);
+            c += riflessi * vec3(1.0, 0.8, 0.52) * 0.55 * exp(-length((vUv - sp) * asp) * 2.4);
+            for (int k = 1; k <= 4; k++) {
+              float f = float(k), rr = 0.025 + 0.018 * mod(f * 1.7, 3.0);
+              vec2 gp = sp + (vec2(0.5) - sp) * (0.32 * f);
+              float g = smoothstep(rr, rr * 0.55, length((vUv - gp) * asp));
+              c += riflessi * g * 0.07 * mix(vec3(1.0, 0.75, 0.5), vec3(0.6, 0.85, 1.0), mod(f, 2.0));
+            }
+            vec2 dd = (vUv - sp) * asp; c += riflessi * vec3(1.0, 0.86, 0.6) * 0.05 * exp(-abs(dd.x - dd.y * -1.0) * 9.0) * exp(-length(dd) * 1.2);
+          }
           float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
           c = max(mix(vec3(l), c, sat), 0.0);
           c = max((c - 0.18) * con + 0.18, 0.0);
@@ -291,7 +295,7 @@ window.Diorama = (() => {
   function creaTarget(w, h) {
     if (rt) rt.dispose();
     rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4, depthBuffer: true });
-    post.uniforms.tCol.value = rt.texture; post.uniforms.res.value.set(w, h);
+    post.uniforms.tCol.value = rt.texture; post.uniforms.res.value.set(w, h); post.uniforms.aspetto.value = w / h;
   }
 
   /* ---------------------------------------------------------------
@@ -311,7 +315,7 @@ window.Diorama = (() => {
     const pts = [], k = PIASTRA.r * 0.3, f = 1.25 + k;
     for (const [x, y] of [[PIASTRA.x0 + k, PIASTRA.y0 + k], [PIASTRA.x1 - k, PIASTRA.y0 + k], [PIASTRA.x0 + k, PIASTRA.y1 - k], [PIASTRA.x1 - k, PIASTRA.y1 - k]]) pts.push(new THREE.Vector3(x - PIASTRA.cx, 0.3, y - PIASTRA.cy));
     for (const [x, y] of [[PIASTRA.x0 + f, PIASTRA.y1 - f], [PIASTRA.x1 - f, PIASTRA.y1 - f], [PIASTRA.x0 + f, PIASTRA.y0 + f], [PIASTRA.x1 - f, PIASTRA.y0 + f]]) pts.push(new THREE.Vector3(x - PIASTRA.cx, -PIASTRA.spessore - 0.2, y - PIASTRA.cy));
-    pts.push(new THREE.Vector3(11.1 - PIASTRA.cx, Z3 + 5.0, -0.1 - PIASTRA.cy), new THREE.Vector3(-1.95 - PIASTRA.cx, 4.6, -2.35 - PIASTRA.cy));
+    pts.push(new THREE.Vector3(11.1 - PIASTRA.cx, Z3 + 5.0, -0.1 - PIASTRA.cy), new THREE.Vector3(FORN.x + 0.35 - PIASTRA.cx, 3.4, FORN.y + 0.5 - PIASTRA.cy));
     let d = 60, box; const v = new THREE.Vector3();
     camera.clearViewOffset();
     const misura = () => {
@@ -391,7 +395,7 @@ window.Diorama = (() => {
     O.finestreAccese.emissiveIntensity = 2.6 * luci;
     O_finestra().emissiveIntensity = 2.2 * luci;
     O.vetriFornitore.emissiveIntensity = 0.3 + 1.4 * luci;
-    O.matVetrina.emissiveIntensity = 0.5 + 0.9 * luci; O.matDisplay.emissiveIntensity = 0.6 + 0.8 * luci;
+    O.matVetrina.emissiveIntensity = 0.4 + 0.9 * luci; O.matConi.emissiveIntensity = 0.6 + 0.8 * luci;
     O.luceNegozio.intensity = 3 * luci;
     O.furgone.fari.emissiveIntensity = 2.6 * Math.max(luci, kp * 0.6, Math.abs(furgoneStato.v) > 0.05 ? 0.4 : 0);
 
@@ -407,6 +411,7 @@ window.Diorama = (() => {
     // --- l'oscillazione lenta della piastrella e la "respirazione" della camera (niente giro completo)
     const th = (2.5 * Math.sin(t * 0.07)) * Math.PI / 180;
     O.perno.rotation.y = th; O.ombraTile.rotation.z = th;
+    if (CAM.vista) { camera.position.copy(CAM.vista[0]); camera.lookAt(CAM.vista[1]); } else
     piazzaCamera(CAM.az + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * (1 + 0.012 * Math.sin(t * 0.11)));
     O.sole.target.position.set(0, 0, 0);
 
@@ -422,17 +427,6 @@ window.Diorama = (() => {
     for (let i = 0; i < bp.count; i++) { const x = base[i * 3]; bp.setZ(i, Math.sin(t * 4 - x * 7) * 0.05 * (x / 0.66)); }
     bp.needsUpdate = true; O.bandiera.geometry.computeVertexNormals();
 
-    // --- cartelli: guardano l'obiettivo e si girano al colore accento quando la loro tappa è fatta
-    const cs = stato.camion;
-    const fatti = [cs.attivo, cs.attivo && cs.ore >= 1.5 && cs.ore < 22, stato.venduto];
-    O.cartelli.forEach((s, i) => {
-      if (fatti[i] !== s.fatto) { s.fatto = fatti[i]; s.quando = tGioco; }
-      const wp = s.g.getWorldPosition(V1), f = (tGioco - s.quando) / Math.max(1, stato.speed / 2);
-      s.g.rotation.y = Math.atan2(camera.position.x - wp.x, camera.position.z - wp.z) - th;
-      const k = molla(f, 2.0, 0.5);
-      s.giro.rotation.x = -0.25 + Math.PI * (s.fatto ? k : 1 - k);
-      s.giro.position.y = s.h + (f > 0 && f < 1.5 ? Math.exp(-f * 7) * Math.sin(f * 14) * 0.12 : 0);
-    });
     // il cartellino "GELATO FINITO!" si gira
     const ff = tGioco - (O.finito.userData.quando ?? -99), kf = molla(ff, 1.8, 0.45);
     O.finitoCarta.rotation.y = Math.PI * (stato.finito ? kf : 1 - kf);
@@ -447,7 +441,20 @@ window.Diorama = (() => {
       c.scale.setScalar(Math.max(1e-3, s)); c.visible = s > 0.01; c.position.y = c.userData.base + (vuole ? (1 - u) * 0.4 : 0);
     });
 
-    // --- persone
+    // --- persone (con l'ombrello quando piove)
+    const ombrello = kp > 0.4;
+    if (O.ombrelli[0].visible !== ombrello) O.ombrelli.forEach((o) => { o.visible = ombrello; });
+    O.faccine.forEach((f) => {
+      if (!f.visible) return;
+      const u = (t - f.userData.t0) / 2.8;
+      if (u >= 1) { f.visible = false; return; }
+      f.position.set(f.userData.x + Math.sin(t * 3 + f.userData.fase) * 0.25, f.userData.y + u * 17, f.userData.z);
+      f.scale.setScalar(0.85 * Math.max(0.001, easeOutBack(clamp(u * 5))));
+    });
+    // --- banchi di nebbia
+    O.matNebbia.opacity = 0.85 * liscio(0.1, 0.8, nebbia);
+    O.banchi.forEach((b) => { b.visible = O.matNebbia.opacity > 0.01; if (!b.visible) return; const u = b.userData;
+      b.position.set(-3 + ((u.x + 3 + t * u.v) % 26), u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
     aggiornaClienti(t);
     aggiornaRagazzi(t, h);
 
@@ -472,20 +479,21 @@ window.Diorama = (() => {
       if (g.userData.mat !== matN) { g.userData.mat = matN; g.children.forEach((m) => { m.material = matN; }); } });
 
     // --- fiori: col sole sbocciano, col maltempo si chiudono
-    const sboccioVuole = stato.meteo === 'sole' && notte < 0.5 ? 1 : 0.25;
+    const sboccioVuole = stato.meteo === 'sole' && notte < 0.5 ? 1 : 0;          // col sole sbocciano, altrimenti si richiudono
     const sb = stato.sboccio + (sboccioVuole - stato.sboccio) * Math.min(1, dt * 0.8 * Math.max(1, stato.speed));
     if (Math.abs(sb - stato.sboccio) > 0.002 || !O.fiori.userData.pronti) {
       stato.sboccio = sb; O.fiori.userData.pronti = true;
-      O.fioriPos.forEach(([x, y, z], i) => { const s = (0.03 + 0.05 * sb) * (0.8 + 0.4 * hash(i, 3)); O3.position.set(x, z + 0.2 + s * 0.3, y); O3.rotation.set(0, 0, 0); O3.scale.set(s, s * 0.7, s); O3.updateMatrix(); O.fiori.setMatrixAt(i, O3.matrix); });
+      O.fioriPos.forEach(([x, y, z], i) => { const s = (0.014 + 0.066 * sb) * (0.8 + 0.4 * hash(i, 3)); O3.position.set(x, z + 0.2 + s * 0.3, y); O3.rotation.set(0, 0, 0); O3.scale.set(s, s * 0.7, s); O3.updateMatrix(); O.fiori.setMatrixAt(i, O3.matrix); });
       O.fiori.instanceMatrix.needsUpdate = true;
     }
 
     // --- uccellini e farfalle col bel tempo
     const bello = (1 - kn) * (1 - notte) > 0.5;
+    post.uniforms.riflessi.value = (1 - kn) * (1 - notte) * (0.6 + 0.4 * Math.sin(Math.PI * p));
     O.uccelli.forEach((g, i) => {
       g.visible = bello; if (!bello) return;
-      const a = t * 0.18 + i * 1.05, r = 6 + (i % 3) * 1.6;
-      g.position.set(PIASTRA.cx + Math.cos(a) * r, 6.8 + (i % 2) * 0.8 + Math.sin(t * 1.3 + i) * 0.25, PIASTRA.cy - 1 + Math.sin(a) * r * 0.55);
+      const a = t * 0.22 + i * 1.05, r = 5 + (i % 3) * 1.4;
+      g.position.set(PIASTRA.cx + Math.cos(a) * r, 5.4 + (i % 2) * 0.9 + Math.sin(t * 1.3 + i) * 0.25, PIASTRA.cy + 0.5 + Math.sin(a) * r * 0.55); g.scale.setScalar(1.6);
       g.rotation.y = -a; const ali = Math.sin(t * 9 + i * 2) * 0.5; g.userData.ali[0].rotation.z = ali; g.userData.ali[1].rotation.z = -ali;
     });
     O.farfalle.forEach((g, i) => {
@@ -494,11 +502,7 @@ window.Diorama = (() => {
       g.rotation.y = t * 0.8 + i; const ali = Math.abs(Math.sin(t * 14 + i)) * 1.1; g.userData.ali[0].rotation.z = ali; g.userData.ali[1].rotation.z = -ali;
     });
 
-    // --- la fascia a fuoco segue la gelateria (e il furgone quando viaggia)
-    const soggetto = V2.set(GEL.x + 1.5, 1.2, GEL.y + 2.4);
-    if (stato.camion.attivo && stato.camion.ore > 1.5 && stato.camion.ore < 21) { const fp = O.furgone.g.position; soggetto.lerp(V1.set(fp.x, 0.6, fp.z), 0.5); }
-    O.L.localToWorld(soggetto); soggetto.project(camera);
-    post.uniforms.fuoco.value += ((soggetto.y * 0.5 + 0.5) - post.uniforms.fuoco.value) * Math.min(1, dt * 2);
+    post.uniforms.fuoco.value = 0.3;                             // nitido dal 30% dell'altezza in su
   }
 
   // il furgone: carica al fornitore, viaggia giù per la strada, si ferma alla gelateria e scarica; poi riparte e fa il giro
@@ -586,6 +590,8 @@ window.Diorama = (() => {
         pos = [banco[0], 0, banco[1]]; verso = Math.PI / 2 * liscio(0.45, 0.5, u);
         if (!e.servito) testa = liscio(0.52, 0.6, u);
         if (e.servito && !e.venduto && u > 0.5) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
+        // appena prende il gelato (o capisce che non c'è) dalla testa esce la faccina
+        if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); }
       } else {
         const k = (u - 0.6) / 0.4;
         if (e.servito) { pos = passi(banco, via, k, 6, 0.22); verso = 0; }
@@ -665,6 +671,7 @@ window.Diorama = (() => {
     nuovoGiorno() { stato.venduto = false; if (stato.finito) this.setFinito(false); },
     setSpeed(s) { stato.speed = s; },
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
+    vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; if (pos) camera.clearViewOffset(); else inquadra(); },
     forzaQualita(q) { impostaQualita(q); fps.campioni = []; },
     // dove si trova qualcosa sullo schermo (in %), per mettere i cartellini dei guadagni nel DOM
     posizioneSchermo(cosa = 'gelateria') {
