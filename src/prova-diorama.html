@@ -36,6 +36,15 @@ h1 span{color:var(--pink)}
 .btn:hover{background:#e2e7ec}
 .btn.on{background:var(--ink);color:#fff}
 .btn.rosa{background:var(--pink);color:#fff}
+/* il menu della grafica: un ingranaggio sopra la scena */
+.ingranaggio{position:absolute;right:10px;bottom:10px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.92);font-size:22px;cursor:pointer;box-shadow:0 2px 8px rgba(39,43,54,.18)}
+.grafica{position:absolute;right:10px;bottom:62px;width:min(330px,calc(100% - 20px));background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px rgba(39,43,54,.25);font-size:15px;z-index:5}
+.grafica[hidden]{display:none}
+.grafica h3{margin:0 0 8px;font-size:17px;font-weight:600}
+.grafica .riga{margin:10px 0 4px;font-weight:600;color:var(--soft);display:flex;justify-content:space-between}
+.grafica .bar .btn{padding:6px 10px;font-size:14px}
+.grafica .btn:disabled{opacity:.35;cursor:default}
+.grafica label{display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:600}
 input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
 .nota{color:var(--soft);font-size:14px;margin:0}
 </style>
@@ -48,6 +57,22 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
     <div class="hud">
       <span id="s-day">📅 Giorno 1</span><span id="s-clock">🕗 10:00</span><span id="s-cash">💰 €120</span>
       <span class="fps" id="fps">— fps</span>
+    </div>
+    <button class="ingranaggio" id="b-grafica" aria-label="Impostazioni grafiche" aria-expanded="false" aria-controls="grafica">⚙️</button>
+    <div class="grafica" id="grafica" hidden role="dialog" aria-label="Impostazioni grafiche">
+      <h3>Grafica</h3>
+      <div class="riga"><span>Qualità</span></div>
+      <div class="bar" id="g-qualita">
+        <button class="btn" data-g="auto">Automatica</button><button class="btn" data-g="alta">Alta</button><button class="btn" data-g="media">Media</button><button class="btn" data-g="bassa">Bassa</button>
+      </div>
+      <div class="riga"><span>Pixel per pixel dello schermo</span><span id="g-pr-txt">1×</span></div>
+      <input type="range" id="g-pr" min="0.5" max="2" step="0.25" value="1" aria-label="Pixel per pixel dello schermo">
+      <div class="riga"><span>Filtro anisotropico</span><span id="g-an-txt">16×</span></div>
+      <div class="bar" id="g-aniso">
+        <button class="btn" data-a="1">1×</button><button class="btn" data-a="2">2×</button><button class="btn" data-a="4">4×</button><button class="btn" data-a="8">8×</button><button class="btn" data-a="16">16×</button>
+      </div>
+      <label><input type="checkbox" id="g-effetti"> Effetti (sfocatura, riflessi, colore)</label>
+      <p class="nota">Più pixel e più filtro = scritte più nitide ma PC più impegnato. "Automatica" abbassa da sola la qualità se il PC rallenta.</p>
     </div>
   </div>
 
@@ -72,9 +97,8 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
     <div class="gruppo"><h2>Magazzino e vendite</h2><div class="bar">
       <button class="btn" id="b-meno">− 1 pacco</button><button class="btn" id="b-piu">+ 1 pacco</button><span id="stock-txt">6 pacchi sul pallet</span>
     </div></div>
-    <div class="gruppo"><h2>Velocità e qualità</h2><div class="bar" id="b-speed">
+    <div class="gruppo"><h2>Velocità</h2><div class="bar" id="b-speed">
       <button class="btn on" data-s="1">1×</button><button class="btn" data-s="2">2×</button><button class="btn" data-s="4">4×</button>
-      <button class="btn" data-q="alta">alta</button><button class="btn" data-q="media">media</button><button class="btn" data-q="bassa">bassa</button>
     </div><p class="nota" id="q-txt">qualità automatica</p></div>
   </div>
 </div>
@@ -154,9 +178,31 @@ $('#b-piu').onclick = () => Diorama.setPacchi(Diorama.pacchi + 1);
 Diorama.onRifornito = (n) => { coni = n; finito = false; };
 // velocità e qualità
 document.querySelectorAll('#b-speed .btn[data-s]').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-speed .btn[data-s]').forEach((x) => x.classList.toggle('on', x === b)); speed = +b.dataset.s; Diorama.setSpeed(speed); });
-document.querySelectorAll('#b-speed .btn[data-q]').forEach((b) => b.onclick = () => { Diorama.forzaQualita(b.dataset.q); });
+// ---- menu della grafica (le scelte restano salvate in questo browser) ----
+const salvaGrafica = (v) => { try { localStorage.setItem('diorama-grafica', JSON.stringify(v)); } catch (e) { /* senza memoria va bene lo stesso */ } };
+try { const g = JSON.parse(localStorage.getItem('diorama-grafica') || 'null'); if (g) Diorama.impostaGrafica(g); } catch (e) { /* ignora */ }
+function aggiornaMenu() {
+  const g = Diorama.grafica;
+  const PRESET = { alta: [2, 16, true], media: [1.25, 8, true], bassa: [0.75, 2, false] };
+  const scelta = g.auto ? 'auto' : Object.keys(PRESET).find((k) => PRESET[k][0] === g.pr && PRESET[k][1] === g.aniso && PRESET[k][2] === g.effetti);
+  document.querySelectorAll('#g-qualita .btn').forEach((b) => b.classList.toggle('on', b.dataset.g === scelta));
+  $('#g-pr').value = g.pr; $('#g-pr-txt').textContent = String(g.pr).replace('.', ',') + '×';
+  document.querySelectorAll('#g-aniso .btn').forEach((b) => { b.disabled = +b.dataset.a > g.anisoMax; b.classList.toggle('on', +b.dataset.a === g.aniso); });
+  $('#g-an-txt').textContent = g.aniso + '×';
+  $('#g-effetti').checked = g.effetti;
+}
+const manuale = (opz) => { Diorama.impostaGrafica(opz); const g = Diorama.grafica; salvaGrafica({ pr: g.pr, aniso: g.aniso, effetti: g.effetti }); aggiornaMenu(); };
+$('#b-grafica').onclick = () => { const p = $('#grafica'); p.hidden = !p.hidden; $('#b-grafica').setAttribute('aria-expanded', String(!p.hidden)); aggiornaMenu(); };
+document.querySelectorAll('#g-qualita .btn').forEach((b) => b.onclick = () => {
+  if (b.dataset.g === 'auto') { Diorama.impostaGrafica({ auto: true, qualita: 'alta' }); salvaGrafica({ auto: true }); aggiornaMenu(); return; }
+  const pr = { alta: 2, media: 1.25, bassa: 0.75 }[b.dataset.g], aniso = { alta: 16, media: 8, bassa: 2 }[b.dataset.g];
+  manuale({ pr, aniso, effetti: b.dataset.g !== 'bassa' });
+});
+$('#g-pr').oninput = (e) => manuale({ pr: +e.target.value });
+document.querySelectorAll('#g-aniso .btn').forEach((b) => b.onclick = () => manuale({ aniso: +b.dataset.a }));
+$('#g-effetti').onchange = (e) => manuale({ effetti: e.target.checked });
 // contatore fps
-setInterval(() => { $('#stock-txt').textContent = Diorama.pacchi + ' pacchi sul pallet'; $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; $('#q-txt').textContent = 'qualità: ' + Diorama.qualita; }, 500);
+setInterval(() => { $('#stock-txt').textContent = Diorama.pacchi + ' pacchi sul pallet'; $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; const gq = Diorama.grafica; $('#q-txt').textContent = 'grafica: ' + (gq.auto ? 'automatica (' + gq.qualita + ')' : 'a mano') + ' · ' + String(gq.pr).replace('.', ',') + '× pixel · filtro ' + gq.aniso + '×'; }, 500);
 setClock(10);
 
 // ---- DEMO: tre giornate intere (sole, nuvoloso, pioggia). Ogni giorno arrivano più clienti dei coni

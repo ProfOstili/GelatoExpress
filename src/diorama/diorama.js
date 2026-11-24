@@ -17,12 +17,9 @@ window.Diorama = (() => {
      sfumando nel colore del cielo (niente bordi netti). La quantità (0..1) arriva in fogNear.
      --------------------------------------------------------------- */
   THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n varying vec3 vMondoPos;\n#endif';
+  // la posizione nel mondo si ricava da mvPosition, che esiste in tutti i materiali (anche negli sprite e nelle istanze)
   THREE.ShaderChunk.fog_vertex = `#ifdef USE_FOG
-    vec4 mondoP = vec4(transformed, 1.0);
-    #ifdef USE_INSTANCING
-      mondoP = instanceMatrix * mondoP;
-    #endif
-    vMondoPos = (modelMatrix * mondoP).xyz;
+    vMondoPos = (inverse(viewMatrix) * vec4(mvPosition.xyz, 1.0)).xyz;
   #endif`;
   THREE.ShaderChunk.fog_pars_fragment = '#ifdef USE_FOG\n uniform vec3 fogColor; varying vec3 vMondoPos;\n #ifdef FOG_EXP2\n uniform float fogDensity;\n #else\n uniform float fogNear; uniform float fogFar;\n #endif\n#endif';
   THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
@@ -42,7 +39,7 @@ window.Diorama = (() => {
   const stato = {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
     camion: { attivo: false, kg: 0, ore: 0 }, pila: 0, portaOgni: 4, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
-    speed: 1, qualita: 'alta',
+    speed: 1, qualita: 'alta', auto: true, manuale: null,
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
   const O = {};                                                     // tutto ciò che si anima
@@ -351,7 +348,20 @@ window.Diorama = (() => {
      DIMENSIONI, INQUADRATURA E QUALITÀ (si abbassa da sola se gli fps scendono)
      --------------------------------------------------------------- */
   let W = 1, H = 1;
-  const QUALITA = { alta: { pr: 2, ombre: 2048, post: true }, media: { pr: 1.25, ombre: 2048, post: true }, bassa: { pr: 0.75, ombre: 1024, post: false } };
+  // tre livelli già pronti; in "automatica" si scende da soli se il PC rallenta. Dal menu si può scegliere a mano.
+  const QUALITA = { alta: { pr: 2, aniso: 16, ombre: 2048, post: true }, media: { pr: 1.25, aniso: 8, ombre: 2048, post: true }, bassa: { pr: 0.75, aniso: 2, ombre: 1024, post: false } };
+  let ANISO_MAX = 16;
+  // le impostazioni in uso: pixel per pixel dello schermo, filtro anisotropico, effetti (sfocatura, riflessi, colore)
+  function efficace() {
+    if (!stato.auto && stato.manuale) return stato.manuale;
+    const q = QUALITA[stato.qualita];
+    return { pr: Math.min(window.devicePixelRatio || 1, q.pr), aniso: q.aniso, effetti: q.post };
+  }
+  function applicaAniso(a) {
+    const v = Math.max(1, Math.min(ANISO_MAX, a));
+    if (v === ANISO) return; ANISO = v;
+    for (const t of TEXTURE) { t.anisotropy = v; t.needsUpdate = true; }
+  }
   const CAM = { az: 14 * Math.PI / 180, el: 31 * Math.PI / 180, dist: 60, mira: new THREE.Vector3(0, 1.2, 0.6) };
   // piazza la camera; d = distanza
   function piazzaCamera(az, el, d) {
@@ -381,10 +391,11 @@ window.Diorama = (() => {
   }
   function ridimensiona() {
     const r = contenitore.getBoundingClientRect(); W = Math.max(2, Math.round(r.width)); H = Math.max(2, Math.round(r.height));
-    const q = QUALITA[stato.qualita], pr = Math.min(window.devicePixelRatio || 1, q.pr);
-    R.setPixelRatio(pr); R.setSize(W, H, false);
+    const e = efficace();
+    R.setPixelRatio(e.pr); R.setSize(W, H, false);
     camera.aspect = W / H; camera.updateProjectionMatrix(); inquadra();
-    if (q.post) creaTarget(Math.round(W * pr), Math.round(H * pr));
+    if (e.effetti) creaTarget(Math.round(W * e.pr), Math.round(H * e.pr));
+    applicaAniso(e.aniso);
   }
   function impostaQualita(q) {
     if (stato.qualita === q) return;
@@ -399,7 +410,7 @@ window.Diorama = (() => {
     fps.campioni.push(dt); if (fps.campioni.length > 60) fps.campioni.shift();
     fps.valore = fps.campioni.length / fps.campioni.reduce((a, b) => a + b, 0);
     // se resta sotto i 50 fps per un paio di secondi, scende di un gradino
-    if (fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2 && stato.qualita !== 'bassa') { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
+    if (stato.auto && fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2 && stato.qualita !== 'bassa') { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
     else fps.lento = Math.max(0, fps.lento - dt);
   }
 
@@ -785,7 +796,7 @@ window.Diorama = (() => {
     tGioco += dt * stato.speed;
     misuraFps(dt);
     aggiorna(t, dt);
-    if (QUALITA[stato.qualita].post) {
+    if (efficace().effetti && rt) {
       R.setRenderTarget(rt); R.render(scena, camera);
       R.setRenderTarget(null); R.render(quad.s, quad.cam);
     } else { R.setRenderTarget(null); R.render(scena, camera); }
@@ -802,7 +813,7 @@ window.Diorama = (() => {
       tela = document.createElement('canvas'); tela.className = 'diorama-tela'; tela.setAttribute('aria-hidden', 'true');
       el.prepend(tela);
       R = new THREE.WebGLRenderer({ canvas: tela, antialias: false, powerPreference: 'high-performance' });
-      ANISO = R.capabilities.getMaxAnisotropy();
+      ANISO_MAX = R.capabilities.getMaxAnisotropy(); ANISO = Math.min(ANISO_MAX, efficace().aniso);
       R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFShadowMap;      // in r187 PCFSoftShadowMap non c'è più: PCFShadowMap con shadow.radius fa le ombre morbide
       R.toneMapping = THREE.NeutralToneMapping; R.toneMappingExposure = 1.0; R.outputColorSpace = THREE.SRGBColorSpace;
       costruisci(); creaPost(); disegnaConi();
@@ -838,6 +849,14 @@ window.Diorama = (() => {
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
     vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; camera.near = pos ? 0.05 : 5; camera.updateProjectionMatrix(); if (pos) camera.clearViewOffset(); else inquadra(); },
     forzaQualita(q) { impostaQualita(q); fps.campioni = []; },
+    // il menu della grafica: { auto: true } per la regolazione automatica, oppure { pr, aniso, effetti } a mano
+    impostaGrafica(opz) {
+      if (opz.auto) { stato.auto = true; stato.manuale = null; if (opz.qualita) stato.qualita = opz.qualita; }
+      else { stato.manuale = { ...efficace(), ...opz }; delete stato.manuale.auto; stato.auto = false; }
+      fps.campioni = []; fps.lento = 0;
+      if (R) ridimensiona();
+    },
+    get grafica() { const e = efficace(); return { auto: stato.auto, qualita: stato.qualita, pr: e.pr, aniso: Math.min(e.aniso, ANISO_MAX), anisoMax: ANISO_MAX, effetti: e.effetti }; },
     // dove si trova qualcosa sullo schermo (in %), per mettere i cartellini dei guadagni nel DOM
     posizioneSchermo(cosa = 'gelateria') {
       if (!O.L) return [50, 50];

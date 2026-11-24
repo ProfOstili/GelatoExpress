@@ -137,10 +137,11 @@ function arcoGeo(w, h) {
 }
 // filtraggio anisotropico: tiene nitide le immagini viste di sbieco (insegne, scritte); il massimo lo dice la scheda grafica
 let ANISO = 8;
+const TEXTURE = [];                                                   // tutte le immagini dipinte, per cambiare il filtro dal menu
 function texCanvas(w, h, disegna, ripeti) {
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d'); if (disegna) disegna(ctx, w, h);
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = ANISO;
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = ANISO; TEXTURE.push(t);
   if (ripeti) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(ripeti[0], ripeti[1]); }
   t.ridisegna = (fn) => { ctx.clearRect(0, 0, w, h); fn(ctx, w, h); t.needsUpdate = true; };
   return t;

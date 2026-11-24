@@ -36,6 +36,15 @@ h1 span{color:var(--pink)}
 .btn:hover{background:#e2e7ec}
 .btn.on{background:var(--ink);color:#fff}
 .btn.rosa{background:var(--pink);color:#fff}
+/* il menu della grafica: un ingranaggio sopra la scena */
+.ingranaggio{position:absolute;right:10px;bottom:10px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.92);font-size:22px;cursor:pointer;box-shadow:0 2px 8px rgba(39,43,54,.18)}
+.grafica{position:absolute;right:10px;bottom:62px;width:min(330px,calc(100% - 20px));background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px rgba(39,43,54,.25);font-size:15px;z-index:5}
+.grafica[hidden]{display:none}
+.grafica h3{margin:0 0 8px;font-size:17px;font-weight:600}
+.grafica .riga{margin:10px 0 4px;font-weight:600;color:var(--soft);display:flex;justify-content:space-between}
+.grafica .bar .btn{padding:6px 10px;font-size:14px}
+.grafica .btn:disabled{opacity:.35;cursor:default}
+.grafica label{display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:600}
 input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
 .nota{color:var(--soft);font-size:14px;margin:0}
 </style>
@@ -48,6 +57,22 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
     <div class="hud">
       <span id="s-day">📅 Giorno 1</span><span id="s-clock">🕗 10:00</span><span id="s-cash">💰 €120</span>
       <span class="fps" id="fps">— fps</span>
+    </div>
+    <button class="ingranaggio" id="b-grafica" aria-label="Impostazioni grafiche" aria-expanded="false" aria-controls="grafica">⚙️</button>
+    <div class="grafica" id="grafica" hidden role="dialog" aria-label="Impostazioni grafiche">
+      <h3>Grafica</h3>
+      <div class="riga"><span>Qualità</span></div>
+      <div class="bar" id="g-qualita">
+        <button class="btn" data-g="auto">Automatica</button><button class="btn" data-g="alta">Alta</button><button class="btn" data-g="media">Media</button><button class="btn" data-g="bassa">Bassa</button>
+      </div>
+      <div class="riga"><span>Pixel per pixel dello schermo</span><span id="g-pr-txt">1×</span></div>
+      <input type="range" id="g-pr" min="0.5" max="2" step="0.25" value="1" aria-label="Pixel per pixel dello schermo">
+      <div class="riga"><span>Filtro anisotropico</span><span id="g-an-txt">16×</span></div>
+      <div class="bar" id="g-aniso">
+        <button class="btn" data-a="1">1×</button><button class="btn" data-a="2">2×</button><button class="btn" data-a="4">4×</button><button class="btn" data-a="8">8×</button><button class="btn" data-a="16">16×</button>
+      </div>
+      <label><input type="checkbox" id="g-effetti"> Effetti (sfocatura, riflessi, colore)</label>
+      <p class="nota">Più pixel e più filtro = scritte più nitide ma PC più impegnato. "Automatica" abbassa da sola la qualità se il PC rallenta.</p>
     </div>
   </div>
 
@@ -72,9 +97,8 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
     <div class="gruppo"><h2>Magazzino e vendite</h2><div class="bar">
       <button class="btn" id="b-meno">− 1 pacco</button><button class="btn" id="b-piu">+ 1 pacco</button><span id="stock-txt">6 pacchi sul pallet</span>
     </div></div>
-    <div class="gruppo"><h2>Velocità e qualità</h2><div class="bar" id="b-speed">
+    <div class="gruppo"><h2>Velocità</h2><div class="bar" id="b-speed">
       <button class="btn on" data-s="1">1×</button><button class="btn" data-s="2">2×</button><button class="btn" data-s="4">4×</button>
-      <button class="btn" data-q="alta">alta</button><button class="btn" data-q="media">media</button><button class="btn" data-q="bassa">bassa</button>
     </div><p class="nota" id="q-txt">qualità automatica</p></div>
   </div>
 </div>
@@ -4449,10 +4473,11 @@ function arcoGeo(w, h) {
 }
 // filtraggio anisotropico: tiene nitide le immagini viste di sbieco (insegne, scritte); il massimo lo dice la scheda grafica
 let ANISO = 8;
+const TEXTURE = [];                                                   // tutte le immagini dipinte, per cambiare il filtro dal menu
 function texCanvas(w, h, disegna, ripeti) {
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d'); if (disegna) disegna(ctx, w, h);
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = ANISO;
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = ANISO; TEXTURE.push(t);
   if (ripeti) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(ripeti[0], ripeti[1]); }
   t.ridisegna = (fn) => { ctx.clearRect(0, 0, w, h); fn(ctx, w, h); t.needsUpdate = true; };
   return t;
@@ -5180,12 +5205,9 @@ window.Diorama = (() => {
      sfumando nel colore del cielo (niente bordi netti). La quantità (0..1) arriva in fogNear.
      --------------------------------------------------------------- */
   THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n varying vec3 vMondoPos;\n#endif';
+  // la posizione nel mondo si ricava da mvPosition, che esiste in tutti i materiali (anche negli sprite e nelle istanze)
   THREE.ShaderChunk.fog_vertex = `#ifdef USE_FOG
-    vec4 mondoP = vec4(transformed, 1.0);
-    #ifdef USE_INSTANCING
-      mondoP = instanceMatrix * mondoP;
-    #endif
-    vMondoPos = (modelMatrix * mondoP).xyz;
+    vMondoPos = (inverse(viewMatrix) * vec4(mvPosition.xyz, 1.0)).xyz;
   #endif`;
   THREE.ShaderChunk.fog_pars_fragment = '#ifdef USE_FOG\n uniform vec3 fogColor; varying vec3 vMondoPos;\n #ifdef FOG_EXP2\n uniform float fogDensity;\n #else\n uniform float fogNear; uniform float fogFar;\n #endif\n#endif';
   THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
@@ -5205,7 +5227,7 @@ window.Diorama = (() => {
   const stato = {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
     camion: { attivo: false, kg: 0, ore: 0 }, pila: 0, portaOgni: 4, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
-    speed: 1, qualita: 'alta',
+    speed: 1, qualita: 'alta', auto: true, manuale: null,
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
   const O = {};                                                     // tutto ciò che si anima
@@ -5514,7 +5536,20 @@ window.Diorama = (() => {
      DIMENSIONI, INQUADRATURA E QUALITÀ (si abbassa da sola se gli fps scendono)
      --------------------------------------------------------------- */
   let W = 1, H = 1;
-  const QUALITA = { alta: { pr: 2, ombre: 2048, post: true }, media: { pr: 1.25, ombre: 2048, post: true }, bassa: { pr: 0.75, ombre: 1024, post: false } };
+  // tre livelli già pronti; in "automatica" si scende da soli se il PC rallenta. Dal menu si può scegliere a mano.
+  const QUALITA = { alta: { pr: 2, aniso: 16, ombre: 2048, post: true }, media: { pr: 1.25, aniso: 8, ombre: 2048, post: true }, bassa: { pr: 0.75, aniso: 2, ombre: 1024, post: false } };
+  let ANISO_MAX = 16;
+  // le impostazioni in uso: pixel per pixel dello schermo, filtro anisotropico, effetti (sfocatura, riflessi, colore)
+  function efficace() {
+    if (!stato.auto && stato.manuale) return stato.manuale;
+    const q = QUALITA[stato.qualita];
+    return { pr: Math.min(window.devicePixelRatio || 1, q.pr), aniso: q.aniso, effetti: q.post };
+  }
+  function applicaAniso(a) {
+    const v = Math.max(1, Math.min(ANISO_MAX, a));
+    if (v === ANISO) return; ANISO = v;
+    for (const t of TEXTURE) { t.anisotropy = v; t.needsUpdate = true; }
+  }
   const CAM = { az: 14 * Math.PI / 180, el: 31 * Math.PI / 180, dist: 60, mira: new THREE.Vector3(0, 1.2, 0.6) };
   // piazza la camera; d = distanza
   function piazzaCamera(az, el, d) {
@@ -5544,10 +5579,11 @@ window.Diorama = (() => {
   }
   function ridimensiona() {
     const r = contenitore.getBoundingClientRect(); W = Math.max(2, Math.round(r.width)); H = Math.max(2, Math.round(r.height));
-    const q = QUALITA[stato.qualita], pr = Math.min(window.devicePixelRatio || 1, q.pr);
-    R.setPixelRatio(pr); R.setSize(W, H, false);
+    const e = efficace();
+    R.setPixelRatio(e.pr); R.setSize(W, H, false);
     camera.aspect = W / H; camera.updateProjectionMatrix(); inquadra();
-    if (q.post) creaTarget(Math.round(W * pr), Math.round(H * pr));
+    if (e.effetti) creaTarget(Math.round(W * e.pr), Math.round(H * e.pr));
+    applicaAniso(e.aniso);
   }
   function impostaQualita(q) {
     if (stato.qualita === q) return;
@@ -5562,7 +5598,7 @@ window.Diorama = (() => {
     fps.campioni.push(dt); if (fps.campioni.length > 60) fps.campioni.shift();
     fps.valore = fps.campioni.length / fps.campioni.reduce((a, b) => a + b, 0);
     // se resta sotto i 50 fps per un paio di secondi, scende di un gradino
-    if (fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2 && stato.qualita !== 'bassa') { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
+    if (stato.auto && fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2 && stato.qualita !== 'bassa') { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
     else fps.lento = Math.max(0, fps.lento - dt);
   }
 
@@ -5948,7 +5984,7 @@ window.Diorama = (() => {
     tGioco += dt * stato.speed;
     misuraFps(dt);
     aggiorna(t, dt);
-    if (QUALITA[stato.qualita].post) {
+    if (efficace().effetti && rt) {
       R.setRenderTarget(rt); R.render(scena, camera);
       R.setRenderTarget(null); R.render(quad.s, quad.cam);
     } else { R.setRenderTarget(null); R.render(scena, camera); }
@@ -5965,7 +6001,7 @@ window.Diorama = (() => {
       tela = document.createElement('canvas'); tela.className = 'diorama-tela'; tela.setAttribute('aria-hidden', 'true');
       el.prepend(tela);
       R = new THREE.WebGLRenderer({ canvas: tela, antialias: false, powerPreference: 'high-performance' });
-      ANISO = R.capabilities.getMaxAnisotropy();
+      ANISO_MAX = R.capabilities.getMaxAnisotropy(); ANISO = Math.min(ANISO_MAX, efficace().aniso);
       R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFShadowMap;      // in r187 PCFSoftShadowMap non c'è più: PCFShadowMap con shadow.radius fa le ombre morbide
       R.toneMapping = THREE.NeutralToneMapping; R.toneMappingExposure = 1.0; R.outputColorSpace = THREE.SRGBColorSpace;
       costruisci(); creaPost(); disegnaConi();
@@ -6001,6 +6037,14 @@ window.Diorama = (() => {
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
     vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; camera.near = pos ? 0.05 : 5; camera.updateProjectionMatrix(); if (pos) camera.clearViewOffset(); else inquadra(); },
     forzaQualita(q) { impostaQualita(q); fps.campioni = []; },
+    // il menu della grafica: { auto: true } per la regolazione automatica, oppure { pr, aniso, effetti } a mano
+    impostaGrafica(opz) {
+      if (opz.auto) { stato.auto = true; stato.manuale = null; if (opz.qualita) stato.qualita = opz.qualita; }
+      else { stato.manuale = { ...efficace(), ...opz }; delete stato.manuale.auto; stato.auto = false; }
+      fps.campioni = []; fps.lento = 0;
+      if (R) ridimensiona();
+    },
+    get grafica() { const e = efficace(); return { auto: stato.auto, qualita: stato.qualita, pr: e.pr, aniso: Math.min(e.aniso, ANISO_MAX), anisoMax: ANISO_MAX, effetti: e.effetti }; },
     // dove si trova qualcosa sullo schermo (in %), per mettere i cartellini dei guadagni nel DOM
     posizioneSchermo(cosa = 'gelateria') {
       if (!O.L) return [50, 50];
@@ -6078,9 +6122,31 @@ $('#b-piu').onclick = () => Diorama.setPacchi(Diorama.pacchi + 1);
 Diorama.onRifornito = (n) => { coni = n; finito = false; };
 // velocità e qualità
 document.querySelectorAll('#b-speed .btn[data-s]').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-speed .btn[data-s]').forEach((x) => x.classList.toggle('on', x === b)); speed = +b.dataset.s; Diorama.setSpeed(speed); });
-document.querySelectorAll('#b-speed .btn[data-q]').forEach((b) => b.onclick = () => { Diorama.forzaQualita(b.dataset.q); });
+// ---- menu della grafica (le scelte restano salvate in questo browser) ----
+const salvaGrafica = (v) => { try { localStorage.setItem('diorama-grafica', JSON.stringify(v)); } catch (e) { /* senza memoria va bene lo stesso */ } };
+try { const g = JSON.parse(localStorage.getItem('diorama-grafica') || 'null'); if (g) Diorama.impostaGrafica(g); } catch (e) { /* ignora */ }
+function aggiornaMenu() {
+  const g = Diorama.grafica;
+  const PRESET = { alta: [2, 16, true], media: [1.25, 8, true], bassa: [0.75, 2, false] };
+  const scelta = g.auto ? 'auto' : Object.keys(PRESET).find((k) => PRESET[k][0] === g.pr && PRESET[k][1] === g.aniso && PRESET[k][2] === g.effetti);
+  document.querySelectorAll('#g-qualita .btn').forEach((b) => b.classList.toggle('on', b.dataset.g === scelta));
+  $('#g-pr').value = g.pr; $('#g-pr-txt').textContent = String(g.pr).replace('.', ',') + '×';
+  document.querySelectorAll('#g-aniso .btn').forEach((b) => { b.disabled = +b.dataset.a > g.anisoMax; b.classList.toggle('on', +b.dataset.a === g.aniso); });
+  $('#g-an-txt').textContent = g.aniso + '×';
+  $('#g-effetti').checked = g.effetti;
+}
+const manuale = (opz) => { Diorama.impostaGrafica(opz); const g = Diorama.grafica; salvaGrafica({ pr: g.pr, aniso: g.aniso, effetti: g.effetti }); aggiornaMenu(); };
+$('#b-grafica').onclick = () => { const p = $('#grafica'); p.hidden = !p.hidden; $('#b-grafica').setAttribute('aria-expanded', String(!p.hidden)); aggiornaMenu(); };
+document.querySelectorAll('#g-qualita .btn').forEach((b) => b.onclick = () => {
+  if (b.dataset.g === 'auto') { Diorama.impostaGrafica({ auto: true, qualita: 'alta' }); salvaGrafica({ auto: true }); aggiornaMenu(); return; }
+  const pr = { alta: 2, media: 1.25, bassa: 0.75 }[b.dataset.g], aniso = { alta: 16, media: 8, bassa: 2 }[b.dataset.g];
+  manuale({ pr, aniso, effetti: b.dataset.g !== 'bassa' });
+});
+$('#g-pr').oninput = (e) => manuale({ pr: +e.target.value });
+document.querySelectorAll('#g-aniso .btn').forEach((b) => b.onclick = () => manuale({ aniso: +b.dataset.a }));
+$('#g-effetti').onchange = (e) => manuale({ effetti: e.target.checked });
 // contatore fps
-setInterval(() => { $('#stock-txt').textContent = Diorama.pacchi + ' pacchi sul pallet'; $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; $('#q-txt').textContent = 'qualità: ' + Diorama.qualita; }, 500);
+setInterval(() => { $('#stock-txt').textContent = Diorama.pacchi + ' pacchi sul pallet'; $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; const gq = Diorama.grafica; $('#q-txt').textContent = 'grafica: ' + (gq.auto ? 'automatica (' + gq.qualita + ')' : 'a mano') + ' · ' + String(gq.pr).replace('.', ',') + '× pixel · filtro ' + gq.aniso + '×'; }, 500);
 setClock(10);
 
 // ---- DEMO: tre giornate intere (sole, nuvoloso, pioggia). Ogni giorno arrivano più clienti dei coni
