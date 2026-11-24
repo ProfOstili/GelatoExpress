@@ -162,7 +162,6 @@ window.Diorama = (() => {
 
     // i due furgoncini color accento: quello che viaggia e quello che aspetta al fornitore
     O.furgone = furgone(L, PAL.accento);
-    O.furgoneFermo = furgone(L, PAL.accento);
     O.fumo = sbuffi(L, 20);
     O.scia = [];
     O.casseVolanti = [0, 1, 2, 3, 4].map(() => { const c = new THREE.Group(); c.userData.vivo = true; c.visible = false; L.add(c); metti(c, scatolaGeo(0.42, 0.32, 0.36, 0.035), PAL.cartone); metti(c, scatolaGeo(0.08, 0.326, 0.366, 0.01), PAL.crema); return c; });
@@ -372,13 +371,13 @@ window.Diorama = (() => {
     if (O.sole.shadow.mapSize.x !== Q.ombre) { O.sole.shadow.mapSize.setScalar(Q.ombre); if (O.sole.shadow.map) { O.sole.shadow.map.dispose(); O.sole.shadow.map = null; } }
     ridimensiona();
   }
-  const fps = { campioni: [], valore: 60, lento: 0 };
+  const fps = { campioni: [], valore: 60, lento: 0, inizio: tReale() };
   function misuraFps(dt) {
     if (dt <= 0 || dt > 0.5) return;
     fps.campioni.push(dt); if (fps.campioni.length > 60) fps.campioni.shift();
     fps.valore = fps.campioni.length / fps.campioni.reduce((a, b) => a + b, 0);
     // se resta sotto i 50 fps per un paio di secondi, scende di un gradino
-    if (stato.auto && fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2 && stato.qualita !== 'bassa') { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
+    if (stato.auto && tReale() - fps.inizio > 6 && fps.campioni.length >= 60 && fps.valore < 50) { fps.lento += dt; if (fps.lento > 2 && stato.qualita !== 'bassa') { fps.lento = 0; fps.campioni = []; impostaQualita(stato.qualita === 'alta' ? 'media' : 'bassa'); } }
     else fps.lento = Math.max(0, fps.lento - dt);
   }
 
@@ -543,7 +542,6 @@ window.Diorama = (() => {
       const ore = cs.ore;
       portellone = ore < 1.6 ? 1 - seg(ore, 1.0, 1.6) : ore >= 22 ? seg(ore, 22, 22.6) : 0;
       percorsoS = ANDATA.len * trap(seg(ore, 2, 21), 0.15, 0.25); punto = ANDATA.a(percorsoS); via = ANDATA;
-      if (ore < 1.2) punto.ang = lerp(Math.PI, 0, liscio(0.1, 1.0, ore));                 // gira sul posto davanti al fornitore
     } else if (fs.ritorno >= 0) {
       const u = (tGioco - fs.ritorno) / fs.ritornoT;
       percorsoS = RITORNO.len * Math.min(0.42, 0.42 * trap(u, 0.3, 0.05)); punto = RITORNO.a(percorsoS); via = RITORNO;
@@ -551,14 +549,12 @@ window.Diorama = (() => {
     }
     // il furgone che viaggia: visibile in andata e mentre se ne va (poi rimpicciolisce e sparisce)
     F.g.visible = !!punto;
-    O.furgoneFermo.g.visible = !cs.attivo;
     const uRit = fs.ritorno >= 0 ? (tGioco - fs.ritorno) / fs.ritornoT : 0;
-    // quello che aspetta al fornitore spunta con un balzo appena l'altro è partito per tornare
-    const pop = fs.ritorno >= 0 ? easeOutBack(clamp(uRit * 3)) : 1;
-    O.furgoneFermo.g.scale.setScalar(1.55 * Math.max(0.001, pop));
-    posa(O.furgoneFermo, { x: -1.6, y: 2.6, ang: Math.PI });
     if (!punto) { fs.v = 0; fs.vPrec = 0; return; }
-    if (fs.ritorno >= 0) F.g.scale.setScalar(1.55 * Math.max(0.001, 1 - liscio(0.75, 1, uRit))); else F.g.scale.setScalar(1.55);
+    // il furgone compare al fornitore solo quando parte il carico (con un balzo, già girato verso la Consolazione)
+    // e dopo la consegna se ne va e rimpicciolisce fino a sparire
+    if (fs.ritorno >= 0) F.g.scale.setScalar(1.55 * Math.max(0.001, 1 - liscio(0.75, 1, uRit)));
+    else F.g.scale.setScalar(1.55 * Math.max(0.001, easeOutBack(clamp(cs.ore / 0.6))));
     // velocità e accelerazione (per beccheggio e rollio: il furgone "pesa")
     const v = dt > 0 ? (percorsoS - fs.s) / dt : 0; fs.v = Math.abs(percorsoS - fs.s) > 5 ? 0 : v;
     const acc = dt > 0 ? (fs.v - fs.vPrec) / dt : 0; fs.vPrec = fs.v; fs.s = percorsoS;
@@ -784,7 +780,7 @@ window.Diorama = (() => {
   const api = {
     async monta(el) {
       if (avviato) return;
-      avviato = true; contenitore = el;
+      avviato = true; contenitore = el; fps.inizio = tReale();
       try { await document.fonts.load(FONT); } catch (e) { /* senza font si usa il ripiego */ }
       tela = document.createElement('canvas'); tela.className = 'diorama-tela'; tela.setAttribute('aria-hidden', 'true');
       el.prepend(tela);

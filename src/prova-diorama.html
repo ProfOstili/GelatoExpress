@@ -178,9 +178,10 @@ $('#b-piu').onclick = () => Diorama.setPacchi(Diorama.pacchi + 1);
 Diorama.onRifornito = (n) => { coni = n; finito = false; };
 // velocità e qualità
 document.querySelectorAll('#b-speed .btn[data-s]').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-speed .btn[data-s]').forEach((x) => x.classList.toggle('on', x === b)); speed = +b.dataset.s; Diorama.setSpeed(speed); });
-// ---- menu della grafica (le scelte restano salvate in questo browser) ----
-const salvaGrafica = (v) => { try { localStorage.setItem('diorama-grafica', JSON.stringify(v)); } catch (e) { /* senza memoria va bene lo stesso */ } };
-try { const g = JSON.parse(localStorage.getItem('diorama-grafica') || 'null'); if (g) Diorama.impostaGrafica(g); } catch (e) { /* ignora */ }
+// ---- menu della grafica (vale finché la pagina resta aperta) ----
+const salvaGrafica = () => {};
+// si parte sempre in automatica, dal livello alto
+Diorama.impostaGrafica({ auto: true, qualita: 'alta' });
 function aggiornaMenu() {
   const g = Diorama.grafica;
   const PRESET = { alta: [2, 16, true], media: [1.25, 8, true], bassa: [0.75, 2, false] };
@@ -215,7 +216,7 @@ $('#b-demo').onclick = async () => {
     Diorama.setMeteo(meteo);
     $('#s-day').textContent = '📅 Giorno ' + g + ' ' + { sole: '☀️', nuvoloso: '☁️', pioggia: '🌧️' }[meteo];
     const orari = [9.0, 9.8, 10.6, 11.3, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 20.25];   // 11 clienti, solo 6 coni (l'ultimo arriva a negozio chiuso)
-    let prossimo = 0, furgone = 'atteso';
+    let prossimo = 0;
     // la mattina: la gelateria apre (porta, gelataio, pacchi dentro, bancone fuori, porta chiusa)
     if (g === 1) { Diorama.setPacchi(6); coni = 0; finito = true; Diorama.setConi(0, 6); Diorama.setFinito(true); }
     setClock(8); await Diorama.apri(4);                       // porta dentro 4 pacchi: i coni tornano a 6
@@ -225,15 +226,19 @@ $('#b-demo').onclick = async () => {
         const aperto = orari[prossimo] < 20;
         cliente(aperto && coni > 0); prossimo++;
       }
-      // il furgone: parte alle 12:30 e arriva la sera alle 19:15
-      if (h >= 12.5 && furgone === 'atteso') { furgone = 'viaggio'; const pos = Diorama.posizioneSchermo('fornitore'); floater('📦 ordine 30 kg', pos[0], pos[1]); }
-      if (furgone === 'viaggio') { const ore = Math.min(24, (h - 12.5) / (19.25 - 12.5) * 24); Diorama.camion(true, 30, ore); $('#camion-txt').textContent = ore < 22 ? '🚚 30 kg · arriva tra ' + Math.max(1, Math.ceil(19.25 - h)) + ' h' : '🚚 arrivato!'; if (ore >= 24) { furgone = 'fatto'; arriva(30); } }
     });
     // la sera: chiude (bancone dentro, gelataio dentro, porta chiusa); l'ultimo cliente arriva tardi e resta a bocca asciutta
     const chiusa = Diorama.chiudi();
     while (prossimo < orari.length) { cliente(false); prossimo++; }
     await chiusa;
-    await tween(6000, (p) => setClock(20 + 12 * p));
+    // la notte: il furgone parte dal fornitore alle 21 e arriva alle 5; i pacchi restano sul pallet fino alla mattina
+    let furgone = 'atteso';
+    await tween(11000, (p) => {
+      const h = 20 + 12 * p; setClock(h);
+      if (h >= 21 && furgone === 'atteso') { furgone = 'viaggio'; const pos = Diorama.posizioneSchermo('fornitore'); floater('📦 30 kg in partenza', pos[0], pos[1]); }
+      if (furgone === 'viaggio') { const ore = Math.min(24, (h - 21) / 8 * 24); Diorama.camion(true, 30, ore); $('#camion-txt').textContent = ore < 22 ? '🚚 30 kg · arriva tra ' + Math.max(1, Math.ceil(29 - h)) + ' h' : '🚚 arrivato!'; if (ore >= 24) { furgone = 'fatto'; arriva(30); } }
+    });
+    if (furgone === 'viaggio') arriva(30);
   }
   setClock(10); demo = false; $('#b-demo').textContent = '🎬 Tre giornate: sole, nuvoloso, pioggia';
 };
