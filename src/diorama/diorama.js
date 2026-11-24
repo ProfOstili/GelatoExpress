@@ -232,16 +232,28 @@ window.Diorama = (() => {
     const matPozza = new THREE.MeshStandardMaterial({ color: PAL.acqua, roughness: 0.06, metalness: 0.1, envMapIntensity: 1.6, transparent: true, opacity: 0.9 });
     O.pozze = POZZE.map(([x, y, z, s]) => { const m = metti(L, loft(anello(s * 2.4, s * 1.5, s * 0.7, 6), [[0, 0.06, 0]]), matPozza, [x, z, y], [0, hash(x, y) * 3, 0], false); m.userData.vivo = true; m.scale.setScalar(0.001); return m; });
 
+    // gli edifici alti (x0, x1, y0, y1, cima): le nuvole non devono mai attraversarli
+    const EDIFICI = [[-3.5, -0.4, -1.5, 2.2, 2.8], [2.0, 6.8, 0.2, 5.0, 6.2], [7.8, 11.6, -1.0, 2.4, 7.9], [11.5, 13.2, -0.8, 2.0, 7.3], [13.2, 17.3, -0.8, 2.2, 8.4],
+      [6.9, 8.0, 1.6, 2.7, 4.1], [10.7, 13.3, 1.9, 2.9, 4.2], [6.5, 11.1, 5.2, 8.6, 5.5], [12.8, 17.6, 5.2, 8.2, 4.9]];
+    // alza la nuvola (x, y = pianta, z = quota, s = grandezza) finché sta tutta sopra gli edifici che ha sotto, anche quando scorre di lato
+    const sopraGliEdifici = (x, y, z, s, scorre) => {
+      const mx = 2.3 * s + scorre, my = 1.6 * s;
+      for (const [x0, x1, y0, y1, cima] of EDIFICI) if (x + mx > x0 && x - mx < x1 && y + my > y0 && y - my < y1) z = Math.max(z, cima + 1.1 * s + 0.25);
+      return z;
+    };
     // nuvole: grappoli di palline sospesi sopra la città
     O.nuvole = [[0.8, -2.0, 5.0, 0.85], [8.0, -2.6, 5.3, 1.0], [14.6, -2.5, 5.1, 0.9], [20.3, 1.5, 4.6, 0.7]].map(([x, y, z, s], i) => {
+      z = sopraGliEdifici(x, y, z, s, 1.2);
       const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(0.001); g.userData = { vivo: true, x, s }; L.add(g);
       const rn = rng(40 + i);
       for (let k = 0; k < 7; k++) { const m = metti(g, new THREE.SphereGeometry(1, 14, 10), '#ffffff', [rn.range(-1.3, 1.3), rn.range(-0.1, 0.35), rn.range(-0.6, 0.6)], null, true); m.scale.setScalar(rn.range(0.5, 0.9)); m.receiveShadow = false; }
       return g;
     });
-    O.matNuvola = vernice('#ffffff', 0.95); O.matNuvolaScura = vernice('#5f6672', 0.95);
+    O.matNuvola = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.95, fog: false });
+    O.matNuvolaScura = new THREE.MeshStandardMaterial({ color: '#5f6672', roughness: 0.95, fog: false, emissive: '#8b93a4', emissiveIntensity: 0 });
     // i nuvoloni neri del temporale: ce ne sono molti di più, e compaiono solo quando piove
     O.nuvoloni = [[-2.4, -0.6, 4.4, 0.9], [3.5, -3.2, 5.6, 1.1], [5.6, 2.4, 4.7, 0.8], [10.8, -3.4, 6.2, 1.15], [11.6, 3.6, 5.2, 0.85], [17.6, -3.0, 5.8, 1.05], [19.6, 6.0, 4.5, 0.8], [-1.6, 8.8, 4.3, 0.75]].map(([x, y, z, s], i) => {
+      z = sopraGliEdifici(x, y, z, s, 1.0);
       const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(0.001); g.visible = false; g.userData = { vivo: true, x, s }; L.add(g);
       const rn = rng(70 + i);
       for (let k = 0; k < 8; k++) { const m = metti(g, new THREE.SphereGeometry(1, 14, 10), O.matNuvolaScura, [rn.range(-1.5, 1.5), rn.range(-0.15, 0.4), rn.range(-0.7, 0.7)], null, true); m.scale.setScalar(rn.range(0.55, 0.95)); m.receiveShadow = false; }
@@ -546,6 +558,7 @@ window.Diorama = (() => {
 
     // --- nuvole: compaiono col cielo coperto e passano piano (scure col temporale)
     const matN = kp > 0.5 ? O.matNuvolaScura : O.matNuvola;
+    O.matNuvolaScura.emissiveIntensity = 0.5 * Math.max(notte, liscio(0.7, 1, p)) + (post.uniforms.lampo.value > 0 ? 0.8 : 0);   // di sera restano grigie sul cielo scuro; il lampo le illumina
     O.nuvole.forEach((g, i) => { const s = Math.max(0.001, kn * g.userData.s); g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.05 + i) * 1.2;
       if (g.userData.mat !== matN) { g.userData.mat = matN; g.children.forEach((m) => { m.material = matN; }); } });
     O.nuvoloni.forEach((g, i) => { const s = Math.max(0.001, liscio(0.2, 0.9, kp) * g.userData.s); g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.06 + i * 1.7) * 1.0; });
