@@ -480,8 +480,8 @@ function gelateria(L, O) {
   metti(O.bancone, scatolaGeo(2.2, 0.8, 0.5, 0.05), PAL.menta, [1.1, 0.5, 0.25]);
   metti(O.bancone, scatolaGeo(2.3, 0.07, 0.56, 0.02), PAL.ardesia, [1.1, 0.93, 0.25]);
   [PAL.accento, PAL.pistacchio, PAL.cioccolato, PAL.crema].forEach((c, i) => metti(O.bancone, new THREE.SphereGeometry(0.17, 14, 10), c, [0.3 + i * 0.53, 0.98, 0.25]).scale.set(1, 0.5, 0.8));
-  // i pacchi della consegna: il furgone li lascia davanti alla porta, la mattina il gelataio li porta dentro
-  O.posPacchi = [[16.95, 8.62, 0], [17.4, 8.62, 0], [17.18, 9.0, 0], [17.06, 8.78, 1], [17.36, 8.86, 1]];
+  // i pacchi della consegna: il furgone li lascia sul pallet di fianco alla gelateria, la mattina il gelataio li porta dentro
+  O.posPacchi = [[-0.23, -0.2, 0], [0.23, -0.2, 0], [-0.23, 0.2, 0], [0.23, 0.2, 0], [0, 0, 1]].map(([dx, dy, l]) => [CASSE.x + dx, CASSE.y + dy, l]);   // sul pallet di fianco
   O.pacchi = O.posPacchi.map(() => { const c = new THREE.Group(); c.userData.vivo = true; c.visible = false; L.add(c);
     metti(c, scatolaGeo(0.42, 0.32, 0.36, 0.035), PAL.cartone, [0, 0.16, 0]); metti(c, scatolaGeo(0.08, 0.326, 0.366, 0.01), PAL.crema, [0, 0.16, 0]); return c; });
   // le luci del negozio
@@ -593,16 +593,8 @@ function lampioni(L, O) {
   O.luceLampione = new THREE.PointLight(PAL.lampada, 0, 6, 2); O.luceLampione.position.set(10.95, 2.18, 8.25); L.add(O.luceLampione);
 }
 
-/* ---------- il magazzino: una pila di casse accanto alla gelateria, cresce e cala con i kg ---------- */
+/* ---------- il pallet accanto alla gelateria: qui il furgone lascia i pacchi, la mattina il gelataio li porta dentro ---------- */
 function casse(L, O) {
-  const G = new THREE.Group(); G.position.set(CASSE.x, 0, CASSE.y); G.userData.vivo = true; L.add(G);
-  metti(G, scatolaGeo(1.25, 0.1, 1.05, 0.03), PAL.sasso[1], [0, 0.05, 0]);
+  metti(L, scatolaGeo(1.25, 0.1, 1.05, 0.03), PAL.sasso[1], [CASSE.x, 0.05, CASSE.y]);
   contatto(L, CASSE.x + 0.1, CASSE.y + 0.1, 0, 1.9, 1.6, 0.35);
-  const posti = [[-0.32, 0, -0.24], [0.32, 0, -0.24], [-0.32, 0, 0.24], [0.32, 0, 0.24], [-0.32, 1, -0.24], [0.32, 1, -0.24], [-0.32, 1, 0.24], [0.32, 1, 0.24], [0, 2, 0], [0, 3, 0]];
-  O.casse = posti.map(([x, l, z], i) => {
-    const c = new THREE.Group(); c.position.set(x, 0.1 + 0.2 + l * 0.4, z); c.rotation.y = (hash(i) - 0.5) * 0.25; G.add(c);
-    metti(c, scatolaGeo(0.58, 0.4, 0.44, 0.035), PAL.cartone); metti(c, scatolaGeo(0.1, 0.406, 0.446, 0.01), PAL.crema);
-    c.userData = { visibile: true, da: -99, base: c.position.y };
-    return c;
-  });
 }

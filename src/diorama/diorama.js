@@ -441,15 +441,6 @@ window.Diorama = (() => {
     O.finitoCarta.rotation.y = Math.PI * (stato.finito ? kf : 1 - kf);
     O.finito.rotation.z = (ff > 0 && ff < 2 ? Math.exp(-ff * 3) * Math.sin(ff * 9) * 0.25 : 0) + Math.sin(t * 1.7) * 0.02;
 
-    // --- la pila di casse: ogni cassa compare o sparisce con un piccolo balzo
-    const nCasse = clamp(Math.ceil(stato.stock / (stato.stockMax / 10) - 0.01), 0, 10);
-    O.casse.forEach((c, i) => {
-      const vuole = i < nCasse;
-      if (vuole !== c.userData.visibile) { c.userData.visibile = vuole; c.userData.da = tGioco; }
-      const u = clamp((tGioco - c.userData.da) / 0.35), s = vuole ? easeOutBack(u) : 1 - easeInOut(u);
-      c.scale.setScalar(Math.max(1e-3, s)); c.visible = s > 0.01; c.position.y = c.userData.base + (vuole ? (1 - u) * 0.4 : 0);
-    });
-
     // --- persone (con l'ombrello quando piove)
     const ombrello = kp > 0.4;
     if (O.ombrelli[0].visible !== ombrello) O.ombrelli.forEach((o) => { o.visible = ombrello; });
@@ -571,7 +562,7 @@ window.Diorama = (() => {
     // la saracinesca del fornitore si alza mentre carica
     const aperta = cs.attivo ? 1 - seg(cs.ore, 1.6, 2.6) : 0;
     O.saracinesca.scale.y = Math.max(0.03, 1 - aperta * 0.96); O.lamelle.repeat.y = 7 * O.saracinesca.scale.y;
-    // i pacchi volano dal furgone davanti alla porta della gelateria (domattina il gelataio li porta dentro)
+    // i pacchi volano dal furgone sul pallet di fianco alla gelateria (domattina il gelataio li porta dentro)
     O.casseVolanti.forEach((c, i) => {
       const u = cs.attivo ? seg(cs.ore, 22.4 + i * 0.3, 23.2 + i * 0.15) : 1;
       if (u >= 1 && cs.attivo && stato.pacchi[i] !== 'fuori' && cs.ore >= 22.4) { stato.pacchi[i] = 'fuori'; (O.pacchiArrivo ??= [])[i] = tGioco; }
@@ -608,7 +599,7 @@ window.Diorama = (() => {
     passi.push(passo(0.5, (u) => { N.porta = easeInOut(u); }));
     passi.push(passo(0.5, (u) => { N.gs = Math.min(1, u * 2); cammina(DENTRO(), SOGLIA(), u); }));
     for (const k of da) {
-      const [px, py] = O.posPacchi[k], vicino = [px - 0.45, py + 0.05];
+      const [px] = O.posPacchi[k], vicino = [px, CASSE.y + 0.75];          // davanti al pallet
       passi.push(passo(0.45, (u) => cammina(SOGLIA(), vicino, u)));
       passi.push(passo(0.55, (u) => { N.carico = k; cammina(vicino, SOGLIA(), u); }));
       passi.push(passo(0.3, (u) => { cammina(SOGLIA(), DENTRO(), u); N.gs = 1 - 0.5 * u; if (u >= 1) { stato.pacchi[k] = 'portato'; N.carico = -1; } }));
@@ -664,7 +655,7 @@ window.Diorama = (() => {
       const st = stato.pacchi[k];
       c.visible = st === 'fuori' || N.carico === k;
       if (N.carico === k) { c.position.set(N.gx + Math.sin(N.gr) * 0.25, 0.1 + N.gh + 0.75, N.gy + Math.cos(N.gr) * 0.25); c.scale.setScalar(Math.max(0.001, N.gs)); }
-      else if (st === 'fuori') { const [x, y, l] = O.posPacchi[k], u = clamp((tGioco - (O.pacchiArrivo?.[k] ?? -99)) / 0.3); c.position.set(x, 0.1 + l * 0.32, y); c.scale.setScalar(Math.max(0.001, easeOutBack(u))); }
+      else if (st === 'fuori') { const [x, y, l] = O.posPacchi[k], u = clamp((tGioco - (O.pacchiArrivo?.[k] ?? -99)) / 0.3); c.position.set(x, 0.1 + l * 0.32, y); c.rotation.y = (hash(k) - 0.5) * 0.2; c.scale.setScalar(Math.max(0.001, easeOutBack(u))); }
     });
     // il gelataio
     const g = O.gelataio, aperto = negozio.stato === 'aperto' && !negozio.seq;
