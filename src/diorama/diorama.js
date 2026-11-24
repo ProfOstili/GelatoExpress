@@ -12,6 +12,31 @@
    ===================================================================== */
 window.Diorama = (() => {
   /* ---------------------------------------------------------------
+     FOSCHIA DEL CIELO COPERTO, calcolata pixel per pixel
+     Non dipende dalla distanza ma dal posto: sale dal livello 2 verso l'alto e copre la città alta,
+     sfumando nel colore del cielo (niente bordi netti). La quantità (0..1) arriva in fogNear.
+     --------------------------------------------------------------- */
+  THREE.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n varying vec3 vMondoPos;\n#endif';
+  THREE.ShaderChunk.fog_vertex = `#ifdef USE_FOG
+    vec4 mondoP = vec4(transformed, 1.0);
+    #ifdef USE_INSTANCING
+      mondoP = instanceMatrix * mondoP;
+    #endif
+    vMondoPos = (modelMatrix * mondoP).xyz;
+  #endif`;
+  THREE.ShaderChunk.fog_pars_fragment = '#ifdef USE_FOG\n uniform vec3 fogColor; varying vec3 vMondoPos;\n #ifdef FOG_EXP2\n uniform float fogDensity;\n #else\n uniform float fogNear; uniform float fogFar;\n #endif\n#endif';
+  THREE.ShaderChunk.fog_fragment = `#ifdef USE_FOG
+    #ifndef FOG_EXP2
+    {
+      float iy = vMondoPos.z + 4.5, ix = vMondoPos.x + 8.85, h = vMondoPos.y;
+      float dietro = smoothstep(5.25, 4.8, iy) * smoothstep(0.4, 2.0, ix);      // tutto ciò che sta dietro la scuola e la gelateria
+      float alto = smoothstep(1.42, 1.95, h);                                   // appena sopra il piano del livello 2
+      float f = clamp(max(dietro * alto, smoothstep(5.0, 6.6, h) * smoothstep(-2.0, 1.0, ix)), 0.0, 1.0) * fogNear;
+      gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, f);
+    }
+    #endif
+  #endif`;
+  /* ---------------------------------------------------------------
      STATO (impostato dagli agganci del gioco)
      --------------------------------------------------------------- */
   const stato = {
@@ -225,16 +250,20 @@ window.Diorama = (() => {
     O.matCuori = new THREE.SpriteMaterial({ map: faccina('cuori'), depthTest: false, depthWrite: false, fog: false });
     O.matRabbia = new THREE.SpriteMaterial({ map: faccina('rabbia'), depthTest: false, depthWrite: false, fog: false });
     O.faccine = Array.from({ length: 14 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
-    // il banco di nebbia del cielo coperto: batuffoli bianchi opachi (come le nuvole) che coprono del tutto la città alta
-    const rb = rng(55), batuffoli = [];
-    for (let x = 2.0; x <= 19.4; x += 1.45) for (let y = -2.7; y <= (x < 7.6 ? 4.6 : 2.9); y += 1.5) for (const z of [2.3, 4.1, 5.9]) {
-      if (z < 3 && x < 7 && y > 4) continue;
-      batuffoli.push([x + rb.range(-0.4, 0.4), y + rb.range(-0.4, 0.4), z + rb.range(-0.3, 0.4), rb.range(1.25, 1.75), rb.range(0, 6.3)]);
-    }
-    for (let x = 7.5; x <= 18; x += 1.6) batuffoli.push([x + rb.range(-0.3, 0.3), rb.range(-1.4, 0.6), 7.4 + rb.range(0, 0.4), rb.range(1.0, 1.4), rb.range(0, 6.3)]);   // sopra campanile e torre
-    O.batuffoli = batuffoli;
-    O.nebbia = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 18, 12), new THREE.MeshStandardMaterial({ color: '#f4f6f9', roughness: 1, emissive: '#dfe5ec', emissiveIntensity: 0.35 }), batuffoli.length);
-    O.nebbia.frustumCulled = false; O.nebbia.castShadow = false; O.nebbia.receiveShadow = false; O.nebbia.visible = false; O.nebbia.userData.vivo = true; L.add(O.nebbia);
+    // il faro sulla terrazza della scuola: di notte si accende, ruota piano e punta il fascio sul logo
+    O.faro = new THREE.Group(); O.faro.position.set(8.8, 3.75, 7.72); O.faro.userData.vivo = true; L.add(O.faro);
+    metti(O.faro, new THREE.CylinderGeometry(0.1, 0.13, 0.08, 12), PAL.ardesia, [0, 0.04, 0]);
+    O.faroGiro = new THREE.Group(); O.faroGiro.position.y = 0.08; O.faro.add(O.faroGiro);
+    for (const sx of [-1, 1]) metti(O.faroGiro, scatolaGeo(0.03, 0.26, 0.06, 0.01), PAL.ardesia, [sx * 0.16, 0.13, 0]);
+    O.faroTesta = new THREE.Group(); O.faroTesta.position.y = 0.24; O.faroGiro.add(O.faroTesta);
+    metti(O.faroTesta, new THREE.CylinderGeometry(0.13, 0.11, 0.26, 16), PAL.scuro, [0, 0, 0], [Math.PI / 2, 0, 0]);
+    O.faroLente = luminosa('#d8dde4', '#fff3c8');
+    metti(O.faroTesta, new THREE.CircleGeometry(0.12, 18), O.faroLente, [0, 0, 0.132], null, false);
+    const texFascio = texCanvas(32, 256, (ctx, W, H) => { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255,240,200,0.9)'); g.addColorStop(0.5, 'rgba(255,240,200,0.3)'); g.addColorStop(1, 'rgba(255,240,200,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); });
+    const geoF = new THREE.ConeGeometry(0.95, 7, 28, 1, true); geoF.translate(0, -3.5, 0); geoF.rotateX(-Math.PI / 2);
+    O.matFascio = new THREE.MeshBasicMaterial({ map: texFascio, color: '#fff2c4', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    O.fascio = new THREE.Mesh(geoF, O.matFascio); O.fascio.position.z = 0.13; O.fascio.renderOrder = 6; O.faroTesta.add(O.fascio);
+    O.luceFaro = new THREE.SpotLight('#fff2c8', 0, 10, 0.28, 0.55, 1.2); O.luceFaro.position.set(8.8, 4.07, 7.72); L.add(O.luceFaro, O.luceFaro.target);
     // tutto ciò che è fermo viene fuso in poche mesh
     fondi(L);
   }
@@ -269,10 +298,10 @@ window.Diorama = (() => {
      --------------------------------------------------------------- */
   function creaPost() {
     post = new THREE.ShaderMaterial({
-      uniforms: { tCol: { value: null }, res: { value: new THREE.Vector2(1, 1) }, fuoco: { value: 0.5 }, fascia: { value: 0.12 }, sfoc: { value: 6 }, riflessi: { value: 0 }, aspetto: { value: 1.8 }, vign: { value: 0.2 }, sat: { value: 1.08 }, con: { value: 1.03 }, esposizione: { value: 1 }, lampo: { value: 0 } },
+      uniforms: { tCol: { value: null }, res: { value: new THREE.Vector2(1, 1) }, fuoco: { value: 0.5 }, fascia: { value: 0.12 }, sfoc: { value: 6 }, riflessi: { value: 0 }, aspetto: { value: 1.8 }, foschia: { value: 0 }, colFoschia: { value: new THREE.Color('#eef1f4') }, vign: { value: 0.2 }, sat: { value: 1.08 }, con: { value: 1.03 }, esposizione: { value: 1 }, lampo: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
       fragmentShader: `
-        uniform sampler2D tCol; uniform vec2 res; uniform float fuoco, fascia, sfoc, vign, sat, con, esposizione, lampo, riflessi, aspetto; varying vec2 vUv;
+        uniform sampler2D tCol; uniform vec2 res; uniform float fuoco, fascia, sfoc, vign, sat, con, esposizione, lampo, riflessi, aspetto, foschia; uniform vec3 colFoschia; varying vec2 vUv;
         const vec2 DISCO[12] = vec2[12](vec2(-0.326,-0.406), vec2(-0.840,-0.074), vec2(-0.696,0.457), vec2(-0.203,0.621), vec2(0.962,-0.195), vec2(0.473,-0.480),
                                         vec2(0.519,0.767), vec2(0.185,-0.893), vec2(0.507,0.064), vec2(0.896,0.412), vec2(-0.322,-0.933), vec2(-0.792,-0.598));
         void main(){
@@ -286,6 +315,7 @@ window.Diorama = (() => {
             c = acc / 13.0;
           }
           c = c * esposizione + lampo * vec3(0.5, 0.52, 0.6);
+          c = mix(c, colFoschia, foschia * 0.3 * smoothstep(0.5, 1.0, vUv.y));     // velo di foschia in alto col cielo coperto
           // riflessi del sole sull'obiettivo: un bagliore caldo in alto a sinistra e qualche cerchio lungo la diagonale
           if (riflessi > 0.001) {
             vec2 sp = vec2(-0.02, 1.04), asp = vec2(aspetto, 1.0);
@@ -403,8 +433,9 @@ window.Diorama = (() => {
     C.tmp2.copy(C.sfondo).lerp(C.sera, liscio(0.75, 1, p)).lerp(C.nuvole, nebbia).lerp(C.pioggia, kp).lerp(C.notte, notte);
     scena.background.copy(C.tmp2); O.carta.material.color.copy(C.tmp2);
     // la nebbia del cielo coperto: fitta sulla città alta (più lontana), leggera davanti
-    scena.fog.color.copy(C.tmp2).lerp(C.tmp.set('#eef1f5'), 0.5 * (1 - notte));
-    scena.fog.near = 1e4; scena.fog.far = 2e4;                  // niente nebbia "trasparente": la copre il banco di batuffoli
+    scena.fog.color.copy(C.tmp2);                                  // la foschia ha lo stesso colore del cielo: gli edifici ci spariscono dentro
+    scena.fog.near = liscio(0.05, 0.85, nebbia); scena.fog.far = 1;
+    post.uniforms.foschia.value = scena.fog.near; post.uniforms.colFoschia.value.copy(C.tmp2).lerp(C.tmp.set('#ffffff'), 0.25);    // (fogNear = quantità di foschia, vedi sopra)
     scena.environmentIntensity = lerp(0.4, 0.15, notte);
     post.uniforms.esposizione.value = lerp(1, 0.92, kp);
     post.uniforms.sat.value = lerp(1.08, 0.9, kp);
@@ -419,6 +450,12 @@ window.Diorama = (() => {
     O.luceNegozio.intensity = 3 * luci;
     O.furgone.fari.emissiveIntensity = 2.6 * Math.max(luci, kp * 0.6, Math.abs(furgoneStato.v) > 0.05 ? 0.4 : 0);
 
+    // --- il faro della scuola: spento di giorno; di notte ruota avanti e indietro e il fascio passa sul logo
+    const faro = liscio(19.6, 20.4, h) * (h < 31.5 ? 1 : 1 - liscio(31.5, 32, h));
+    const giro = Math.sin(t * 0.55) * 0.55, mira = V1.set(8.8 + Math.sin(giro) * 1.0, 4.7 + Math.abs(Math.sin(t * 0.55)) * 0.25, 6.82);
+    O.faroGiro.rotation.y = giro; O.faroTesta.lookAt(O.L.localToWorld(V2.copy(mira)));
+    O.faroLente.emissiveIntensity = 6 * faro; O.matFascio.opacity = 0.22 * faro; O.fascio.visible = faro > 0.01;
+    O.luceFaro.intensity = 30 * faro; O.luceFaro.target.position.copy(mira);
     // --- apertura e chiusura della gelateria (porta, gelataio, pacchi, bancone)
     aggiornaNegozio(t, h, luci);
 
@@ -456,16 +493,7 @@ window.Diorama = (() => {
       f.position.set(f.userData.x + Math.sin(t * 3 + f.userData.fase) * 0.25, f.userData.y + u * 17, f.userData.z);
       f.scale.setScalar(0.85 * Math.max(0.001, easeOutBack(clamp(u * 5))));
     });
-    // --- il banco di nebbia: i batuffoli si gonfiano col cielo coperto e respirano piano
-    const kNeb = liscio(0.05, 0.75, nebbia);
-    O.nebbia.visible = kNeb > 0.01;
-    if (O.nebbia.visible) {
-      O.batuffoli.forEach(([x, y, z, r, ph], i) => { const s = r * kNeb * (0.94 + 0.06 * Math.sin(t * 0.4 + ph));
-        O3.position.set(x + Math.sin(t * 0.08 + ph) * 0.35, z, y); O3.rotation.set(0, 0, 0); O3.scale.set(s * 1.25, s * 0.85, s); O3.updateMatrix(); O.nebbia.setMatrixAt(i, O3.matrix); });
-      O.nebbia.instanceMatrix.needsUpdate = true;
-      O.nebbia.material.emissiveIntensity = 0.35 * (1 - notte);
-    }
-    aggiornaClienti(t);
+    aggiornaClienti(t, dt);
     aggiornaRagazzi(t, h);
 
     // --- pioggia, pozzanghere, fulmini
@@ -485,7 +513,7 @@ window.Diorama = (() => {
 
     // --- nuvole: compaiono col cielo coperto e passano piano (scure col temporale)
     const matN = kp > 0.5 ? O.matNuvolaScura : O.matNuvola;
-    O.nuvole.forEach((g, i) => { const s = Math.max(0.001, kn * g.userData.s); g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.05 + i) * 1.2;
+    O.nuvole.forEach((g, i) => { const s = Math.max(0.001, kp * g.userData.s);          // le nuvole solo col temporale (col nuvoloso c'è la foschia) g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.05 + i) * 1.2;
       if (g.userData.mat !== matN) { g.userData.mat = matN; g.children.forEach((m) => { m.material = matN; }); } });
 
     // --- fiori: col sole sbocciano, col maltempo si chiudono
@@ -695,18 +723,24 @@ window.Diorama = (() => {
   }
 
   // i clienti: arrivano saltellando lungo il marciapiede fino al bancone; se serviti ripartono col cono, se no tornano indietro a testa bassa
-  function aggiornaClienti(t) {
+  function aggiornaClienti(t, dt) {
     for (let i = eventi.length - 1; i >= 0; i--) {
-      const e = eventi[i], u = (t - e.t0) / e.dur, p = e.piolo, corpo = p.userData.corpo;
+      const e = eventi[i], p = e.piolo, corpo = p.userData.corpo;
+      // se i ragazzi stanno attraversando, chi sta per passare davanti alle strisce si ferma e aspetta
+      const fermo = stato.ragazziInStrada && ((e.fase === 'va' && e.x > 7.6 && e.x < 8.35) || (e.fase === 'torna' && e.x > 9.25 && e.x < 10.0));
+      if (!fermo) e.el += dt;
+      const u = e.el / e.dur;
       if (u >= 1) { p.visible = false; eventi.splice(i, 1); continue; }
       p.visible = true;
       const da = [2.6, 8.95 + e.dz], banco = [14.6 + e.dx, 9.0 + e.dz], via = e.servito ? [19.0, 8.95 + e.dz] : da;
       let pos, testa = 0, verso = 0;
       const passi = (a, b, k, n, alt) => { const f = (k * n) % 1, q = Math.floor(k * n); return saltello(f, [lerp(a[0], b[0], q / n), lerp(a[1], b[1], q / n)], [lerp(a[0], b[0], (q + 1) / n), lerp(a[1], b[1], (q + 1) / n)], alt); };
+      e.fase = u < 0.45 ? 'va' : u > 0.6 && !e.servito ? 'torna' : '';
       if (u < 0.45) { pos = passi(da, banco, u / 0.45, 9, 0.16); verso = 0; }
       else if (u < 0.6) {
         pos = [banco[0], 0, banco[1]]; verso = Math.PI / 2 * liscio(0.45, 0.5, u);
         if (!e.servito) testa = liscio(0.52, 0.6, u);
+        if (!e.alBancoFatto && u > 0.5) { e.alBancoFatto = true; if (e.alBanco) e.alBanco(); }       // per il gioco: il cliente è al bancone
         if (e.servito && !e.venduto && u > 0.5) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
         // appena prende il gelato (o capisce che non c'è) dalla testa esce la faccina
         if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); }
@@ -715,6 +749,8 @@ window.Diorama = (() => {
         if (e.servito) { pos = passi(banco, via, k, 6, 0.22); verso = 0; }
         else { pos = [lerp(banco[0], via[0], easeInOut(k)), 0, lerp(banco[1], via[1], easeInOut(k))]; verso = Math.PI; testa = 1; }
       }
+      if (fermo) pos[1] = 0;
+      e.x = pos[0];
       p.position.set(pos[0], 0.1 + pos[1], pos[2]);
       p.rotation.y = verso + Math.PI / 2;                             // il corpo guarda verso +x quando cammina
       corpo.rotation.x = testa * 0.45;
@@ -728,6 +764,7 @@ window.Diorama = (() => {
     // in fila indiana sulle strisce, uno ogni 0,6 di distanza: si contano bene
     const LUNGO = 3.9, PASSO = 0.6, tot = LUNGO + PASSO * (O.ragazzi.length - 1);
     const entra = seg(h, 8.6, 10.0), esce = seg(h, 13.0, 14.4);
+    stato.ragazziInStrada = (entra > 0 && entra < 1) || (esce > 0 && esce < 1);
     O.ragazzi.forEach((r, i) => {
       let s = -1, dir = 1;
       if (entra > 0 && entra < 1) { s = entra * tot - i * PASSO; dir = 1; }
@@ -775,13 +812,13 @@ window.Diorama = (() => {
     setMeteo(m) { stato.meteo = m; },
     setOra(h) { stato.ora = h; },
     camion(attivo, kg, ore) { stato.camion.attivo = !!attivo; stato.camion.kg = kg || 0; stato.camion.ore = ore || 0; },
-    cliente(servito, durataMs) {
+    cliente(servito, durataMs, alBanco) {
       if (!O.clienti) return;
       if (stato.finito) servito = false;                         // coni finiti: resta senza (e si arrabbia)
       const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
       if (!libero) return;
       const n = eventi.length;
-      eventi.push({ piolo: libero, servito, t0: tReale(), dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 });
+      eventi.push({ piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 });
     },
     setConi(n, max) { if (max) stato.coniMax = max; if (Math.round(n) !== Math.round(stato.coni) || max) { stato.coni = n; disegnaConi(); } },
     setFinito(v) { if (!!v !== stato.finito) { stato.finito = !!v; if (O.finito) O.finito.userData.quando = tGioco; disegnaConi(); } },

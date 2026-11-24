@@ -34,7 +34,7 @@ const trap = (u, a, b) => { u = clamp(u); const v = 1 / (1 - a / 2 - b / 2); ret
 
 /* ---------- colori: pochi, opachi; UN solo accento (rosa), riservato al gelato ---------- */
 const PAL = {
-  sfondo: '#b4d2de', sera: '#9fb0cf', notte: '#4d556c', pioggia: '#97a7b5', nuvole: '#b6c3cc',
+  sfondo: '#b4d2de', sera: '#9fb0cf', notte: '#4d556c', pioggia: '#97a7b5', nuvole: '#c6d0d8',
   erba: '#9fc47c', erbaScura: '#8db86c', foglie: ['#5fa574', '#3f866c', '#84ba6b'], tronco: '#8b5b3e',
   terra: ['#5c4135', '#8f6248', '#c9955f', '#7c7f8e'], sasso: ['#a9a9b0', '#d9cdb8', '#8d8f9c'],
   crema: '#f6ebd8', ardesia: '#44718a', senape: '#f0b040', accento: '#ff6fa5', vetro: '#2c4658', scuro: '#272b36',

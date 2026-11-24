@@ -132,15 +132,14 @@ Diorama.setConi(coni, 12);
 function cliente(servito) {
   servito = servito && coni > 0;
   const dur = 2600 / speed;
-  Diorama.cliente(servito, dur);
-  if (servito) {
-    coni--; const resto = coni;
-    setTimeout(() => {
-      Diorama.setConi(resto); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
-      const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c');
-      if (resto === 0) Diorama.setFinito(true);
-    }, dur * 0.52);
-  }
+  if (servito) coni--;
+  const resto = coni;
+  // il contatore scende quando il cliente arriva al bancone (anche se si è fermato ad aspettare i ragazzi)
+  Diorama.cliente(servito, dur, servito ? () => {
+    Diorama.setConi(resto); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
+    const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c');
+    if (resto === 0) Diorama.setFinito(true);
+  } : null);
 }
 $('#b-servito').onclick = () => cliente(true);
 $('#b-perso').onclick = () => cliente(false);
