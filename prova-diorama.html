@@ -5671,7 +5671,7 @@ window.Diorama = (() => {
     // la nebbia del cielo coperto: fitta sulla città alta (più lontana), leggera davanti
     // la nebbia del cielo coperto: più fitta sulla città alta (più lontana), leggera davanti
     scena.fog.color.copy(C.tmp2).lerp(C.tmp.set('#eef1f5'), 0.5 * (1 - notte));
-    scena.fog.near = nebbia > 0.02 ? CAM.dist - 3 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 18 + 60 * (1 - nebbia) : 2e4;
+    scena.fog.near = nebbia > 0.02 ? CAM.dist - 3 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 15 + 60 * (1 - nebbia) : 2e4;
     scena.environmentIntensity = lerp(0.4, 0.15, notte);
     post.uniforms.esposizione.value = lerp(1, 0.92, kp);
     post.uniforms.sat.value = lerp(1.08, 0.9, kp);
@@ -5712,7 +5712,7 @@ window.Diorama = (() => {
 
 
     // --- banchi di nebbia
-    O.matNebbia.opacity = 0.8 * liscio(0.1, 0.8, nebbia);
+    O.matNebbia.opacity = 0.86 * liscio(0.1, 0.8, nebbia);
     O.banchi.forEach((b) => { b.visible = O.matNebbia.opacity > 0.01; if (!b.visible) return; const u = b.userData;
       b.position.set(-3 + ((u.x + 3 + t * u.v) % 26), u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
     // --- persone (con l'ombrello quando piove)
