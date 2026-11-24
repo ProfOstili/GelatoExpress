@@ -22,6 +22,22 @@ h1 span{color:var(--pink)}
 /* la scena: la tela 3D sotto, i pezzi del gioco (HUD, cartellini) sopra, nel DOM */
 #scene{position:relative;aspect-ratio:16/9;max-height:72vh;width:100%;border-radius:20px;overflow:hidden;background:#b4d2de;box-shadow:0 10px 30px rgba(39,43,54,.15)}
 #scene .diorama-tela{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pienoBtn{position:absolute;left:10px;bottom:10px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.92);font-size:22px;cursor:pointer;box-shadow:0 2px 8px rgba(39,43,54,.18)}
+/* schermo intero (con il Fullscreen API, o "finto" su iPhone che non lo permette sui riquadri) */
+#scene:fullscreen,#scene.pieno{aspect-ratio:auto;max-height:none;width:100vw;height:100vh;height:100dvh;border-radius:0}
+#scene.pieno{position:fixed;inset:0;z-index:100}
+.gira{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(39,43,54,.82);color:#fff;font-size:20px;font-weight:600;text-align:center;z-index:6;padding:20px}
+.gira span{font-size:56px;display:inline-block;animation:ruota 1.6s ease-in-out infinite}
+@keyframes ruota{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait){#scene:fullscreen .gira,#scene.pieno .gira{display:flex}}
+/* le etichette grandi per il telefono: coni, aperto/chiuso, pacchi */
+.hud-tel{position:absolute;left:10px;right:10px;top:50px;display:none;gap:6px;flex-wrap:wrap;pointer-events:none}
+.hud-tel span{background:rgba(39,43,54,.88);color:#fff;border-radius:99px;padding:3px 11px;font-weight:600;font-size:15px}
+.hud-tel .si{background:#2e9e5b}.hud-tel .no{background:#d9404d}
+@media (max-width:700px),(max-height:430px){.hud-tel{display:flex}.hud span{font-size:13px;padding:3px 9px}.hud{gap:5px;top:8px;left:8px;right:8px}}
+#scene:fullscreen .hud-tel,#scene.pieno .hud-tel{display:flex}
+/* telefono in verticale: la scena più alta, così le etichette non la coprono */
+@media (max-width:700px) and (orientation:portrait){#scene:not(.pieno):not(:fullscreen){aspect-ratio:4/3}}
 .hud{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
 .hud span{background:rgba(255,255,255,.92);border-radius:99px;padding:4px 12px;font-weight:600;box-shadow:0 2px 8px rgba(39,43,54,.12)}
 .hud .fps{margin-left:auto;font-variant-numeric:tabular-nums}
@@ -58,6 +74,9 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
       <span id="s-day">📅 Giorno 1</span><span id="s-clock">🕗 10:00</span><span id="s-cash">💰 €120</span>
       <span class="fps" id="fps">— fps</span>
     </div>
+    <div class="hud-tel" aria-live="polite"><span id="t-coni">🍦 12 coni</span><span id="t-negozio" class="si">APERTO</span><span id="t-pacchi">📦 6 pacchi</span></div>
+    <button class="pienoBtn" id="b-pieno" aria-label="Schermo intero">⛶</button>
+    <div class="gira" id="gira"><span>📱</span>Gira il telefono in orizzontale<br><small>per vedere meglio la città</small></div>
     <button class="ingranaggio" id="b-grafica" aria-label="Impostazioni grafiche" aria-expanded="false" aria-controls="grafica">⚙️</button>
     <div class="grafica" id="grafica" hidden role="dialog" aria-label="Impostazioni grafiche">
       <h3>Grafica</h3>
@@ -178,6 +197,23 @@ $('#b-piu').onclick = () => Diorama.setPacchi(Diorama.pacchi + 1);
 Diorama.onRifornito = (n) => { coni = n; finito = false; };
 // velocità e qualità
 document.querySelectorAll('#b-speed .btn[data-s]').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-speed .btn[data-s]').forEach((x) => x.classList.toggle('on', x === b)); speed = +b.dataset.s; Diorama.setSpeed(speed); });
+// ---- schermo intero: prova il Fullscreen API (e il blocco in orizzontale); su iPhone usa un riquadro fisso a tutto schermo ----
+const scena = $('#scene');
+const pieno = () => document.fullscreenElement === scena || scena.classList.contains('pieno');
+$('#b-pieno').onclick = async () => {
+  if (pieno()) { if (document.fullscreenElement) await document.exitFullscreen().catch(() => {}); scena.classList.remove('pieno'); $('#b-pieno').textContent = '⛶'; return; }
+  try { await scena.requestFullscreen(); try { await screen.orientation.lock('landscape'); } catch (e) { /* non tutti i telefoni lo permettono */ } }
+  catch (e) { scena.classList.add('pieno'); }
+  $('#b-pieno').textContent = '✕';
+};
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !scena.classList.contains('pieno')) $('#b-pieno').textContent = '⛶'; });
+// le etichette per il telefono
+setInterval(() => {
+  const n = Diorama.coni; $('#t-coni').textContent = '🍦 ' + n + (n === 1 ? ' cono' : ' coni');
+  const ap = Diorama.aperto; $('#t-negozio').textContent = ap ? 'APERTO' : 'CHIUSO'; $('#t-negozio').className = ap ? 'si' : 'no';
+  const k = Diorama.pacchi; $('#t-pacchi').textContent = '📦 ' + k + (k === 1 ? ' pacco' : ' pacchi');
+}, 250);
+
 // ---- menu della grafica (vale finché la pagina resta aperta) ----
 const salvaGrafica = () => {};
 // si parte sempre in automatica, dal livello alto

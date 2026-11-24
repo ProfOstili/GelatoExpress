@@ -17,7 +17,7 @@ window.Diorama = (() => {
   const stato = {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
     camion: { attivo: false, kg: 0, ore: 0 }, pila: 0, portaOgni: 4, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
-    speed: 1, qualita: 'alta', auto: true, manuale: null,
+    speed: 1, qualita: 'alta', auto: true, manuale: null, inquadratura: 'auto',
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
   const O = {};                                                     // tutto ciò che si anima
@@ -87,6 +87,7 @@ window.Diorama = (() => {
     g.userData = { vivo: true, corpo, batacchio, onde, materiali: [campana.material, pomello.material, palla.material, ...onde.map((o) => o.m.material)] };
     return g;
   }
+  const grandezzaSegni = () => (W && schermoPiccolo() ? 1 + 0.7 * clamp((CAM.z - 0.5) / 0.5) : 1);
   function suonaCampanella(x, y, z) {
     const c = O.campane.find((q) => !q.visible); if (!c) return;
     Object.assign(c.userData, { t0: tReale(), x, y, z }); c.visible = true;
@@ -98,7 +99,7 @@ window.Diorama = (() => {
       if (u >= 1) { c.visible = false; return; }
       c.position.set(d.x + Math.sin(t * 2.2) * 0.15, d.y + easeInOut(u) * 8.5, d.z);
       c.quaternion.copy(camera.quaternion);                              // guarda sempre chi osserva
-      c.scale.setScalar(1.2 * Math.max(0.001, easeOutBack(clamp(u * 5))));
+      c.scale.setScalar(1.2 * grandezzaSegni() * Math.max(0.001, easeOutBack(clamp(u * 5))));
       d.corpo.rotation.z = Math.sin(t * 16) * 0.32;                       // dondola
       d.corpo.position.x = Math.sin(t * 55) * 0.012;                      // e vibra
       d.batacchio.rotation.z = Math.sin(t * 16 - 0.9) * 0.45;
@@ -403,10 +404,10 @@ window.Diorama = (() => {
     if (v === ANISO) return; ANISO = v;
     for (const t of TEXTURE) { t.anisotropy = v; t.needsUpdate = true; }
   }
-  const CAM = { az: 14 * Math.PI / 180, el: 31 * Math.PI / 180, dist: 60, mira: new THREE.Vector3(0, 1.2, 0.6) };
+  // z = quanto è vicina (1 = tutta la piastrella), off = quanto si usa lo spostamento che centra la piastrella
+  const CAM = { az: 14 * Math.PI / 180, el: 31 * Math.PI / 180, dist: 60, miraBase: new THREE.Vector3(0, 1.2, 0.6), mira: new THREE.Vector3(0, 1.2, 0.6), z: 1, off: 1, offset: [0, 0] };
   // piazza la camera; d = distanza
-  function piazzaCamera(az, el, d) {
-    const m = CAM.mira;
+  function piazzaCamera(az, el, d, m = CAM.mira) {
     camera.position.set(m.x + d * Math.sin(az) * Math.cos(el), m.y + d * Math.sin(el), m.z + d * Math.cos(az) * Math.cos(el));
     camera.lookAt(m);
   }
@@ -419,7 +420,7 @@ window.Diorama = (() => {
     let d = 60, box; const v = new THREE.Vector3();
     camera.clearViewOffset();
     const misura = () => {
-      piazzaCamera(CAM.az, CAM.el, d); camera.updateMatrixWorld();
+      piazzaCamera(CAM.az, CAM.el, d, CAM.miraBase); camera.updateMatrixWorld();
       const b = [1e9, -1e9, 1e9, -1e9]; for (const p of pts) { v.copy(p).project(camera); b[0] = Math.min(b[0], v.x); b[1] = Math.max(b[1], v.x); b[2] = Math.min(b[2], v.y); b[3] = Math.max(b[3], v.y); }
       return b;
     };
@@ -428,7 +429,25 @@ window.Diorama = (() => {
     CAM.dist = d;
     // sposta l'inquadratura perché la piastrella stia al centro (la mira resta la stessa)
     CAM.offset = [(box[0] + box[1]) / 2 * W / 2, -(box[2] + box[3]) / 2 * H / 2];
-    camera.setViewOffset(W, H, CAM.offset[0], CAM.offset[1], W, H);
+    camera.setViewOffset(W, H, CAM.offset[0] * CAM.off, CAM.offset[1] * CAM.off, W, H);
+  }
+  /* ---------------------------------------------------------------
+     INQUADRATURA CHE SEGUE L'AZIONE (schermi piccoli, come i telefoni)
+     Di solito si avvicina a scuola e gelateria; quando il furgone viaggia lo segue;
+     di notte, senza furgone, si allarga sulla città intera. Sui PC resta tutta la piastrella.
+     --------------------------------------------------------------- */
+  const MIRA = new THREE.Vector3();
+  const schermoPiccolo = () => stato.inquadratura === 'segui' || (stato.inquadratura === 'auto' && (W < 700 || Math.min(W, H) < 430));
+  function aggiornaInquadratura(dt, notte) {
+    let zoom = 1, off = 1; MIRA.copy(CAM.miraBase);
+    if (schermoPiccolo()) {
+      const cs = stato.camion, viaggia = O.furgone.g.visible && cs.attivo && cs.ore < 22.8;
+      if (viaggia) { MIRA.copy(O.furgone.g.position).setY(0.8); O.L.localToWorld(MIRA); zoom = 0.6; off = 0; }
+      else if (notte < 0.6) { O.L.localToWorld(MIRA.set(12.3, 1.6, 7.6)); zoom = W / H < 1.5 ? 0.42 : 0.5; off = 0; }   // più vicina se la scena è stretta
+    }
+    const k = Math.min(1, dt * 1.6);
+    CAM.mira.lerp(MIRA, k); CAM.z += (zoom - CAM.z) * k; CAM.off += (off - CAM.off) * k;
+    camera.setViewOffset(W, H, CAM.offset[0] * CAM.off, CAM.offset[1] * CAM.off, W, H);
   }
   function ridimensiona() {
     const r = contenitore.getBoundingClientRect(); W = Math.max(2, Math.round(r.width)); H = Math.max(2, Math.round(r.height));
@@ -510,7 +529,7 @@ window.Diorama = (() => {
     const th = (2.5 * Math.sin(t * 0.07)) * Math.PI / 180;
     O.perno.rotation.y = th; O.ombraTile.rotation.z = th;
     if (CAM.vista) { camera.position.copy(CAM.vista[0]); camera.lookAt(CAM.vista[1]); } else
-    piazzaCamera(CAM.az + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * (1 + 0.012 * Math.sin(t * 0.11)));
+    { aggiornaInquadratura(dt, notte); piazzaCamera(CAM.az + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * CAM.z * (1 + 0.012 * Math.sin(t * 0.11))); }
     O.sole.target.position.set(0, 0, 0);
 
     // --- il furgone, il fumo del comignolo e la scia
@@ -538,7 +557,7 @@ window.Diorama = (() => {
       const u = (t - f.userData.t0) / (f.userData.dur || 2.8);
       if (u >= 1) { f.visible = false; return; }
       f.position.set(f.userData.x + Math.sin(t * 3 + f.userData.fase) * 0.25, f.userData.y + u * (f.userData.sale || 17), f.userData.z);
-      const sf = 0.85 * Math.max(0.001, easeOutBack(clamp(u * 5))); f.scale.set(sf * (f.userData.ax || 1), sf * (f.userData.ay || 1), 1);
+      const sf = 0.85 * grandezzaSegni() * Math.max(0.001, easeOutBack(clamp(u * 5))); f.scale.set(sf * (f.userData.ax || 1), sf * (f.userData.ay || 1), 1);
     });
     aggiornaClienti(t, dt);
     aggiornaRagazzi(t, h);
@@ -924,6 +943,11 @@ window.Diorama = (() => {
     // quanti pacchi ci sono sul pallet (il magazzino rimasto) e quanti ne porta dentro ogni mattina
     setPacchi(n) { stato.pila = clamp(Math.round(n), 0, 12); },
     get pacchi() { return stato.pila; },
+    // per le etichette sopra la scena (telefono)
+    get coni() { return stato.finito ? 0 : Math.max(0, Math.round(stato.coni)); }, get aperto() { return negozio.stato === 'aperto' && !negozio.seq; },
+    get schermoPiccolo() { return !!R && schermoPiccolo(); },
+    // 'auto' (segue l'azione sugli schermi piccoli), 'segui' (sempre), 'tutto' (sempre tutta la piastrella)
+    setInquadratura(m) { stato.inquadratura = m; },
     setPortaOgni(n) { stato.portaOgni = Math.max(0, Math.round(n)); },
     onRifornito: null,
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
