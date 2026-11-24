@@ -98,7 +98,7 @@ window.Diorama = (() => {
       if (u >= 1) { c.visible = false; return; }
       c.position.set(d.x + Math.sin(t * 2.2) * 0.15, d.y + easeInOut(u) * 8.5, d.z);
       c.quaternion.copy(camera.quaternion);                              // guarda sempre chi osserva
-      c.scale.setScalar(2.0 * Math.max(0.001, easeOutBack(clamp(u * 5))));
+      c.scale.setScalar(1.0 * Math.max(0.001, easeOutBack(clamp(u * 5))));
       d.corpo.rotation.z = Math.sin(t * 16) * 0.32;                       // dondola
       d.corpo.position.x = Math.sin(t * 55) * 0.012;                      // e vibra
       d.batacchio.rotation.z = Math.sin(t * 16 - 0.9) * 0.45;
