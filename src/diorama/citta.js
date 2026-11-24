@@ -13,7 +13,7 @@ const ANELLO = { xS: 1.2, xD: 20.1, yF: 10.35, cy: 9.15, yB: -2.0, cyB: -0.8, r:
 const GEL = { x: 13.0, y: 5.4, w: 4.4, d: 2.6, h: 2.8, porta: 16.35 };
 const FORN = { x: -3.3, y: -1.3, w: 2.7, d: 2.9, h: 1.55 };
 const CASSE = { x: 18.35, y: 6.95 };
-const BANCO = { x: 13.5, y: 8.1 };
+const BANCO = { x: 13.05, y: 8.1 };                               // lascia libero il neon accanto alla porta
 const LAMPIONI = [[2.5, 8.25, 0], [10.95, 8.25, 0], [17.75, 8.25, 0], [6.75, 4.95, Z2], [10.75, 4.95, Z2], [-0.55, 1.85, 0]];
 const POZZE = [[4.5, 10.0, 0, 0.55], [9.0, 10.7, 0, 0.7], [13.6, 10.1, 0, 0.5], [1.2, 5.6, 0, 0.45], [20.1, 4.2, 0, 0.5], [-1.6, 4.4, 0, 0.45], [8.8, 4.4, Z2, 0.45], [15.4, 4.0, Z2, 0.4], [12.2, 0.4, Z3, 0.35]];
 
@@ -406,11 +406,16 @@ function scuola(L, finestra, O) {
   // il logo della scuola, come un'insegna rotonda sulla terrazza del tetto
   const logo = new THREE.Group(); logo.position.set(cx, hc, y + 1.4); L.add(logo);
   for (const s of [-1, 1]) metti(logo, new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6), '#5b6075', [s * 0.32, 0.2, 0]);
-  metti(logo, new THREE.CylinderGeometry(0.62, 0.62, 0.08, 32), '#6e9f38', [0, 0.95, 0], [Math.PI / 2, 0, 0]);
+  O.matBordoLogo = new THREE.MeshStandardMaterial({ color: '#6e9f38', roughness: 0.6, emissive: '#a6f06a', emissiveIntensity: 0 });
+  metti(logo, new THREE.CylinderGeometry(0.62, 0.62, 0.08, 32), O.matBordoLogo, [0, 0.95, 0], [Math.PI / 2, 0, 0]);
   const img = typeof document !== 'undefined' && document.getElementById('logo-scuola');
   const texLogo = new THREE.Texture(); texLogo.colorSpace = THREE.SRGBColorSpace;
   if (img) { const pronto = () => { texLogo.image = img; texLogo.needsUpdate = true; }; if (img.complete && img.naturalWidth) pronto(); else img.addEventListener('load', pronto); }
-  metti(logo, new THREE.CircleGeometry(0.56, 32), img ? new THREE.MeshStandardMaterial({ map: texLogo, roughness: 0.8 }) : vernice('#ffffff'), [0, 0.95, 0.045], null, false);
+  O.matLogo = new THREE.MeshStandardMaterial({ map: texLogo, emissiveMap: texLogo, emissive: '#ffffff', emissiveIntensity: 0, roughness: 0.8 });
+  metti(logo, new THREE.CircleGeometry(0.56, 32), img ? O.matLogo : vernice('#ffffff'), [0, 0.95, 0.045], null, false);
+  // l'alone della retroilluminazione, dietro il disco
+  O.aloneLogo = new THREE.Sprite(new THREE.SpriteMaterial({ map: texCanvas(128, 128, (ctx, W) => { const g = ctx.createRadialGradient(W / 2, W / 2, W * 0.28, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(255,248,215,0.95)'); g.addColorStop(1, 'rgba(255,248,215,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); }), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false }));
+  O.aloneLogo.position.set(0, 0.95, -0.12); O.aloneLogo.scale.setScalar(2.1); O.aloneLogo.userData.vivo = true; logo.add(O.aloneLogo);
   metti(logo, new THREE.CircleGeometry(0.56, 32), '#ffffff', [0, 0.95, -0.045], [0, Math.PI, 0], false);
   // la bandiera italiana: asta che sporge dal balcone verso la strada
   const asta = new THREE.Vector3(cx + 0.55, 1.5, yc + 0.3), cima = new THREE.Vector3(cx + 0.55, 2.55, yc + 1.05);
@@ -431,16 +436,16 @@ function gelateria(L, O) {
   blocco(L, x - 0.02, fy - 0.03, 0, w + 0.04, 0.06, 0.3, '#e9d7b8', 0.02); blocco(L, x + w - 0.03, y - 0.02, 0, 0.06, d + 0.04, 0.3, '#d9c6a6', 0.02);
   blocco(L, x - 0.15, y - 0.15, h, w + 0.3, d + 0.3, 0.25, PAL.accento, 0.08);                         // il tetto rosa
   // la vetrina: coni e vaschette dipinti, la sera si accende
-  O.texVetrina = texCanvas(512, 236, (ctx, W, H) => {
+  O.texVetrina = texCanvas(370, 236, (ctx, W, H) => {
     ctx.fillStyle = '#2a2433'; ctx.fillRect(0, 0, W, H);
-    [PAL.accento, PAL.pistacchio, '#fff1dc', PAL.cioccolato, PAL.accento, PAL.menta].forEach((c, i) => { const x = 50 + i * 82;
+    [PAL.accento, PAL.pistacchio, '#fff1dc', PAL.cioccolato].forEach((c, i) => { const x = 57 + i * 85;
       ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(x - 22, 120); ctx.lineTo(x + 22, 120); ctx.lineTo(x, 200); ctx.fill();
       ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, 104, 26, 0, 7); ctx.fill(); });
     ctx.fillStyle = '#fff6e6'; ctx.font = fontPx(40); ctx.textAlign = 'center'; ctx.fillText('GELATI', W / 2, 52);
   });
   O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texVetrina, emissiveMap: O.texVetrina, emissive: '#ffffff', emissiveIntensity: 0.4, roughness: 0.5 });
-  blocco(L, 13.2, fy - 0.02, 0.92, 2.7, 0.08, 1.32, PAL.crema, 0.04);
-  sulMuro(L, 'y', 14.55, fy + 0.06, 1.575, 2.5, 1.15, O.matVetrina, 0.05);
+  blocco(L, 13.2, fy - 0.02, 0.92, 2.0, 0.08, 1.32, PAL.crema, 0.04);
+  sulMuro(L, 'y', 14.2, fy + 0.06, 1.575, 1.8, 1.15, O.matVetrina, 0.05);
   // il contatore dei coni: un'insegna luminosa sul tetto, ben visibile
   O.texConi = texCanvas(1024, 480);
   O.matConi = new THREE.MeshStandardMaterial({ map: O.texConi, emissiveMap: O.texConi, emissive: '#ffffff', emissiveIntensity: 0.6, roughness: 0.5 });
@@ -467,14 +472,19 @@ function gelateria(L, O) {
   metti(O.conone, new THREE.ConeGeometry(0.34, 1.0, 18), PAL.cialda, [0, 0.52, 0], [Math.PI, 0, 0]);
   metti(O.conone, new THREE.SphereGeometry(0.42, 20, 14), PAL.accento, [0, 1.12, 0]);
   metti(O.conone, new THREE.SphereGeometry(0.11, 12, 8), '#e2465e', [0.05, 1.56, 0.05]);
-  // il cartellino APERTO / GELATO FINITO! appeso sotto la tenda: si gira quando i coni finiscono
-  O.finito = new THREE.Group(); O.finito.position.set(GEL.porta, 2.02, fy + 0.42); O.finito.userData.vivo = true; L.add(O.finito);
-  for (const s of [-1, 1]) metti(O.finito, new THREE.CylinderGeometry(0.008, 0.008, 0.3, 6), PAL.scuro, [s * 0.36, 0.15, 0]);
-  O.finitoCarta = new THREE.Group(); O.finito.add(O.finitoCarta);
-  metti(O.finitoCarta, scatolaGeo(1.05, 0.4, 0.04, 0.03), PAL.crema);
-  const scritta = (testo, bg, fg) => new THREE.MeshStandardMaterial({ roughness: 0.8, map: texCanvas(512, 196, (ctx, W, H) => { ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H); ctx.fillStyle = fg; ctx.font = fontPx(testo.length > 8 ? 76 : 100); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(testo, W / 2, H / 2 + 6); }) });
-  metti(O.finitoCarta, rettangoloGeo(0.98, 0.34, 0.025), scritta('APERTO', '#ece8df', PAL.ardesia), [0, 0, 0.022], null, false);
-  metti(O.finitoCarta, rettangoloGeo(0.98, 0.34, 0.025), scritta('GELATO FINITO!', PAL.scuro, PAL.accento), [0, 0, -0.022], [0, Math.PI, 0], false);
+  O.finito = { userData: {} };                                       // (solo per ricordare quando sono finiti i coni)
+  // l'insegna al neon accanto alla porta, scritta in verticale: verde APERTO, rossa CHIUSO
+  const neon = (parola, colore) => texCanvas(160, 640, (ctx, W, H) => {
+    ctx.fillStyle = '#1e1b24'; ctx.beginPath(); ctx.roundRect(4, 4, W - 8, H - 8, 22); ctx.fill();
+    ctx.font = fontGrassetto(100); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    [...parola].forEach((l, i) => { const y = 62 + i * 103;
+      ctx.shadowColor = colore; ctx.shadowBlur = 26; ctx.fillStyle = colore; ctx.fillText(l, W / 2, y);
+      ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = fontGrassetto(90); ctx.fillText(l, W / 2, y); ctx.font = fontGrassetto(100); });
+  });
+  O.texNeonAperto = neon('APERTO', '#5dff8a'); O.texNeonChiuso = neon('CHIUSO', '#ff4a5a');
+  O.matNeon = new THREE.MeshStandardMaterial({ map: O.texNeonAperto, emissiveMap: O.texNeonAperto, emissive: '#ffffff', emissiveIntensity: 1.2, roughness: 0.4 });
+  blocco(L, 15.3, fy - 0.01, 0.1, 0.56, 0.07, 1.86, PAL.scuro, 0.05);          // sta sotto la tenda, così si legge tutta
+  sulMuro(L, 'y', 15.58, fy + 0.07, 1.03, 0.5, 1.78, O.matNeon, 0.05);
   // il bancone con le vaschette (la sera il gelataio lo porta dentro)
   O.bancone = new THREE.Group(); O.bancone.userData.vivo = true; L.add(O.bancone);
   metti(O.bancone, scatolaGeo(2.2, 0.8, 0.5, 0.05), PAL.menta, [1.1, 0.5, 0.25]);
