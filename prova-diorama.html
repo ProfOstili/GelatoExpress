@@ -5027,13 +5027,17 @@ function gelateria(L, O) {
   metti(O.bancone, scatolaGeo(2.2, 0.8, 0.5, 0.05), PAL.menta, [1.1, 0.5, 0.25]);
   metti(O.bancone, scatolaGeo(2.3, 0.07, 0.56, 0.02), PAL.ardesia, [1.1, 0.93, 0.25]);
   [PAL.accento, PAL.pistacchio, PAL.cioccolato, PAL.crema].forEach((c, i) => metti(O.bancone, new THREE.SphereGeometry(0.17, 14, 10), c, [0.3 + i * 0.53, 0.98, 0.25]).scale.set(1, 0.5, 0.8));
-  // il cartello con la X rossa davanti al bancone: compare quando i coni finiscono (viaggia col bancone)
-  O.cartelloX = new THREE.Group(); O.cartelloX.position.set(1.65, 0, 0.72); O.cartelloX.visible = false; O.bancone.add(O.cartelloX);
-  metti(O.cartelloX, new THREE.CylinderGeometry(0.025, 0.025, 0.5, 6), PAL.ardesia, [0, 0.25, 0]);
-  metti(O.cartelloX, new THREE.CylinderGeometry(0.1, 0.12, 0.04, 12), PAL.ardesia, [0, 0.02, 0]);
-  metti(O.cartelloX, scatolaGeo(0.52, 0.52, 0.05, 0.06), PAL.crema, [0, 0.72, 0]);
+  // tre cartelli con la X rossa davanti al bancone: compaiono quando i coni finiscono (viaggiano col bancone)
   const texX = texCanvas(256, 256, (ctx) => { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 256, 256); ctx.strokeStyle = '#e8323f'; ctx.lineWidth = 46; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(62, 62); ctx.lineTo(194, 194); ctx.moveTo(194, 62); ctx.lineTo(62, 194); ctx.stroke(); });
-  metti(O.cartelloX, rettangoloGeo(0.44, 0.44, 0.05), new THREE.MeshStandardMaterial({ map: texX, roughness: 0.8 }), [0, 0.72, 0.027], null, false);
+  const matX = new THREE.MeshStandardMaterial({ map: texX, roughness: 0.8 });
+  O.cartelliX = [0.4, 1.1, 1.8].map((x, i) => {
+    const c = new THREE.Group(); c.position.set(x, 0, 0.72); c.rotation.y = (i - 1) * 0.12; c.visible = false; O.bancone.add(c);
+    metti(c, new THREE.CylinderGeometry(0.025, 0.025, 0.5, 6), PAL.ardesia, [0, 0.25, 0]);
+    metti(c, new THREE.CylinderGeometry(0.1, 0.12, 0.04, 12), PAL.ardesia, [0, 0.02, 0]);
+    metti(c, scatolaGeo(0.52, 0.52, 0.05, 0.06), PAL.crema, [0, 0.72, 0]);
+    metti(c, rettangoloGeo(0.44, 0.44, 0.05), matX, [0, 0.72, 0.027], null, false);
+    return c;
+  });
   // i pacchi della consegna: il furgone li lascia sul pallet di fianco alla gelateria, la mattina il gelataio li porta dentro
   // il magazzino: fino a 12 pacchi sul pallet di fianco, a strati da 4 (2×2)
   O.posPacchi = Array.from({ length: 12 }, (_, i) => { const j = i % 4; return [CASSE.x + (j % 2 ? 0.23 : -0.23), CASSE.y + (j < 2 ? -0.2 : 0.2), Math.floor(i / 4)]; });
@@ -5381,11 +5385,16 @@ window.Diorama = (() => {
     O.matCuori = new THREE.SpriteMaterial({ map: faccina('cuori'), depthTest: false, depthWrite: false, fog: false });
     O.matRabbia = new THREE.SpriteMaterial({ map: faccina('rabbia'), depthTest: false, depthWrite: false, fog: false });
     O.faccine = Array.from({ length: 14 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
-    // i banchi di nebbia del cielo coperto: coprono la parte alta del plastico e scorrono piano
-    const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(244,246,250,1)'); g.addColorStop(0.55, 'rgba(244,246,250,0.88)'); g.addColorStop(1, 'rgba(244,246,250,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
-    O.matNebbia = new THREE.SpriteMaterial({ map: texNebbia, transparent: true, depthWrite: false, fog: false, opacity: 0 });
-    const rb = rng(55);
-    O.banchi = Array.from({ length: 70 }, (_, i) => { const sp = new THREE.Sprite(O.matNebbia); sp.userData = { vivo: true, x: rb.range(0.5, 20), y: rb.range(-3, i < 58 ? 3.4 : 5.0), z: i < 58 ? 3.0 + (i % 7) * 0.95 + rb.range(0, 0.5) : rb.range(2.0, 3.4), v: rb.range(0.1, 0.25), ph: rb.range(0, 6.3), w: rb.range(8, 12.5) }; sp.scale.set(sp.userData.w, sp.userData.w * 0.36, 1); sp.renderOrder = 5; L.add(sp); return sp; });
+    // il banco di nebbia del cielo coperto: batuffoli bianchi opachi (come le nuvole) che coprono del tutto la città alta
+    const rb = rng(55), batuffoli = [];
+    for (let x = 2.0; x <= 19.4; x += 1.45) for (let y = -2.7; y <= (x < 7.6 ? 4.6 : 2.9); y += 1.5) for (const z of [2.3, 4.1, 5.9]) {
+      if (z < 3 && x < 7 && y > 4) continue;
+      batuffoli.push([x + rb.range(-0.4, 0.4), y + rb.range(-0.4, 0.4), z + rb.range(-0.3, 0.4), rb.range(1.25, 1.75), rb.range(0, 6.3)]);
+    }
+    for (let x = 7.5; x <= 18; x += 1.6) batuffoli.push([x + rb.range(-0.3, 0.3), rb.range(-1.4, 0.6), 7.4 + rb.range(0, 0.4), rb.range(1.0, 1.4), rb.range(0, 6.3)]);   // sopra campanile e torre
+    O.batuffoli = batuffoli;
+    O.nebbia = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 18, 12), new THREE.MeshStandardMaterial({ color: '#f4f6f9', roughness: 1, emissive: '#dfe5ec', emissiveIntensity: 0.35 }), batuffoli.length);
+    O.nebbia.frustumCulled = false; O.nebbia.castShadow = false; O.nebbia.receiveShadow = false; O.nebbia.visible = false; O.nebbia.userData.vivo = true; L.add(O.nebbia);
     // tutto ciò che è fermo viene fuso in poche mesh
     fondi(L);
   }
@@ -5555,7 +5564,7 @@ window.Diorama = (() => {
     scena.background.copy(C.tmp2); O.carta.material.color.copy(C.tmp2);
     // la nebbia del cielo coperto: fitta sulla città alta (più lontana), leggera davanti
     scena.fog.color.copy(C.tmp2).lerp(C.tmp.set('#eef1f5'), 0.5 * (1 - notte));
-    scena.fog.near = nebbia > 0.02 ? CAM.dist - 2 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 6 + 60 * (1 - nebbia) : 2e4;
+    scena.fog.near = 1e4; scena.fog.far = 2e4;                  // niente nebbia "trasparente": la copre il banco di batuffoli
     scena.environmentIntensity = lerp(0.4, 0.15, notte);
     post.uniforms.esposizione.value = lerp(1, 0.92, kp);
     post.uniforms.sat.value = lerp(1.08, 0.9, kp);
@@ -5607,10 +5616,15 @@ window.Diorama = (() => {
       f.position.set(f.userData.x + Math.sin(t * 3 + f.userData.fase) * 0.25, f.userData.y + u * 17, f.userData.z);
       f.scale.setScalar(0.85 * Math.max(0.001, easeOutBack(clamp(u * 5))));
     });
-    // --- banchi di nebbia
-    O.matNebbia.opacity = 0.86 * liscio(0.1, 0.8, nebbia);
-    O.banchi.forEach((b) => { b.visible = O.matNebbia.opacity > 0.01; if (!b.visible) return; const u = b.userData;
-      b.position.set(u.x + Math.sin(t * u.v + u.ph) * 1.6, u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
+    // --- il banco di nebbia: i batuffoli si gonfiano col cielo coperto e respirano piano
+    const kNeb = liscio(0.05, 0.75, nebbia);
+    O.nebbia.visible = kNeb > 0.01;
+    if (O.nebbia.visible) {
+      O.batuffoli.forEach(([x, y, z, r, ph], i) => { const s = r * kNeb * (0.94 + 0.06 * Math.sin(t * 0.4 + ph));
+        O3.position.set(x + Math.sin(t * 0.08 + ph) * 0.35, z, y); O3.rotation.set(0, 0, 0); O3.scale.set(s * 1.25, s * 0.85, s); O3.updateMatrix(); O.nebbia.setMatrixAt(i, O3.matrix); });
+      O.nebbia.instanceMatrix.needsUpdate = true;
+      O.nebbia.material.emissiveIntensity = 0.35 * (1 - notte);
+    }
     aggiornaClienti(t);
     aggiornaRagazzi(t, h);
 
@@ -5828,8 +5842,8 @@ window.Diorama = (() => {
     });
     // il cartello con la X rossa davanti al bancone
     const ux = clamp((tGioco - (O.finito.userData.quando ?? -99)) / 0.4);
-    O.cartelloX.visible = stato.finito || ux < 1;
-    O.cartelloX.scale.setScalar(Math.max(0.001, stato.finito ? easeOutBack(ux) : 1 - ux));
+    O.cartelliX.forEach((c, i) => { const u = clamp(ux * 1.4 - i * 0.2);           // uno dopo l'altro
+      c.visible = stato.finito || u < 1; c.scale.setScalar(Math.max(0.001, stato.finito ? easeOutBack(u) : 1 - u)); });
     // il gelataio
     const g = O.gelataio, aperto = negozio.stato === 'aperto' && !negozio.seq;
     const salto = aperto ? Math.max(0, Math.sin(clamp((tGioco - (g.userData.vendita ?? -99)) / 0.35) * Math.PI)) * 0.3 : 0;
@@ -5871,18 +5885,18 @@ window.Diorama = (() => {
   }
   // i ragazzi attraversano sulle strisce ed entrano a scuola; escono dopo pranzo
   function aggiornaRagazzi(t, h) {
+    // in fila indiana sulle strisce, uno ogni 0,6 di distanza: si contano bene
+    const LUNGO = 3.9, PASSO = 0.6, tot = LUNGO + PASSO * (O.ragazzi.length - 1);
+    const entra = seg(h, 8.6, 10.0), esce = seg(h, 13.0, 14.4);
     O.ragazzi.forEach((r, i) => {
-      const xs = 8.55 + (i % 3) * 0.25, entra = seg(h, 8.6 + i * 0.13, 9.6 + i * 0.13), esce = seg(h, 13.0 + i * 0.13, 14.0 + i * 0.13);
-      let k = -1, dir = 1;
-      if (entra > 0 && entra < 1) { k = entra; dir = 1; } else if (esce > 0 && esce < 1) { k = 1 - esce; dir = -1; }
-      r.visible = k >= 0; if (k < 0) return;
-      let x = xs, y = lerp(12.2, 8.7, seg(k, 0, 0.8));
-      if (k > 0.8) { x = lerp(xs, 8.8, seg(k, 0.8, 1)); y = lerp(8.7, 8.3, seg(k, 0.8, 1)); }
-      const hop = Math.abs(Math.sin(t * 9 + i)) * 0.08;
-      r.position.set(x, (y < 9.2 ? 0.1 : 0.05) + hop, y);
+      let s = -1, dir = 1;
+      if (entra > 0 && entra < 1) { s = entra * tot - i * PASSO; dir = 1; }
+      else if (esce > 0 && esce < 1) { s = LUNGO - (esce * tot - i * PASSO); dir = -1; }
+      r.visible = s > 0 && s < LUNGO; if (!r.visible) return;
+      const y = 12.2 - s, hop = Math.abs(Math.sin(t * 9 + i)) * 0.08;
+      r.position.set(8.8, (y < 9.2 ? 0.1 : 0.05) + hop, y);
       r.rotation.y = dir > 0 ? Math.PI : 0;
-      const a = Math.min(seg(12.2 - y, 0, 0.3), 1 - seg(k, 0.92, 1));
-      r.scale.setScalar(0.95 * Math.max(1e-3, a));
+      r.scale.setScalar(0.95 * Math.max(1e-3, Math.min(seg(s, 0, 0.35), seg(LUNGO - s, 0, 0.35))));
     });
   }
 
@@ -5923,6 +5937,7 @@ window.Diorama = (() => {
     camion(attivo, kg, ore) { stato.camion.attivo = !!attivo; stato.camion.kg = kg || 0; stato.camion.ore = ore || 0; },
     cliente(servito, durataMs) {
       if (!O.clienti) return;
+      if (stato.finito) servito = false;                         // coni finiti: resta senza (e si arrabbia)
       const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
       if (!libero) return;
       const n = eventi.length;
@@ -5996,12 +6011,19 @@ function arriva(kg) {
 // clienti
 let coni = 12, cassa = 120;
 Diorama.setConi(coni, 12);
+// un cliente: viene servito solo se resta un cono (deciso subito); il contatore scende quando arriva al bancone,
+// così quando l'insegna segna 0 il cliente dopo trova i coni finiti e si arrabbia
 function cliente(servito) {
-  Diorama.cliente(servito, 2600 / speed);
-  if (servito && coni > 0) {
-    coni--; Diorama.setConi(coni); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
-    setTimeout(() => { const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c'); }, 1400 / speed);
-    if (coni === 0) Diorama.setFinito(true);
+  servito = servito && coni > 0;
+  const dur = 2600 / speed;
+  Diorama.cliente(servito, dur);
+  if (servito) {
+    coni--; const resto = coni;
+    setTimeout(() => {
+      Diorama.setConi(resto); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
+      const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c');
+      if (resto === 0) Diorama.setFinito(true);
+    }, dur * 0.52);
   }
 }
 $('#b-servito').onclick = () => cliente(true);

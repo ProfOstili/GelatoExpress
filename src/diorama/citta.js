@@ -480,13 +480,17 @@ function gelateria(L, O) {
   metti(O.bancone, scatolaGeo(2.2, 0.8, 0.5, 0.05), PAL.menta, [1.1, 0.5, 0.25]);
   metti(O.bancone, scatolaGeo(2.3, 0.07, 0.56, 0.02), PAL.ardesia, [1.1, 0.93, 0.25]);
   [PAL.accento, PAL.pistacchio, PAL.cioccolato, PAL.crema].forEach((c, i) => metti(O.bancone, new THREE.SphereGeometry(0.17, 14, 10), c, [0.3 + i * 0.53, 0.98, 0.25]).scale.set(1, 0.5, 0.8));
-  // il cartello con la X rossa davanti al bancone: compare quando i coni finiscono (viaggia col bancone)
-  O.cartelloX = new THREE.Group(); O.cartelloX.position.set(1.65, 0, 0.72); O.cartelloX.visible = false; O.bancone.add(O.cartelloX);
-  metti(O.cartelloX, new THREE.CylinderGeometry(0.025, 0.025, 0.5, 6), PAL.ardesia, [0, 0.25, 0]);
-  metti(O.cartelloX, new THREE.CylinderGeometry(0.1, 0.12, 0.04, 12), PAL.ardesia, [0, 0.02, 0]);
-  metti(O.cartelloX, scatolaGeo(0.52, 0.52, 0.05, 0.06), PAL.crema, [0, 0.72, 0]);
+  // tre cartelli con la X rossa davanti al bancone: compaiono quando i coni finiscono (viaggiano col bancone)
   const texX = texCanvas(256, 256, (ctx) => { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 256, 256); ctx.strokeStyle = '#e8323f'; ctx.lineWidth = 46; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(62, 62); ctx.lineTo(194, 194); ctx.moveTo(194, 62); ctx.lineTo(62, 194); ctx.stroke(); });
-  metti(O.cartelloX, rettangoloGeo(0.44, 0.44, 0.05), new THREE.MeshStandardMaterial({ map: texX, roughness: 0.8 }), [0, 0.72, 0.027], null, false);
+  const matX = new THREE.MeshStandardMaterial({ map: texX, roughness: 0.8 });
+  O.cartelliX = [0.4, 1.1, 1.8].map((x, i) => {
+    const c = new THREE.Group(); c.position.set(x, 0, 0.72); c.rotation.y = (i - 1) * 0.12; c.visible = false; O.bancone.add(c);
+    metti(c, new THREE.CylinderGeometry(0.025, 0.025, 0.5, 6), PAL.ardesia, [0, 0.25, 0]);
+    metti(c, new THREE.CylinderGeometry(0.1, 0.12, 0.04, 12), PAL.ardesia, [0, 0.02, 0]);
+    metti(c, scatolaGeo(0.52, 0.52, 0.05, 0.06), PAL.crema, [0, 0.72, 0]);
+    metti(c, rettangoloGeo(0.44, 0.44, 0.05), matX, [0, 0.72, 0.027], null, false);
+    return c;
+  });
   // i pacchi della consegna: il furgone li lascia sul pallet di fianco alla gelateria, la mattina il gelataio li porta dentro
   // il magazzino: fino a 12 pacchi sul pallet di fianco, a strati da 4 (2×2)
   O.posPacchi = Array.from({ length: 12 }, (_, i) => { const j = i % 4; return [CASSE.x + (j % 2 ? 0.23 : -0.23), CASSE.y + (j < 2 ? -0.2 : 0.2), Math.floor(i / 4)]; });

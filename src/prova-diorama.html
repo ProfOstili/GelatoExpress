@@ -127,12 +127,19 @@ function arriva(kg) {
 // clienti
 let coni = 12, cassa = 120;
 Diorama.setConi(coni, 12);
+// un cliente: viene servito solo se resta un cono (deciso subito); il contatore scende quando arriva al bancone,
+// così quando l'insegna segna 0 il cliente dopo trova i coni finiti e si arrabbia
 function cliente(servito) {
-  Diorama.cliente(servito, 2600 / speed);
-  if (servito && coni > 0) {
-    coni--; Diorama.setConi(coni); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
-    setTimeout(() => { const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c'); }, 1400 / speed);
-    if (coni === 0) Diorama.setFinito(true);
+  servito = servito && coni > 0;
+  const dur = 2600 / speed;
+  Diorama.cliente(servito, dur);
+  if (servito) {
+    coni--; const resto = coni;
+    setTimeout(() => {
+      Diorama.setConi(resto); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
+      const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c');
+      if (resto === 0) Diorama.setFinito(true);
+    }, dur * 0.52);
   }
 }
 $('#b-servito').onclick = () => cliente(true);
