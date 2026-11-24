@@ -8,7 +8,7 @@
   PROVA della scena della simulazione in stile "Tiny Diorama" (three.js, tempo reale).
   Sorgente: impacchettato in prova-diorama.html da strumenti/build.py (three.js e font incorporati, funziona offline).
   Ridisegna nel nuovo stile la Todi della versione isometrica (livelli, mura, Consolazione, Duomo, Priori, scuola).
-  I pulsanti chiamano gli stessi agganci che userà il gioco: setMeteo, setOra, camion, cliente, setFinito, setStock.
+  I pulsanti chiamano gli stessi agganci che userà il gioco: setMeteo, setOra, camion, cliente, setFinito, setPacchi, apri, chiudi.
 -->
 <style>
 @font-face{font-family:"Fredoka";src:url("@DATA:assets/fonts/Fredoka.woff2@") format("woff2");font-weight:300 700;font-display:block}
@@ -70,7 +70,7 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
       <button class="btn" id="b-finito">🚫 Gelato finito</button>
     </div></div>
     <div class="gruppo"><h2>Magazzino e vendite</h2><div class="bar">
-      <button class="btn" id="b-meno">− 10 kg</button><button class="btn" id="b-piu">+ 10 kg</button><span id="stock-txt">40 kg</span>
+      <button class="btn" id="b-meno">− 1 pacco</button><button class="btn" id="b-piu">+ 1 pacco</button><span id="stock-txt">6 pacchi sul pallet</span>
     </div></div>
     <div class="gruppo"><h2>Velocità e qualità</h2><div class="bar" id="b-speed">
       <button class="btn on" data-s="1">1×</button><button class="btn" data-s="2">2×</button><button class="btn" data-s="4">4×</button>
@@ -119,10 +119,9 @@ $('#b-ordina').onclick = async () => {
   arriva(kg);
 };
 $('#b-arriva').onclick = () => { if (!viaggio) { Diorama.camion(true, 30, 23.5); setTimeout(() => arriva(30), 600 / speed); } };
-let stock = 40;
 function arriva(kg) {
   Diorama.camion(false); viaggio = null; $('#camion-txt').textContent = 'consegnato, torna al fornitore';
-  stock = Math.min(100, stock + kg); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg';
+
   const p = Diorama.posizioneSchermo('casse'); floater('+' + kg + ' kg', p[0], p[1], '#3f866c');
 }
 // clienti
@@ -132,7 +131,6 @@ function cliente(servito) {
   Diorama.cliente(servito, 2600 / speed);
   if (servito && coni > 0) {
     coni--; Diorama.setConi(coni); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
-    stock = Math.max(0, stock - 4); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg';   // ogni cono consuma un po' di magazzino
     setTimeout(() => { const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c'); }, 1400 / speed);
     if (coni === 0) Diorama.setFinito(true);
   }
@@ -142,14 +140,17 @@ $('#b-perso').onclick = () => cliente(false);
 let finito = false;
 $('#b-finito').onclick = () => { finito = !finito; Diorama.setFinito(finito); if (!finito) { coni = 12; Diorama.setConi(coni); } else { coni = 0; Diorama.setConi(0); } };
 // magazzino
-$('#b-meno').onclick = () => { stock = Math.max(0, stock - 10); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg'; };
-$('#b-piu').onclick = () => { stock = Math.min(100, stock + 10); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg'; };
-Diorama.setStock(stock, 100);
+// il magazzino è il mucchio di pacchi sul pallet di fianco alla gelateria (ogni mattina il gelataio ne porta dentro 4)
+Diorama.setPacchi(6);
+$('#b-meno').onclick = () => Diorama.setPacchi(Diorama.pacchi - 1);
+$('#b-piu').onclick = () => Diorama.setPacchi(Diorama.pacchi + 1);
+// quando il gelataio porta dentro i pacchi, i coni tornano al massimo
+Diorama.onRifornito = (n) => { coni = n; finito = false; };
 // velocità e qualità
 document.querySelectorAll('#b-speed .btn[data-s]').forEach((b) => b.onclick = () => { document.querySelectorAll('#b-speed .btn[data-s]').forEach((x) => x.classList.toggle('on', x === b)); speed = +b.dataset.s; Diorama.setSpeed(speed); });
 document.querySelectorAll('#b-speed .btn[data-q]').forEach((b) => b.onclick = () => { Diorama.forzaQualita(b.dataset.q); });
 // contatore fps
-setInterval(() => { $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; $('#q-txt').textContent = 'qualità: ' + Diorama.qualita; }, 500);
+setInterval(() => { $('#stock-txt').textContent = Diorama.pacchi + ' pacchi sul pallet'; $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; $('#q-txt').textContent = 'qualità: ' + Diorama.qualita; }, 500);
 setClock(10);
 
 // ---- DEMO: tre giornate intere (sole, nuvoloso, pioggia). Ogni giorno arrivano più clienti dei coni
@@ -159,14 +160,13 @@ $('#b-demo').onclick = async () => {
   if (demo) return; demo = true; $('#b-demo').textContent = '🎬 Demo in corso…';
   for (const [g, meteo] of [[1, 'sole'], [2, 'nuvoloso'], [3, 'pioggia']]) {
     document.querySelectorAll('#b-meteo .btn').forEach((x) => x.classList.toggle('on', x.dataset.m === meteo));
-    Diorama.setMeteo(meteo); Diorama.nuovoGiorno(); finito = false;
-    coni = 6; Diorama.setConi(coni, 6);
+    Diorama.setMeteo(meteo);
     $('#s-day').textContent = '📅 Giorno ' + g + ' ' + { sole: '☀️', nuvoloso: '☁️', pioggia: '🌧️' }[meteo];
     const orari = [9.0, 9.8, 10.6, 11.3, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 20.25];   // 11 clienti, solo 6 coni (l'ultimo arriva a negozio chiuso)
     let prossimo = 0, furgone = 'atteso';
     // la mattina: la gelateria apre (porta, gelataio, pacchi dentro, bancone fuori, porta chiusa)
-    if (g === 1) Diorama.pacchiPronti(5);
-    setClock(8); await Diorama.apri();
+    if (g === 1) { Diorama.setPacchi(6); coni = 0; finito = true; Diorama.setConi(0, 6); Diorama.setFinito(true); }
+    setClock(8); await Diorama.apri(4);                       // porta dentro 4 pacchi: i coni tornano a 6
     await tween(25000, (p) => {
       const h = 8.5 + 11.5 * p; setClock(h);
       while (prossimo < orari.length && h >= orari[prossimo]) {
