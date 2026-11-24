@@ -65,22 +65,52 @@ window.Diorama = (() => {
       }
     });
   }
-  // la campanella della scuola: una campana d'oro e la scritta DRIIIN in verticale
-  function campanella() {
-    return texCanvas(160, 480, (ctx, W, H) => {
-      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#f0b040'; ctx.lineWidth = 8; ctx.beginPath(); ctx.roundRect(6, 6, W - 12, H - 12, 34); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#f0b040'; ctx.beginPath(); ctx.moveTo(40, 112); ctx.quadraticCurveTo(44, 30, 80, 28); ctx.quadraticCurveTo(116, 30, 120, 112); ctx.lineTo(128, 120); ctx.lineTo(32, 120); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.arc(80, 128, 11, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(80, 22, 8, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#f0b040'; ctx.lineWidth = 6; ctx.lineCap = 'round';
-      for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(80, 76, 62, s > 0 ? -0.5 : Math.PI - 0.1, s > 0 ? 0.1 : Math.PI + 0.5); ctx.stroke(); }
-      ctx.fillStyle = '#44718a'; ctx.font = fontGrassetto(54); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      [...'DRIIIN'].forEach((l, i) => ctx.fillText(l, W / 2, 178 + i * 48));
+  // la campanella della scuola: una campana gialla in 3D con il batacchio e, ai lati, due onde di suono per parte.
+  // Sale verso l'alto oscillando e vibrando, mentre le onde pulsano una dopo l'altra. Sta sempre davanti a tutto.
+  function campanella3D() {
+    const g = new THREE.Group(); g.visible = false; g.renderOrder = 20;
+    const sopra = (m, ordine) => { m.material.depthTest = false; m.material.depthWrite = false; m.renderOrder = ordine; m.castShadow = false; m.receiveShadow = false; return m; };
+    const oro = () => new THREE.MeshStandardMaterial({ color: '#ffc63a', roughness: 0.45, emissive: '#ffb21a', emissiveIntensity: 0.25, transparent: true });
+    const corpo = new THREE.Group(); g.add(corpo);                    // oscilla intorno al gancio in alto
+    const profilo = [[0, -0.02], [0.34, -0.02], [0.37, 0.03], [0.33, 0.08], [0.25, 0.18], [0.21, 0.32], [0.2, 0.44], [0.16, 0.55], [0.08, 0.61], [0, 0.62]];
+    const campana = new THREE.Mesh(new THREE.LatheGeometry(profilo.map(([a, b]) => new THREE.Vector2(a, b - 0.62)), 28), oro()); corpo.add(sopra(campana, 22));
+    const pomello = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.06, 4, 10), oro()); pomello.position.y = 0.04; corpo.add(sopra(pomello, 22));
+    const batacchio = new THREE.Group(); batacchio.position.y = -0.62; corpo.add(batacchio);
+    const palla = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 10), new THREE.MeshStandardMaterial({ color: '#f29a1e', roughness: 0.45, transparent: true })); palla.position.y = -0.06; batacchio.add(sopra(palla, 21));
+    // le onde del suono: archi azzurri ai due lati
+    const onde = [];
+    for (const lato of [1, -1]) for (const [r, k] of [[0.55, 0], [0.75, 1]]) {
+      const arco = 1.05, m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.035, 8, 20, arco), new THREE.MeshBasicMaterial({ color: '#9db4ff', transparent: true, fog: false }));
+      m.rotation.z = lato > 0 ? -arco / 2 : Math.PI - arco / 2; m.position.y = -0.3;
+      g.add(sopra(m, 23)); onde.push({ m, k });
+    }
+    g.userData = { vivo: true, corpo, batacchio, onde, materiali: [campana.material, pomello.material, palla.material, ...onde.map((o) => o.m.material)] };
+    return g;
+  }
+  function suonaCampanella(x, y, z) {
+    const c = O.campane.find((q) => !q.visible); if (!c) return;
+    Object.assign(c.userData, { t0: tReale(), x, y, z }); c.visible = true;
+  }
+  function aggiornaCampane(t) {
+    O.campane.forEach((c) => {
+      if (!c.visible) return;
+      const d = c.userData, u = (t - d.t0) / 3.6;
+      if (u >= 1) { c.visible = false; return; }
+      c.position.set(d.x + Math.sin(t * 2.2) * 0.15, d.y + easeInOut(u) * 8.5, d.z);
+      c.quaternion.copy(camera.quaternion);                              // guarda sempre chi osserva
+      c.scale.setScalar(2.0 * Math.max(0.001, easeOutBack(clamp(u * 5))));
+      d.corpo.rotation.z = Math.sin(t * 16) * 0.32;                       // dondola
+      d.corpo.position.x = Math.sin(t * 55) * 0.012;                      // e vibra
+      d.batacchio.rotation.z = Math.sin(t * 16 - 0.9) * 0.45;
+      d.onde.forEach(({ m, k }) => { const f = ((t * 2.6 - k * 0.45) % 1 + 1) % 1;   // ogni onda si allarga e svanisce, le esterne dopo le interne
+        m.scale.setScalar(0.8 + 0.4 * f); m.material.opacity = Math.sin(Math.PI * f) * (1 - liscio(0.85, 1, u)); });
+      d.materiali.slice(0, 3).forEach((mt) => { mt.opacity = 1 - liscio(0.85, 1, u); });
     });
   }
   function emetti(tipo, x, y, z) {
     const f = O.faccine.find((q) => !q.visible); if (!f) return;
-    f.material = tipo === 'cuori' ? O.matCuori : tipo === 'campanella' ? O.matCampanella : O.matRabbia; f.visible = true;
-    f.userData = { vivo: true, t0: tReale(), x, y, z, fase: hash(x, z) * 6, ax: tipo === 'campanella' ? 0.9 : 1, ay: tipo === 'campanella' ? 2.7 : 1, dur: tipo === 'campanella' ? 4 : 2.8, sale: tipo === 'campanella' ? 11 : 17 };
+    f.material = tipo === 'cuori' ? O.matCuori : O.matRabbia; f.visible = true;
+    f.userData = { vivo: true, t0: tReale(), x, y, z, fase: hash(x, z) * 6 };
   }
   function cono(padre) {
     const g = new THREE.Group(); padre.add(g);
@@ -209,7 +239,14 @@ window.Diorama = (() => {
       for (let k = 0; k < 7; k++) { const m = metti(g, new THREE.SphereGeometry(1, 14, 10), '#ffffff', [rn.range(-1.3, 1.3), rn.range(-0.1, 0.35), rn.range(-0.6, 0.6)], null, true); m.scale.setScalar(rn.range(0.5, 0.9)); m.receiveShadow = false; }
       return g;
     });
-    O.matNuvola = vernice('#ffffff', 0.95); O.matNuvolaScura = vernice('#9aa1ad', 0.95);
+    O.matNuvola = vernice('#ffffff', 0.95); O.matNuvolaScura = vernice('#5f6672', 0.95);
+    // i nuvoloni neri del temporale: ce ne sono molti di più, e compaiono solo quando piove
+    O.nuvoloni = [[-2.4, -0.6, 4.4, 0.9], [3.5, -3.2, 5.6, 1.1], [5.6, 2.4, 4.7, 0.8], [10.8, -3.4, 6.2, 1.15], [11.6, 3.6, 5.2, 0.85], [17.6, -3.0, 5.8, 1.05], [19.6, 6.0, 4.5, 0.8], [-1.6, 8.8, 4.3, 0.75]].map(([x, y, z, s], i) => {
+      const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(0.001); g.visible = false; g.userData = { vivo: true, x, s }; L.add(g);
+      const rn = rng(70 + i);
+      for (let k = 0; k < 8; k++) { const m = metti(g, new THREE.SphereGeometry(1, 14, 10), O.matNuvolaScura, [rn.range(-1.5, 1.5), rn.range(-0.15, 0.4), rn.range(-0.7, 0.7)], null, true); m.scale.setScalar(rn.range(0.55, 0.95)); m.receiveShadow = false; }
+      return g;
+    });
     // il fulmine: una saetta di bastoncini luminosi
     O.fulmine = new THREE.Group(); O.fulmine.userData.vivo = true; O.fulmine.visible = false; L.add(O.fulmine);
     const matF = new THREE.MeshBasicMaterial({ color: '#fff6c8', fog: false }); let px = 0, py = 0;
@@ -242,7 +279,7 @@ window.Diorama = (() => {
     // le faccine (sprite sempre davanti a tutto)
     O.matCuori = new THREE.SpriteMaterial({ map: faccina('cuori'), depthTest: false, depthWrite: false, fog: false });
     O.matRabbia = new THREE.SpriteMaterial({ map: faccina('rabbia'), depthTest: false, depthWrite: false, fog: false });
-    O.matCampanella = new THREE.SpriteMaterial({ map: campanella(), depthTest: false, depthWrite: false, fog: false });
+    O.campane = [0, 1].map(() => { const c = campanella3D(); L.add(c); return c; });
     O.faccine = Array.from({ length: 14 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
     // i banchi di nebbia del cielo coperto: scorrono piano sopra la città alta (leggeri)
     const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(246,248,252,0.95)'); g.addColorStop(0.5, 'rgba(246,248,252,0.6)'); g.addColorStop(1, 'rgba(246,248,252,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
@@ -488,6 +525,7 @@ window.Diorama = (() => {
     });
     aggiornaClienti(t, dt);
     aggiornaRagazzi(t, h);
+    aggiornaCampane(t);
 
     // --- pioggia, pozzanghere, fulmini
     O.gocce.visible = kp > 0.02;
@@ -508,6 +546,7 @@ window.Diorama = (() => {
     const matN = kp > 0.5 ? O.matNuvolaScura : O.matNuvola;
     O.nuvole.forEach((g, i) => { const s = Math.max(0.001, kn * g.userData.s); g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.05 + i) * 1.2;
       if (g.userData.mat !== matN) { g.userData.mat = matN; g.children.forEach((m) => { m.material = matN; }); } });
+    O.nuvoloni.forEach((g, i) => { const s = Math.max(0.001, liscio(0.2, 0.9, kp) * g.userData.s); g.scale.setScalar(s); g.visible = s > 0.02; g.position.x = g.userData.x + Math.sin(t * 0.06 + i * 1.7) * 1.0; });
 
     // --- fiori: col sole sbocciano, col maltempo si chiudono
     const sboccioVuole = stato.meteo === 'sole' && notte < 0.5 ? 1 : 0;          // col sole sbocciano, altrimenti si richiudono
@@ -771,7 +810,7 @@ window.Diorama = (() => {
     const obiettivo = modo === 'entra' ? entra * tot : modo === 'esce' ? esce * tot : 0;
     if (modo !== fila.modo) {
       fila.F = Math.min(obiettivo, 0.2); fila.modo = modo;
-      if (modo) emetti('campanella', 8.8, 2.6, 8.6);                 // suona la campanella: DRIIIN
+      if (modo) suonaCampanella(8.8, 3.6, 8.6);                      // suona la campanella
     }
     const dh = h - fila.hPrec; fila.hPrec = h;
     if (dh < 0 || dh > 1) fila.F = obiettivo;                          // l'ora è saltata: si va subito al posto giusto
