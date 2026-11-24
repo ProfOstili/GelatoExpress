@@ -59,6 +59,9 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
       <input type="range" id="ora" min="8" max="32" step="0.1" value="10" aria-label="Ora del giorno"><span id="ora-txt">10:00</span>
       <button class="btn" id="b-giornata">▶ Giornata</button>
     </div></div>
+    <div class="gruppo"><h2>Demo</h2><div class="bar">
+      <button class="btn rosa" id="b-demo">🎬 Tre giornate: sole, nuvoloso, pioggia</button>
+    </div></div>
     <div class="gruppo"><h2>Camion</h2><div class="bar">
       <button class="btn" id="b-ordina">📦 Ordina 30 kg</button><button class="btn" id="b-arriva">🏁 Arriva</button>
     </div><p class="nota" id="camion-txt">fermo al fornitore</p></div>
@@ -129,6 +132,7 @@ function cliente(servito) {
   Diorama.cliente(servito, 2600 / speed);
   if (servito && coni > 0) {
     coni--; Diorama.setConi(coni); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
+    stock = Math.max(0, stock - 4); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg';   // ogni cono consuma un po' di magazzino
     setTimeout(() => { const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c'); }, 1400 / speed);
     if (coni === 0) Diorama.setFinito(true);
   }
@@ -147,6 +151,34 @@ document.querySelectorAll('#b-speed .btn[data-q]').forEach((b) => b.onclick = ()
 // contatore fps
 setInterval(() => { $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; $('#q-txt').textContent = 'qualità: ' + Diorama.qualita; }, 500);
 setClock(10);
+
+// ---- DEMO: tre giornate intere (sole, nuvoloso, pioggia). Ogni giorno arrivano più clienti dei coni
+//      e la sera arriva sempre il furgone con 30 kg. Rispetta la velocità 1×/2×/4×.
+let demo = false;
+$('#b-demo').onclick = async () => {
+  if (demo) return; demo = true; $('#b-demo').textContent = '🎬 Demo in corso…';
+  for (const [g, meteo] of [[1, 'sole'], [2, 'nuvoloso'], [3, 'pioggia']]) {
+    document.querySelectorAll('#b-meteo .btn').forEach((x) => x.classList.toggle('on', x.dataset.m === meteo));
+    Diorama.setMeteo(meteo); Diorama.nuovoGiorno(); finito = false;
+    coni = 6; Diorama.setConi(coni, 6);
+    $('#s-day').textContent = '📅 Giorno ' + g + ' ' + { sole: '☀️', nuvoloso: '☁️', pioggia: '🌧️' }[meteo];
+    const orari = [9.0, 9.8, 10.6, 11.3, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 20.25];   // 11 clienti, solo 6 coni (l'ultimo arriva a negozio chiuso)
+    let prossimo = 0, furgone = 'atteso';
+    await tween(26000, (p) => {
+      const h = 8 + 12 * p; setClock(h);
+      while (prossimo < orari.length && h >= orari[prossimo]) {
+        const aperto = orari[prossimo] < 20;
+        cliente(aperto && coni > 0); prossimo++;
+      }
+      // il furgone: parte alle 12:30 e arriva la sera alle 19:15
+      if (h >= 12.5 && furgone === 'atteso') { furgone = 'viaggio'; const pos = Diorama.posizioneSchermo('fornitore'); floater('📦 ordine 30 kg', pos[0], pos[1]); }
+      if (furgone === 'viaggio') { const ore = Math.min(24, (h - 12.5) / (19.25 - 12.5) * 24); Diorama.camion(true, 30, ore); $('#camion-txt').textContent = ore < 22 ? '🚚 30 kg · arriva tra ' + Math.max(1, Math.ceil(19.25 - h)) + ' h' : '🚚 arrivato!'; if (ore >= 24) { furgone = 'fatto'; arriva(30); } }
+    });
+    while (prossimo < orari.length) { cliente(false); prossimo++; }
+    await tween(6000, (p) => setClock(20 + 12 * p));
+  }
+  setClock(10); demo = false; $('#b-demo').textContent = '🎬 Tre giornate: sole, nuvoloso, pioggia';
+};
 </script>
 </body>
 </html>

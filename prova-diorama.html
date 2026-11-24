@@ -59,6 +59,9 @@ input[type=range]{flex:1;min-width:140px;accent-color:var(--pink)}
       <input type="range" id="ora" min="8" max="32" step="0.1" value="10" aria-label="Ora del giorno"><span id="ora-txt">10:00</span>
       <button class="btn" id="b-giornata">▶ Giornata</button>
     </div></div>
+    <div class="gruppo"><h2>Demo</h2><div class="bar">
+      <button class="btn rosa" id="b-demo">🎬 Tre giornate: sole, nuvoloso, pioggia</button>
+    </div></div>
     <div class="gruppo"><h2>Camion</h2><div class="bar">
       <button class="btn" id="b-ordina">📦 Ordina 30 kg</button><button class="btn" id="b-arriva">🏁 Arriva</button>
     </div><p class="nota" id="camion-txt">fermo al fornitore</p></div>
@@ -4867,19 +4870,47 @@ function palazzoPriori(L, finestra) {
   for (let i = 0; i < 3; i++) { blocco(L, tx + 0.02 + i * 0.31, ty + 0.65, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); blocco(L, tx + 0.65, ty + 0.02 + i * 0.31, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); blocco(L, tx + 0.02 + i * 0.31, ty, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); blocco(L, tx, ty + 0.02 + i * 0.31, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); }
   aquila(L, tx + 0.42, ty + 0.42, z + h + 1.5);
 }
-// l'aquila, simbolo di Todi, in bronzo con le ali spiegate
+// l'aquila di Todi in bronzo, come quella del Palazzo dei Priori: ali alzate e aperte, penne lunghe che scendono
+// con la patina verde in fondo, testa girata di lato, artigli su una sbarra appoggiata a due mensole di pietra
+let texAla = null;
 function aquila(L, x, y, z) {
-  const g = new THREE.Group(); g.position.set(x, z, y); g.rotation.y = 0.35; L.add(g);
-  metti(g, new THREE.CylinderGeometry(0.12, 0.14, 0.12, 10), '#5b6070', [0, 0.06, 0]);
-  metti(g, new THREE.SphereGeometry(0.1, 12, 10), PAL.bronzo, [0, 0.3, 0]).scale.set(0.9, 1.6, 0.8);
-  metti(g, new THREE.SphereGeometry(0.07, 12, 10), PAL.bronzo, [0.02, 0.55, 0.02]);
-  metti(g, new THREE.ConeGeometry(0.03, 0.08, 6), PAL.senape, [0.03, 0.54, 0.1], [Math.PI / 2, 0, 0]);
+  const bronzo = '#3d4438', bronzoChiaro = '#4d564a', patina = '#5d8c7c', pietra = PAL.travertino;
+  const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(1.35); L.add(g);
+  // mensole e sbarra
+  metti(g, scatolaGeo(0.5, 0.07, 0.16, 0.02), pietra, [0, 0.035, 0]);
+  for (const s of [-0.16, 0.16]) metti(g, scatolaGeo(0.09, 0.16, 0.13, 0.02), pietra, [s, -0.07, 0]);
+  metti(g, new THREE.CylinderGeometry(0.018, 0.018, 0.4, 6), bronzo, [0, 0.085, 0.02], [0, 0, Math.PI / 2]);
+  // zampe e artigli
   for (const s of [-1, 1]) {
-    const ala = prisma([[0, 0], [0.45, 0.22], [0.42, 0.1], [0.36, 0.14], [0.33, 0.02], [0.26, 0.05], [0.06, -0.12]], 0.02, 0.04, 0.012);
-    const m = metti(g, ala, '#4e3a27', [s * 0.06, 0.38, -0.02]); m.scale.x = s; m.rotation.y = s * 0.25;
+    metti(g, new THREE.CylinderGeometry(0.022, 0.03, 0.2, 6), bronzo, [s * 0.05, 0.19, 0.01], [0, 0, s * 0.12]);
+    for (const k of [-1, 0, 1]) metti(g, new THREE.ConeGeometry(0.012, 0.05, 5), bronzo, [s * 0.05 + k * 0.022, 0.08, 0.04], [Math.PI / 2.4, 0, 0]);
+  }
+  // corpo, coda, collo, testa girata e becco adunco
+  metti(g, new THREE.SphereGeometry(0.1, 14, 12), bronzo, [0, 0.4, 0.01]).scale.set(1.3, 1.75, 1.0);
+  metti(g, prisma([[-0.07, 0], [0.07, 0], [0.04, 0.16], [-0.04, 0.16]], 0.02, 0.03, 0.008), bronzo, [0, 0.06, -0.06], [0.25, 0, 0]);
+  metti(g, new THREE.CylinderGeometry(0.05, 0.08, 0.1, 10), bronzo, [0, 0.6, 0.015]);
+  const testa = new THREE.Group(); testa.position.set(0, 0.68, 0.03); testa.rotation.y = 0.55; g.add(testa);
+  metti(testa, new THREE.SphereGeometry(0.068, 12, 10), bronzoChiaro, [0, 0, 0]).scale.set(0.9, 1, 1.15);
+  metti(testa, new THREE.ConeGeometry(0.03, 0.09, 8), bronzoChiaro, [0, -0.01, 0.1], [Math.PI / 2, 0, 0]);
+  metti(testa, new THREE.ConeGeometry(0.014, 0.04, 6), bronzoChiaro, [0, -0.035, 0.135], [Math.PI, 0, 0]);
+  // le ali: sagoma con il bordo alto arrotondato e le penne lunghe che pendono, dipinta con scaglie e patina
+  texAla ??= texCanvas(256, 448, (ctx, W, H) => {
+    ctx.fillStyle = bronzo; ctx.fillRect(0, 0, W, H);
+    const pat = ctx.createLinearGradient(0, H * 0.45, 0, H); pat.addColorStop(0, 'rgba(93,140,124,0)'); pat.addColorStop(0.35, patina); pat.addColorStop(1, '#79a898');
+    ctx.fillStyle = pat; ctx.fillRect(0, H * 0.45, W, H * 0.55);
+    ctx.strokeStyle = '#556050'; ctx.lineWidth = 4;
+    for (let r = 0; r < 7; r++) for (let c = 0; c < 9; c++) { ctx.beginPath(); ctx.arc(c * 30 + (r % 2) * 15, 20 + r * 26, 14, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(30,40,34,0.55)'; ctx.lineWidth = 5;
+    for (let x = 12; x < W; x += 26) { ctx.beginPath(); ctx.moveTo(x, H * 0.42); ctx.lineTo(x + 6, H); ctx.stroke(); }
+  });
+  texAla.wrapS = texAla.wrapT = THREE.RepeatWrapping; texAla.repeat.set(1 / 0.4, 1 / 0.7); texAla.offset.set(0, 0.45 / 0.7);
+  const matAla = new THREE.MeshStandardMaterial({ map: texAla, roughness: 0.55, metalness: 0.35 });
+  const sagoma = [[0, 0], [0.06, 0.12], [0.16, 0.21], [0.27, 0.22], [0.35, 0.14], [0.38, 0.01], [0.37, -0.18], [0.34, -0.38], [0.31, -0.43], [0.28, -0.34], [0.25, -0.43], [0.22, -0.33], [0.18, -0.41], [0.15, -0.3], [0.11, -0.33], [0.07, -0.14]];
+  for (const s of [-1, 1]) {
+    const ala = metti(g, prisma(sagoma, 0.015, 0.045, 0.01), [matAla, vernice(bronzo, 0.6)], [s * 0.09, 0.46, -0.03]);
+    ala.scale.set(s * 1.3, 1.3, 1); ala.rotation.set(0, -s * 0.3, -s * 0.14);       // ali grandi, alzate e un po' aperte verso l'esterno
   }
 }
-
 /* ---------- la scuola: istituto Ciuffelli-Einaudi ---------- */
 function scuola(L, finestra, O) {
   const y = 5.4, h = 3.3, col = PAL.scuola;
@@ -5317,8 +5348,25 @@ window.Diorama = (() => {
       const m = metti(O.fulmine, new THREE.CylinderGeometry(0.05, 0.05, a.distanceTo(b), 5), matF, [(px + nx) / 2, (py + ny) / 2, 0], null, false); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); px = nx; py = ny; }
 
     // uccellini e farfalle (col sole)
-    O.uccelli = Array.from({ length: 6 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
-      for (const s of [-1, 1]) { const a = new THREE.Group(); g.add(a); metti(a, scatolaGeo(0.34, 0.03, 0.08, 0.012), PAL.scuro, [s * 0.17, 0, 0], null, false); ali.push(a); } g.userData.ali = ali; return g; });
+    // uccellini colorati posati sui tetti: ogni tanto battono le ali e fanno un saltello
+    const posatoi = [[13.6, 6.4, GEL.h + 0.25, 0.4], [16.8, 7.7, GEL.h + 0.25, 2.6], [7.35, 6.71, 3.78, -0.5], [10.27, 6.71, 3.78, 2.2], [-2.38, 0.4, FORN.h + 0.55, 1.2],
+      [9.3, 0.7, Z3 + 2.6 + 0.73, 0.3], [12.35, 0.4, Z3 + 3.0 + 0.58, 2.9], [14.6, 1.95, Z3 + 2.6 + 0.22, -0.2], [16.1, 2.31, Z3 + 0.3, 0.8], [5.4, 3.65, Z2 + 2.45 + 0.25, 2.5]];
+    const coloriU = [['#4f9fd8', '#f3e6c9'], ['#f0b040', '#fff1d0'], ['#e0614a', '#f6e3cf'], ['#5fb38a', '#eaf2d8'], ['#8a7fd0', '#efe7ff']];
+    O.uccelli = posatoi.map(([x, y, z, rot], i) => {
+      const [c, petto] = coloriU[i % coloriU.length], g = new THREE.Group(); g.userData.vivo = true; g.position.set(x, z, y); g.rotation.y = rot; g.scale.setScalar(1.7); L.add(g);
+      const corpo = new THREE.Group(); g.add(corpo);
+      metti(corpo, new THREE.SphereGeometry(0.075, 12, 10), c, [0, 0.08, 0]).scale.set(1.35, 1, 1);
+      metti(corpo, new THREE.SphereGeometry(0.06, 10, 8), petto, [0.04, 0.065, 0]).scale.set(1, 0.9, 0.8);
+      const testa = new THREE.Group(); testa.position.set(0.09, 0.15, 0); corpo.add(testa);
+      metti(testa, new THREE.SphereGeometry(0.05, 12, 10), c);
+      metti(testa, new THREE.ConeGeometry(0.016, 0.05, 6), PAL.senape, [0.06, -0.005, 0], [0, 0, -Math.PI / 2]);
+      for (const s of [-1, 1]) metti(testa, new THREE.SphereGeometry(0.01, 6, 4), PAL.scuro, [0.03, 0.015, s * 0.038]);
+      metti(corpo, scatolaGeo(0.1, 0.012, 0.06, 0.005), c, [-0.12, 0.11, 0], [0, 0, 0.5]);
+      for (const s of [-1, 1]) metti(corpo, new THREE.CylinderGeometry(0.005, 0.005, 0.04, 4), PAL.senape, [0.01, 0.02, s * 0.025]);
+      const ali = [-1, 1].map((s) => { const a = new THREE.Group(); a.position.set(0, 0.11, s * 0.06); corpo.add(a); metti(a, new THREE.SphereGeometry(0.06, 10, 6), c, [-0.02, 0, s * 0.02]).scale.set(1.2, 0.3, 0.75); a.userData.s = s; return a; });
+      g.userData = { vivo: true, corpo, testa, ali, periodo: 3.5 + hash(i, 7) * 4, fase: hash(i, 9) * 10 };
+      return g;
+    });
     O.farfalle = Array.from({ length: 3 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
       for (const s of [-1, 1]) { const a = new THREE.Group(); g.add(a); metti(a, new THREE.CircleGeometry(0.08, 10), new THREE.MeshStandardMaterial({ color: [PAL.accento, PAL.senape, '#b9a6e0'][i], side: THREE.DoubleSide, roughness: 0.8 }), [s * 0.07, 0, 0], [-Math.PI / 2, 0, 0], false); ali.push(a); } g.userData.ali = ali; return g; });
 
@@ -5327,10 +5375,10 @@ window.Diorama = (() => {
     O.matRabbia = new THREE.SpriteMaterial({ map: faccina('rabbia'), depthTest: false, depthWrite: false, fog: false });
     O.faccine = Array.from({ length: 14 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
     // i banchi di nebbia del cielo coperto: coprono la parte alta del plastico e scorrono piano
-    const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(246,248,252,0.95)'); g.addColorStop(0.5, 'rgba(246,248,252,0.6)'); g.addColorStop(1, 'rgba(246,248,252,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
+    const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(244,246,250,1)'); g.addColorStop(0.55, 'rgba(244,246,250,0.88)'); g.addColorStop(1, 'rgba(244,246,250,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
     O.matNebbia = new THREE.SpriteMaterial({ map: texNebbia, transparent: true, depthWrite: false, fog: false, opacity: 0 });
     const rb = rng(55);
-    O.banchi = Array.from({ length: 12 }, () => { const sp = new THREE.Sprite(O.matNebbia); sp.userData = { vivo: true, x: rb.range(-2, 22), y: rb.range(-2.5, 3.6), z: rb.range(2.6, 6.2), v: rb.range(0.25, 0.6), w: rb.range(7, 11) }; sp.scale.set(sp.userData.w, sp.userData.w * 0.36, 1); sp.renderOrder = 5; L.add(sp); return sp; });
+    O.banchi = Array.from({ length: 70 }, (_, i) => { const sp = new THREE.Sprite(O.matNebbia); sp.userData = { vivo: true, x: rb.range(0.5, 20), y: rb.range(-3, i < 58 ? 3.4 : 5.0), z: i < 58 ? 3.0 + (i % 7) * 0.95 + rb.range(0, 0.5) : rb.range(2.0, 3.4), v: rb.range(0.1, 0.25), ph: rb.range(0, 6.3), w: rb.range(8, 12.5) }; sp.scale.set(sp.userData.w, sp.userData.w * 0.36, 1); sp.renderOrder = 5; L.add(sp); return sp; });
     // tutto ciò che è fermo viene fuso in poche mesh
     fondi(L);
   }
@@ -5502,7 +5550,7 @@ window.Diorama = (() => {
     scena.background.copy(C.tmp2); O.carta.material.color.copy(C.tmp2);
     // la nebbia del cielo coperto: fitta sulla città alta (più lontana), leggera davanti
     scena.fog.color.copy(C.tmp2).lerp(C.tmp.set('#eef1f5'), 0.5 * (1 - notte));
-    scena.fog.near = nebbia > 0.02 ? CAM.dist - 3 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 20 + 60 * (1 - nebbia) : 2e4;
+    scena.fog.near = nebbia > 0.02 ? CAM.dist - 2 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 3 + 60 * (1 - nebbia) : 2e4;
     scena.environmentIntensity = lerp(0.4, 0.15, notte);
     post.uniforms.esposizione.value = lerp(1, 0.92, kp);
     post.uniforms.sat.value = lerp(1.08, 0.9, kp);
@@ -5570,9 +5618,9 @@ window.Diorama = (() => {
       f.scale.setScalar(0.85 * Math.max(0.001, easeOutBack(clamp(u * 5))));
     });
     // --- banchi di nebbia
-    O.matNebbia.opacity = 0.85 * liscio(0.1, 0.8, nebbia);
+    O.matNebbia.opacity = 0.97 * liscio(0.1, 0.8, nebbia);
     O.banchi.forEach((b) => { b.visible = O.matNebbia.opacity > 0.01; if (!b.visible) return; const u = b.userData;
-      b.position.set(-3 + ((u.x + 3 + t * u.v) % 26), u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
+      b.position.set(u.x + Math.sin(t * u.v + u.ph) * 1.6, u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
     aggiornaClienti(t);
     aggiornaRagazzi(t, h);
 
@@ -5608,11 +5656,14 @@ window.Diorama = (() => {
     // --- uccellini e farfalle col bel tempo
     const bello = (1 - kn) * (1 - notte) > 0.5;
     post.uniforms.riflessi.value = (1 - kn) * (1 - notte) * (0.6 + 0.4 * Math.sin(Math.PI * p));
-    O.uccelli.forEach((g, i) => {
-      g.visible = bello; if (!bello) return;
-      const a = t * 0.22 + i * 1.05, r = 5 + (i % 3) * 1.4;
-      g.position.set(PIASTRA.cx + Math.cos(a) * r, 5.4 + (i % 2) * 0.9 + Math.sin(t * 1.3 + i) * 0.25, PIASTRA.cy + 0.5 + Math.sin(a) * r * 0.55); g.scale.setScalar(1.6);
-      g.rotation.y = -a; const ali = Math.sin(t * 9 + i * 2) * 0.5; g.userData.ali[0].rotation.z = ali; g.userData.ali[1].rotation.z = -ali;
+    O.uccelli.forEach((g) => {
+      g.visible = bello && kp < 0.3; if (!g.visible) return;
+      const u = g.userData, c = ((t + u.fase) % u.periodo), sbatte = c < 0.7;
+      const ali = sbatte ? 0.3 + 0.9 * Math.abs(Math.sin(c * 28)) : 0;
+      u.ali.forEach((a) => { a.rotation.x = -a.userData.s * ali; });
+      u.corpo.position.y = sbatte ? Math.sin(Math.PI * c / 0.7) * 0.06 : 0;
+      u.testa.rotation.y = Math.sin(t * 0.7 + u.fase) > 0.6 ? 0.6 : Math.sin(t * 0.7 + u.fase) < -0.6 ? -0.6 : 0;
+      u.testa.rotation.z = c > 1.5 && c < 1.9 ? -0.35 : 0;                            // ogni tanto becchetta
     });
     O.farfalle.forEach((g, i) => {
       g.visible = bello; if (!bello) return;
@@ -5789,7 +5840,7 @@ window.Diorama = (() => {
     nuovoGiorno() { stato.venduto = false; if (stato.finito) this.setFinito(false); },
     setSpeed(s) { stato.speed = s; },
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
-    vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; if (pos) camera.clearViewOffset(); else inquadra(); },
+    vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; camera.near = pos ? 0.05 : 5; camera.updateProjectionMatrix(); if (pos) camera.clearViewOffset(); else inquadra(); },
     forzaQualita(q) { impostaQualita(q); fps.campioni = []; },
     // dove si trova qualcosa sullo schermo (in %), per mettere i cartellini dei guadagni nel DOM
     posizioneSchermo(cosa = 'gelateria') {
@@ -5846,6 +5897,7 @@ function cliente(servito) {
   Diorama.cliente(servito, 2600 / speed);
   if (servito && coni > 0) {
     coni--; Diorama.setConi(coni); cassa += 3; $('#s-cash').textContent = '💰 €' + cassa;
+    stock = Math.max(0, stock - 4); Diorama.setStock(stock, 100); $('#stock-txt').textContent = stock + ' kg';   // ogni cono consuma un po' di magazzino
     setTimeout(() => { const p = Diorama.posizioneSchermo(); floater('+€3', p[0], p[1], '#3f866c'); }, 1400 / speed);
     if (coni === 0) Diorama.setFinito(true);
   }
@@ -5864,6 +5916,34 @@ document.querySelectorAll('#b-speed .btn[data-q]').forEach((b) => b.onclick = ()
 // contatore fps
 setInterval(() => { $('#fps').textContent = Math.round(Diorama.fps) + ' fps'; $('#q-txt').textContent = 'qualità: ' + Diorama.qualita; }, 500);
 setClock(10);
+
+// ---- DEMO: tre giornate intere (sole, nuvoloso, pioggia). Ogni giorno arrivano più clienti dei coni
+//      e la sera arriva sempre il furgone con 30 kg. Rispetta la velocità 1×/2×/4×.
+let demo = false;
+$('#b-demo').onclick = async () => {
+  if (demo) return; demo = true; $('#b-demo').textContent = '🎬 Demo in corso…';
+  for (const [g, meteo] of [[1, 'sole'], [2, 'nuvoloso'], [3, 'pioggia']]) {
+    document.querySelectorAll('#b-meteo .btn').forEach((x) => x.classList.toggle('on', x.dataset.m === meteo));
+    Diorama.setMeteo(meteo); Diorama.nuovoGiorno(); finito = false;
+    coni = 6; Diorama.setConi(coni, 6);
+    $('#s-day').textContent = '📅 Giorno ' + g + ' ' + { sole: '☀️', nuvoloso: '☁️', pioggia: '🌧️' }[meteo];
+    const orari = [9.0, 9.8, 10.6, 11.3, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 20.25];   // 11 clienti, solo 6 coni (l'ultimo arriva a negozio chiuso)
+    let prossimo = 0, furgone = 'atteso';
+    await tween(26000, (p) => {
+      const h = 8 + 12 * p; setClock(h);
+      while (prossimo < orari.length && h >= orari[prossimo]) {
+        const aperto = orari[prossimo] < 20;
+        cliente(aperto && coni > 0); prossimo++;
+      }
+      // il furgone: parte alle 12:30 e arriva la sera alle 19:15
+      if (h >= 12.5 && furgone === 'atteso') { furgone = 'viaggio'; const pos = Diorama.posizioneSchermo('fornitore'); floater('📦 ordine 30 kg', pos[0], pos[1]); }
+      if (furgone === 'viaggio') { const ore = Math.min(24, (h - 12.5) / (19.25 - 12.5) * 24); Diorama.camion(true, 30, ore); $('#camion-txt').textContent = ore < 22 ? '🚚 30 kg · arriva tra ' + Math.max(1, Math.ceil(19.25 - h)) + ' h' : '🚚 arrivato!'; if (ore >= 24) { furgone = 'fatto'; arriva(30); } }
+    });
+    while (prossimo < orari.length) { cliente(false); prossimo++; }
+    await tween(6000, (p) => setClock(20 + 12 * p));
+  }
+  setClock(10); demo = false; $('#b-demo').textContent = '🎬 Tre giornate: sole, nuvoloso, pioggia';
+};
 </script>
 </body>
 </html>

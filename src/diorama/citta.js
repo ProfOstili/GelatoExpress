@@ -323,19 +323,47 @@ function palazzoPriori(L, finestra) {
   for (let i = 0; i < 3; i++) { blocco(L, tx + 0.02 + i * 0.31, ty + 0.65, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); blocco(L, tx + 0.65, ty + 0.02 + i * 0.31, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); blocco(L, tx + 0.02 + i * 0.31, ty, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); blocco(L, tx, ty + 0.02 + i * 0.31, z + h + 1.5, 0.2, 0.2, 0.22, col, 0.03); }
   aquila(L, tx + 0.42, ty + 0.42, z + h + 1.5);
 }
-// l'aquila, simbolo di Todi, in bronzo con le ali spiegate
+// l'aquila di Todi in bronzo, come quella del Palazzo dei Priori: ali alzate e aperte, penne lunghe che scendono
+// con la patina verde in fondo, testa girata di lato, artigli su una sbarra appoggiata a due mensole di pietra
+let texAla = null;
 function aquila(L, x, y, z) {
-  const g = new THREE.Group(); g.position.set(x, z, y); g.rotation.y = 0.35; L.add(g);
-  metti(g, new THREE.CylinderGeometry(0.12, 0.14, 0.12, 10), '#5b6070', [0, 0.06, 0]);
-  metti(g, new THREE.SphereGeometry(0.1, 12, 10), PAL.bronzo, [0, 0.3, 0]).scale.set(0.9, 1.6, 0.8);
-  metti(g, new THREE.SphereGeometry(0.07, 12, 10), PAL.bronzo, [0.02, 0.55, 0.02]);
-  metti(g, new THREE.ConeGeometry(0.03, 0.08, 6), PAL.senape, [0.03, 0.54, 0.1], [Math.PI / 2, 0, 0]);
+  const bronzo = '#3d4438', bronzoChiaro = '#4d564a', patina = '#5d8c7c', pietra = PAL.travertino;
+  const g = new THREE.Group(); g.position.set(x, z, y); g.scale.setScalar(1.35); L.add(g);
+  // mensole e sbarra
+  metti(g, scatolaGeo(0.5, 0.07, 0.16, 0.02), pietra, [0, 0.035, 0]);
+  for (const s of [-0.16, 0.16]) metti(g, scatolaGeo(0.09, 0.16, 0.13, 0.02), pietra, [s, -0.07, 0]);
+  metti(g, new THREE.CylinderGeometry(0.018, 0.018, 0.4, 6), bronzo, [0, 0.085, 0.02], [0, 0, Math.PI / 2]);
+  // zampe e artigli
   for (const s of [-1, 1]) {
-    const ala = prisma([[0, 0], [0.45, 0.22], [0.42, 0.1], [0.36, 0.14], [0.33, 0.02], [0.26, 0.05], [0.06, -0.12]], 0.02, 0.04, 0.012);
-    const m = metti(g, ala, '#4e3a27', [s * 0.06, 0.38, -0.02]); m.scale.x = s; m.rotation.y = s * 0.25;
+    metti(g, new THREE.CylinderGeometry(0.022, 0.03, 0.2, 6), bronzo, [s * 0.05, 0.19, 0.01], [0, 0, s * 0.12]);
+    for (const k of [-1, 0, 1]) metti(g, new THREE.ConeGeometry(0.012, 0.05, 5), bronzo, [s * 0.05 + k * 0.022, 0.08, 0.04], [Math.PI / 2.4, 0, 0]);
+  }
+  // corpo, coda, collo, testa girata e becco adunco
+  metti(g, new THREE.SphereGeometry(0.1, 14, 12), bronzo, [0, 0.4, 0.01]).scale.set(1.3, 1.75, 1.0);
+  metti(g, prisma([[-0.07, 0], [0.07, 0], [0.04, 0.16], [-0.04, 0.16]], 0.02, 0.03, 0.008), bronzo, [0, 0.06, -0.06], [0.25, 0, 0]);
+  metti(g, new THREE.CylinderGeometry(0.05, 0.08, 0.1, 10), bronzo, [0, 0.6, 0.015]);
+  const testa = new THREE.Group(); testa.position.set(0, 0.68, 0.03); testa.rotation.y = 0.55; g.add(testa);
+  metti(testa, new THREE.SphereGeometry(0.068, 12, 10), bronzoChiaro, [0, 0, 0]).scale.set(0.9, 1, 1.15);
+  metti(testa, new THREE.ConeGeometry(0.03, 0.09, 8), bronzoChiaro, [0, -0.01, 0.1], [Math.PI / 2, 0, 0]);
+  metti(testa, new THREE.ConeGeometry(0.014, 0.04, 6), bronzoChiaro, [0, -0.035, 0.135], [Math.PI, 0, 0]);
+  // le ali: sagoma con il bordo alto arrotondato e le penne lunghe che pendono, dipinta con scaglie e patina
+  texAla ??= texCanvas(256, 448, (ctx, W, H) => {
+    ctx.fillStyle = bronzo; ctx.fillRect(0, 0, W, H);
+    const pat = ctx.createLinearGradient(0, H * 0.45, 0, H); pat.addColorStop(0, 'rgba(93,140,124,0)'); pat.addColorStop(0.35, patina); pat.addColorStop(1, '#79a898');
+    ctx.fillStyle = pat; ctx.fillRect(0, H * 0.45, W, H * 0.55);
+    ctx.strokeStyle = '#556050'; ctx.lineWidth = 4;
+    for (let r = 0; r < 7; r++) for (let c = 0; c < 9; c++) { ctx.beginPath(); ctx.arc(c * 30 + (r % 2) * 15, 20 + r * 26, 14, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(30,40,34,0.55)'; ctx.lineWidth = 5;
+    for (let x = 12; x < W; x += 26) { ctx.beginPath(); ctx.moveTo(x, H * 0.42); ctx.lineTo(x + 6, H); ctx.stroke(); }
+  });
+  texAla.wrapS = texAla.wrapT = THREE.RepeatWrapping; texAla.repeat.set(1 / 0.4, 1 / 0.7); texAla.offset.set(0, 0.45 / 0.7);
+  const matAla = new THREE.MeshStandardMaterial({ map: texAla, roughness: 0.55, metalness: 0.35 });
+  const sagoma = [[0, 0], [0.06, 0.12], [0.16, 0.21], [0.27, 0.22], [0.35, 0.14], [0.38, 0.01], [0.37, -0.18], [0.34, -0.38], [0.31, -0.43], [0.28, -0.34], [0.25, -0.43], [0.22, -0.33], [0.18, -0.41], [0.15, -0.3], [0.11, -0.33], [0.07, -0.14]];
+  for (const s of [-1, 1]) {
+    const ala = metti(g, prisma(sagoma, 0.015, 0.045, 0.01), [matAla, vernice(bronzo, 0.6)], [s * 0.09, 0.46, -0.03]);
+    ala.scale.set(s * 1.3, 1.3, 1); ala.rotation.set(0, -s * 0.3, -s * 0.14);       // ali grandi, alzate e un po' aperte verso l'esterno
   }
 }
-
 /* ---------- la scuola: istituto Ciuffelli-Einaudi ---------- */
 function scuola(L, finestra, O) {
   const y = 5.4, h = 3.3, col = PAL.scuola;

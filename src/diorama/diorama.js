@@ -199,8 +199,25 @@ window.Diorama = (() => {
       const m = metti(O.fulmine, new THREE.CylinderGeometry(0.05, 0.05, a.distanceTo(b), 5), matF, [(px + nx) / 2, (py + ny) / 2, 0], null, false); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); px = nx; py = ny; }
 
     // uccellini e farfalle (col sole)
-    O.uccelli = Array.from({ length: 6 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
-      for (const s of [-1, 1]) { const a = new THREE.Group(); g.add(a); metti(a, scatolaGeo(0.34, 0.03, 0.08, 0.012), PAL.scuro, [s * 0.17, 0, 0], null, false); ali.push(a); } g.userData.ali = ali; return g; });
+    // uccellini colorati posati sui tetti: ogni tanto battono le ali e fanno un saltello
+    const posatoi = [[13.6, 6.4, GEL.h + 0.25, 0.4], [16.8, 7.7, GEL.h + 0.25, 2.6], [7.35, 6.71, 3.78, -0.5], [10.27, 6.71, 3.78, 2.2], [-2.38, 0.4, FORN.h + 0.55, 1.2],
+      [9.3, 0.7, Z3 + 2.6 + 0.73, 0.3], [12.35, 0.4, Z3 + 3.0 + 0.58, 2.9], [14.6, 1.95, Z3 + 2.6 + 0.22, -0.2], [16.1, 2.31, Z3 + 0.3, 0.8], [5.4, 3.65, Z2 + 2.45 + 0.25, 2.5]];
+    const coloriU = [['#4f9fd8', '#f3e6c9'], ['#f0b040', '#fff1d0'], ['#e0614a', '#f6e3cf'], ['#5fb38a', '#eaf2d8'], ['#8a7fd0', '#efe7ff']];
+    O.uccelli = posatoi.map(([x, y, z, rot], i) => {
+      const [c, petto] = coloriU[i % coloriU.length], g = new THREE.Group(); g.userData.vivo = true; g.position.set(x, z, y); g.rotation.y = rot; g.scale.setScalar(1.7); L.add(g);
+      const corpo = new THREE.Group(); g.add(corpo);
+      metti(corpo, new THREE.SphereGeometry(0.075, 12, 10), c, [0, 0.08, 0]).scale.set(1.35, 1, 1);
+      metti(corpo, new THREE.SphereGeometry(0.06, 10, 8), petto, [0.04, 0.065, 0]).scale.set(1, 0.9, 0.8);
+      const testa = new THREE.Group(); testa.position.set(0.09, 0.15, 0); corpo.add(testa);
+      metti(testa, new THREE.SphereGeometry(0.05, 12, 10), c);
+      metti(testa, new THREE.ConeGeometry(0.016, 0.05, 6), PAL.senape, [0.06, -0.005, 0], [0, 0, -Math.PI / 2]);
+      for (const s of [-1, 1]) metti(testa, new THREE.SphereGeometry(0.01, 6, 4), PAL.scuro, [0.03, 0.015, s * 0.038]);
+      metti(corpo, scatolaGeo(0.1, 0.012, 0.06, 0.005), c, [-0.12, 0.11, 0], [0, 0, 0.5]);
+      for (const s of [-1, 1]) metti(corpo, new THREE.CylinderGeometry(0.005, 0.005, 0.04, 4), PAL.senape, [0.01, 0.02, s * 0.025]);
+      const ali = [-1, 1].map((s) => { const a = new THREE.Group(); a.position.set(0, 0.11, s * 0.06); corpo.add(a); metti(a, new THREE.SphereGeometry(0.06, 10, 6), c, [-0.02, 0, s * 0.02]).scale.set(1.2, 0.3, 0.75); a.userData.s = s; return a; });
+      g.userData = { vivo: true, corpo, testa, ali, periodo: 3.5 + hash(i, 7) * 4, fase: hash(i, 9) * 10 };
+      return g;
+    });
     O.farfalle = Array.from({ length: 3 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
       for (const s of [-1, 1]) { const a = new THREE.Group(); g.add(a); metti(a, new THREE.CircleGeometry(0.08, 10), new THREE.MeshStandardMaterial({ color: [PAL.accento, PAL.senape, '#b9a6e0'][i], side: THREE.DoubleSide, roughness: 0.8 }), [s * 0.07, 0, 0], [-Math.PI / 2, 0, 0], false); ali.push(a); } g.userData.ali = ali; return g; });
 
@@ -209,10 +226,10 @@ window.Diorama = (() => {
     O.matRabbia = new THREE.SpriteMaterial({ map: faccina('rabbia'), depthTest: false, depthWrite: false, fog: false });
     O.faccine = Array.from({ length: 14 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
     // i banchi di nebbia del cielo coperto: coprono la parte alta del plastico e scorrono piano
-    const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(246,248,252,0.95)'); g.addColorStop(0.5, 'rgba(246,248,252,0.6)'); g.addColorStop(1, 'rgba(246,248,252,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
+    const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(244,246,250,1)'); g.addColorStop(0.55, 'rgba(244,246,250,0.88)'); g.addColorStop(1, 'rgba(244,246,250,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
     O.matNebbia = new THREE.SpriteMaterial({ map: texNebbia, transparent: true, depthWrite: false, fog: false, opacity: 0 });
     const rb = rng(55);
-    O.banchi = Array.from({ length: 12 }, () => { const sp = new THREE.Sprite(O.matNebbia); sp.userData = { vivo: true, x: rb.range(-2, 22), y: rb.range(-2.5, 3.6), z: rb.range(2.6, 6.2), v: rb.range(0.25, 0.6), w: rb.range(7, 11) }; sp.scale.set(sp.userData.w, sp.userData.w * 0.36, 1); sp.renderOrder = 5; L.add(sp); return sp; });
+    O.banchi = Array.from({ length: 70 }, (_, i) => { const sp = new THREE.Sprite(O.matNebbia); sp.userData = { vivo: true, x: rb.range(0.5, 20), y: rb.range(-3, i < 58 ? 3.4 : 5.0), z: i < 58 ? 3.0 + (i % 7) * 0.95 + rb.range(0, 0.5) : rb.range(2.0, 3.4), v: rb.range(0.1, 0.25), ph: rb.range(0, 6.3), w: rb.range(8, 12.5) }; sp.scale.set(sp.userData.w, sp.userData.w * 0.36, 1); sp.renderOrder = 5; L.add(sp); return sp; });
     // tutto ciò che è fermo viene fuso in poche mesh
     fondi(L);
   }
@@ -384,7 +401,7 @@ window.Diorama = (() => {
     scena.background.copy(C.tmp2); O.carta.material.color.copy(C.tmp2);
     // la nebbia del cielo coperto: fitta sulla città alta (più lontana), leggera davanti
     scena.fog.color.copy(C.tmp2).lerp(C.tmp.set('#eef1f5'), 0.5 * (1 - notte));
-    scena.fog.near = nebbia > 0.02 ? CAM.dist - 3 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 20 + 60 * (1 - nebbia) : 2e4;
+    scena.fog.near = nebbia > 0.02 ? CAM.dist - 2 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 3 + 60 * (1 - nebbia) : 2e4;
     scena.environmentIntensity = lerp(0.4, 0.15, notte);
     post.uniforms.esposizione.value = lerp(1, 0.92, kp);
     post.uniforms.sat.value = lerp(1.08, 0.9, kp);
@@ -452,9 +469,9 @@ window.Diorama = (() => {
       f.scale.setScalar(0.85 * Math.max(0.001, easeOutBack(clamp(u * 5))));
     });
     // --- banchi di nebbia
-    O.matNebbia.opacity = 0.85 * liscio(0.1, 0.8, nebbia);
+    O.matNebbia.opacity = 0.97 * liscio(0.1, 0.8, nebbia);
     O.banchi.forEach((b) => { b.visible = O.matNebbia.opacity > 0.01; if (!b.visible) return; const u = b.userData;
-      b.position.set(-3 + ((u.x + 3 + t * u.v) % 26), u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
+      b.position.set(u.x + Math.sin(t * u.v + u.ph) * 1.6, u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
     aggiornaClienti(t);
     aggiornaRagazzi(t, h);
 
@@ -490,11 +507,14 @@ window.Diorama = (() => {
     // --- uccellini e farfalle col bel tempo
     const bello = (1 - kn) * (1 - notte) > 0.5;
     post.uniforms.riflessi.value = (1 - kn) * (1 - notte) * (0.6 + 0.4 * Math.sin(Math.PI * p));
-    O.uccelli.forEach((g, i) => {
-      g.visible = bello; if (!bello) return;
-      const a = t * 0.22 + i * 1.05, r = 5 + (i % 3) * 1.4;
-      g.position.set(PIASTRA.cx + Math.cos(a) * r, 5.4 + (i % 2) * 0.9 + Math.sin(t * 1.3 + i) * 0.25, PIASTRA.cy + 0.5 + Math.sin(a) * r * 0.55); g.scale.setScalar(1.6);
-      g.rotation.y = -a; const ali = Math.sin(t * 9 + i * 2) * 0.5; g.userData.ali[0].rotation.z = ali; g.userData.ali[1].rotation.z = -ali;
+    O.uccelli.forEach((g) => {
+      g.visible = bello && kp < 0.3; if (!g.visible) return;
+      const u = g.userData, c = ((t + u.fase) % u.periodo), sbatte = c < 0.7;
+      const ali = sbatte ? 0.3 + 0.9 * Math.abs(Math.sin(c * 28)) : 0;
+      u.ali.forEach((a) => { a.rotation.x = -a.userData.s * ali; });
+      u.corpo.position.y = sbatte ? Math.sin(Math.PI * c / 0.7) * 0.06 : 0;
+      u.testa.rotation.y = Math.sin(t * 0.7 + u.fase) > 0.6 ? 0.6 : Math.sin(t * 0.7 + u.fase) < -0.6 ? -0.6 : 0;
+      u.testa.rotation.z = c > 1.5 && c < 1.9 ? -0.35 : 0;                            // ogni tanto becchetta
     });
     O.farfalle.forEach((g, i) => {
       g.visible = bello; if (!bello) return;
@@ -671,7 +691,7 @@ window.Diorama = (() => {
     nuovoGiorno() { stato.venduto = false; if (stato.finito) this.setFinito(false); },
     setSpeed(s) { stato.speed = s; },
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
-    vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; if (pos) camera.clearViewOffset(); else inquadra(); },
+    vistaProva(pos, mira) { CAM.vista = pos ? [new THREE.Vector3(...pos), new THREE.Vector3(...mira)] : null; camera.near = pos ? 0.05 : 5; camera.updateProjectionMatrix(); if (pos) camera.clearViewOffset(); else inquadra(); },
     forzaQualita(q) { impostaQualita(q); fps.campioni = []; },
     // dove si trova qualcosa sullo schermo (in %), per mettere i cartellini dei guadagni nel DOM
     posizioneSchermo(cosa = 'gelateria') {
