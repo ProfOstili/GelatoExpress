@@ -399,7 +399,7 @@ window.Diorama = (() => {
     scena.background.copy(C.tmp2); O.carta.material.color.copy(C.tmp2);
     // la nebbia del cielo coperto: fitta sulla città alta (più lontana), leggera davanti
     scena.fog.color.copy(C.tmp2).lerp(C.tmp.set('#eef1f5'), 0.5 * (1 - notte));
-    scena.fog.near = nebbia > 0.02 ? CAM.dist - 2 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 3 + 60 * (1 - nebbia) : 2e4;
+    scena.fog.near = nebbia > 0.02 ? CAM.dist - 2 : 1e4; scena.fog.far = nebbia > 0.02 ? CAM.dist + 6 + 60 * (1 - nebbia) : 2e4;
     scena.environmentIntensity = lerp(0.4, 0.15, notte);
     post.uniforms.esposizione.value = lerp(1, 0.92, kp);
     post.uniforms.sat.value = lerp(1.08, 0.9, kp);
@@ -452,7 +452,7 @@ window.Diorama = (() => {
       f.scale.setScalar(0.85 * Math.max(0.001, easeOutBack(clamp(u * 5))));
     });
     // --- banchi di nebbia
-    O.matNebbia.opacity = 0.97 * liscio(0.1, 0.8, nebbia);
+    O.matNebbia.opacity = 0.86 * liscio(0.1, 0.8, nebbia);
     O.banchi.forEach((b) => { b.visible = O.matNebbia.opacity > 0.01; if (!b.visible) return; const u = b.userData;
       b.position.set(u.x + Math.sin(t * u.v + u.ph) * 1.6, u.z + Math.sin(t * 0.3 + u.x) * 0.15, u.y); });
     aggiornaClienti(t);
