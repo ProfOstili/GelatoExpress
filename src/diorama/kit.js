@@ -45,6 +45,7 @@ const PAL = {
 };
 const FONT = '600 160px "Fredoka"';
 const fontPx = (px) => FONT.replace('160px', px + 'px');
+const fontGrassetto = (px) => '700 ' + px + 'px "Fredoka"';            // per le scritte che si devono leggere da lontano
 
 /* ---------- conversione di coordinate ---------- */
 const V = (x, y, z) => new THREE.Vector3(x, z, y);
@@ -134,10 +135,12 @@ function arcoGeo(w, h) {
   for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / w + 0.5, p.getY(i) / h);
   return g;
 }
+// filtraggio anisotropico: tiene nitide le immagini viste di sbieco (insegne, scritte); il massimo lo dice la scheda grafica
+let ANISO = 8;
 function texCanvas(w, h, disegna, ripeti) {
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d'); if (disegna) disegna(ctx, w, h);
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = ANISO;
   if (ripeti) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(ripeti[0], ripeti[1]); }
   t.ridisegna = (fn) => { ctx.clearRect(0, 0, w, h); fn(ctx, w, h); t.needsUpdate = true; };
   return t;

@@ -393,8 +393,8 @@ function scuola(L, finestra, O) {
   for (const k of [-0.48, 0, 0.48]) finestra('y', cx + k, yc, 2.75, 0.2, 0.4, 3070 + k * 10, '#f5eedc');
   blocco(L, c0 - 0.02, yc - 0.03, 2.98, c1 - c0 + 0.04, 0.06, 0.06, '#f5ead0', 0.01);
   // l'insegna SCUOLA in facciata
-  const insegna = texCanvas(512, 200, (ctx, W, H) => { ctx.fillStyle = '#fbf6ea'; ctx.beginPath(); ctx.roundRect(8, 8, W - 16, H - 16, 26); ctx.fill(); ctx.strokeStyle = '#6e9f38'; ctx.lineWidth = 12; ctx.stroke();
-    ctx.fillStyle = '#2f5f2a'; ctx.font = fontPx(118); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('SCUOLA', W / 2, H / 2 + 8); });
+  const insegna = texCanvas(1024, 400, (ctx, W, H) => { ctx.fillStyle = '#fbf6ea'; ctx.beginPath(); ctx.roundRect(14, 14, W - 28, H - 28, 50); ctx.fill(); ctx.strokeStyle = '#6e9f38'; ctx.lineWidth = 22; ctx.stroke();
+    ctx.fillStyle = '#2f5f2a'; ctx.font = fontGrassetto(250); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('SCUOLA', W / 2, H / 2 + 8); });
   sulMuro(L, 'y', cx, yc + 0.03, 3.38, 1.25, 0.48, new THREE.MeshStandardMaterial({ map: insegna, roughness: 0.8 }), 0.06);
   for (let k = 0; k < 8; k++) blocco(L, c0 + 0.04 + k * 0.18, yc - 0.1, hc, 0.08, 0.08, 0.22, '#efe6d0', 0.02);   // balaustra della terrazza
   blocco(L, c0, yc - 0.1, hc + 0.22, c1 - c0, 0.1, 0.05, '#f5ead0', 0.02);
@@ -442,12 +442,12 @@ function gelateria(L, O) {
   blocco(L, 13.2, fy - 0.02, 0.92, 2.7, 0.08, 1.32, PAL.crema, 0.04);
   sulMuro(L, 'y', 14.55, fy + 0.06, 1.575, 2.5, 1.15, O.matVetrina, 0.05);
   // il contatore dei coni: un'insegna luminosa sul tetto, ben visibile
-  O.texConi = texCanvas(512, 256);
+  O.texConi = texCanvas(1024, 480);
   O.matConi = new THREE.MeshStandardMaterial({ map: O.texConi, emissiveMap: O.texConi, emissive: '#ffffff', emissiveIntensity: 0.6, roughness: 0.5 });
   const ins = new THREE.Group(); ins.position.set(14.3, h + 0.25, y + 1.75); ins.rotation.x = -0.12; L.add(ins);
-  for (const s of [-0.75, 0.75]) metti(ins, new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8), PAL.ardesia, [s, 0.22, -0.05]);
-  metti(ins, scatolaGeo(2.0, 1.05, 0.14, 0.07), PAL.ardesia, [0, 0.95, 0]);
-  metti(ins, rettangoloGeo(1.84, 0.9, 0.06), O.matConi, [0, 0.95, 0.075], null, false);
+  for (const s of [-0.85, 0.85]) metti(ins, new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8), PAL.ardesia, [s, 0.22, -0.05]);
+  metti(ins, scatolaGeo(2.3, 1.2, 0.14, 0.07), PAL.ardesia, [0, 1.02, 0]);
+  metti(ins, rettangoloGeo(2.14, 1.0, 0.06), O.matConi, [0, 1.02, 0.075], null, false);
   // la porta che scorre (aperta di giorno, chiusa di notte)
   O.vanoPorta = luminosa(PAL.scuro, '#ffca7a');
   sulMuro(L, 'y', GEL.porta, fy + 0.005, 0, 0, 0, PAL.ardesia, 0, arcoGeo(0.9, 1.98));

@@ -285,11 +285,10 @@ window.Diorama = (() => {
     const colNum = finiti ? '#ff8a9e' : pochi ? '#ffd27a' : '#fff6e6';
     O.texConi.ridisegna((ctx, W, H) => {
       ctx.fillStyle = '#2a2433'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(60, 120); ctx.lineTo(132, 120); ctx.lineTo(96, 230); ctx.fill();
-      ctx.fillStyle = PAL.accento; ctx.beginPath(); ctx.arc(96, 96, 44, 0, 7); ctx.fill();
+      ctx.fillStyle = PAL.cialda; ctx.beginPath(); ctx.moveTo(96, 230); ctx.lineTo(224, 230); ctx.lineTo(160, 430); ctx.fill();
+      ctx.fillStyle = PAL.accento; ctx.beginPath(); ctx.arc(160, 186, 82, 0, 7); ctx.fill();
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = colNum; ctx.font = fontPx(170); ctx.fillText(finiti ? '0' : String(n), 330, 112);
-      ctx.font = fontPx(42); ctx.fillStyle = finiti ? '#ff8a9e' : '#c9bfd6'; ctx.fillText(n === 1 && !finiti ? 'CONO' : 'CONI', 330, 222);
+      ctx.fillStyle = colNum; ctx.font = fontGrassetto(400); ctx.fillText(finiti ? '0' : String(n), 640, 255);     // il numero grande, in grassetto
     });
   }
 
@@ -352,7 +351,7 @@ window.Diorama = (() => {
      DIMENSIONI, INQUADRATURA E QUALITÀ (si abbassa da sola se gli fps scendono)
      --------------------------------------------------------------- */
   let W = 1, H = 1;
-  const QUALITA = { alta: { pr: 1.5, ombre: 2048, post: true }, media: { pr: 1, ombre: 2048, post: true }, bassa: { pr: 0.75, ombre: 1024, post: false } };
+  const QUALITA = { alta: { pr: 2, ombre: 2048, post: true }, media: { pr: 1.25, ombre: 2048, post: true }, bassa: { pr: 0.75, ombre: 1024, post: false } };
   const CAM = { az: 14 * Math.PI / 180, el: 31 * Math.PI / 180, dist: 60, mira: new THREE.Vector3(0, 1.2, 0.6) };
   // piazza la camera; d = distanza
   function piazzaCamera(az, el, d) {
@@ -803,6 +802,7 @@ window.Diorama = (() => {
       tela = document.createElement('canvas'); tela.className = 'diorama-tela'; tela.setAttribute('aria-hidden', 'true');
       el.prepend(tela);
       R = new THREE.WebGLRenderer({ canvas: tela, antialias: false, powerPreference: 'high-performance' });
+      ANISO = R.capabilities.getMaxAnisotropy();
       R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFShadowMap;      // in r187 PCFSoftShadowMap non c'è più: PCFShadowMap con shadow.radius fa le ombre morbide
       R.toneMapping = THREE.NeutralToneMapping; R.toneMappingExposure = 1.0; R.outputColorSpace = THREE.SRGBColorSpace;
       costruisci(); creaPost(); disegnaConi();
