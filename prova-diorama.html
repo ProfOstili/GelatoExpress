@@ -5298,7 +5298,7 @@ window.Diorama = (() => {
       if (u >= 1) { c.visible = false; return; }
       c.position.set(d.x + Math.sin(t * 2.2) * 0.15, d.y + easeInOut(u) * 8.5, d.z);
       c.quaternion.copy(camera.quaternion);                              // guarda sempre chi osserva
-      c.scale.setScalar(1.0 * Math.max(0.001, easeOutBack(clamp(u * 5))));
+      c.scale.setScalar(1.2 * Math.max(0.001, easeOutBack(clamp(u * 5))));
       d.corpo.rotation.z = Math.sin(t * 16) * 0.32;                       // dondola
       d.corpo.position.x = Math.sin(t * 55) * 0.012;                      // e vibra
       d.batacchio.rotation.z = Math.sin(t * 16 - 0.9) * 0.45;
@@ -5470,7 +5470,9 @@ window.Diorama = (() => {
       metti(corpo, scatolaGeo(0.1, 0.012, 0.06, 0.005), c, [-0.12, 0.11, 0], [0, 0, 0.5]);
       for (const s of [-1, 1]) metti(corpo, new THREE.CylinderGeometry(0.005, 0.005, 0.04, 4), PAL.senape, [0.01, 0.02, s * 0.025]);
       const ali = [-1, 1].map((s) => { const a = new THREE.Group(); a.position.set(0, 0.11, s * 0.06); corpo.add(a); metti(a, new THREE.SphereGeometry(0.06, 10, 6), c, [-0.02, 0, s * 0.02]).scale.set(1.2, 0.3, 0.75); a.userData.s = s; return a; });
-      g.userData = { vivo: true, corpo, testa, ali, periodo: 3.5 + hash(i, 7) * 4, fase: hash(i, 9) * 10 };
+      // da dove arriva in volo: dall'alto, da una direzione diversa per ognuno
+      const a = hash(i, 3) * Math.PI * 2, volo = new THREE.Vector3(Math.cos(a) * 5, 7 + hash(i, 5) * 2, Math.sin(a) * 3);
+      g.userData = { vivo: true, corpo, testa, ali, periodo: 3.5 + hash(i, 7) * 4, fase: hash(i, 9) * 10, base: g.position.clone(), rot, volo, pres: 0, ritardo: hash(i, 11) * 0.6 };
       return g;
     });
     O.farfalle = Array.from({ length: 3 }, (_, i) => { const g = new THREE.Group(); g.userData.vivo = true; L.add(g); const ali = [];
@@ -5760,12 +5762,24 @@ window.Diorama = (() => {
     // --- uccellini e farfalle col bel tempo
     const bello = (1 - kn) * (1 - notte) > 0.5;
     post.uniforms.riflessi.value = (1 - kn) * (1 - notte) * (0.6 + 0.4 * Math.sin(Math.PI * p));
+    // col sole arrivano in volo dall'alto e si posano sui tetti (uno dopo l'altro); al tramonto o col maltempo ripartono all'indietro
+    const restano = bello && kp < 0.3;
     O.uccelli.forEach((g) => {
-      g.visible = bello && kp < 0.3; if (!g.visible) return;
-      const u = g.userData, c = ((t + u.fase) % u.periodo), sbatte = c < 0.7;
-      const ali = sbatte ? 0.3 + 0.9 * Math.abs(Math.sin(c * 28)) : 0;
+      const u = g.userData;
+      u.pres = clamp(u.pres + (restano ? 1 : -1) * dt * Math.max(1, stato.speed) / 4.5);
+      const k = clamp((u.pres * (1 + u.ritardo) - u.ritardo) / 1);           // ognuno parte col suo ritardo
+      g.visible = k > 0.001; if (!g.visible) return;
+      const e = 1 - Math.pow(1 - k, 2.2), lontano = 1 - e;                 // rallenta mentre si posa
+      g.position.copy(u.base).addScaledVector(u.volo, lontano);
+      g.position.y += Math.sin(Math.PI * k) * 0.6;                           // un arco morbido
+      const inVolo = k < 1;
+      // in volo guarda verso il tetto; da posato torna al suo verso
+      const dirVolo = Math.atan2(u.volo.z, -u.volo.x);
+      g.rotation.y = inVolo ? lerp(dirVolo, u.rot, liscio(0.85, 1, k)) : u.rot;
+      const c = ((t + u.fase) % u.periodo), sbatte = inVolo || c < 0.7;
+      const ali = inVolo ? 0.2 + 1.1 * Math.abs(Math.sin(t * 26 + u.fase)) : sbatte ? 0.3 + 0.9 * Math.abs(Math.sin(c * 28)) : 0;
       u.ali.forEach((a) => { a.rotation.x = -a.userData.s * ali; });
-      u.corpo.position.y = sbatte ? Math.sin(Math.PI * c / 0.7) * 0.06 : 0;
+      u.corpo.position.y = inVolo ? 0 : sbatte ? Math.sin(Math.PI * c / 0.7) * 0.06 : 0;
       u.testa.rotation.y = Math.sin(t * 0.7 + u.fase) > 0.6 ? 0.6 : Math.sin(t * 0.7 + u.fase) < -0.6 ? -0.6 : 0;
       u.testa.rotation.z = c > 1.5 && c < 1.9 ? -0.35 : 0;                            // ogni tanto becchetta
     });
