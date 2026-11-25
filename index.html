@@ -288,6 +288,64 @@ select,input{font-family:inherit}
 .domani{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800;margin-top:4px}
 .domani .ic{font-size:56px;line-height:1}
 .rule select option:disabled{color:#aaa}
+.btns-regole{display:flex;gap:10px;flex-wrap:wrap}
+#coach-err{color:var(--red);font-weight:800;margin:10px 0 0;font-size:17px}
+/* tutorial: il primo passo diviso in tre parti A · B · C */
+.coach>.abc{flex:1;min-width:0}
+.abc{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.abc .parte{background:var(--tint);border:3px solid var(--tint-line);border-radius:16px;padding:10px 12px;position:relative;display:flex;flex-direction:column;gap:8px}
+.abc .parte h3{margin:0;font-size:18px;display:flex;align-items:center;gap:8px}
+.abc .lettera{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+.abc .parte p{margin:0;font-size:16px;font-weight:600}
+.abc .parte.attiva{border-color:var(--pink);background:#fff;box-shadow:0 0 0 4px rgba(255,111,165,.18)}
+.abc .parte.bloccata>*:not(h3):not(.lucchetto){visibility:hidden}
+.abc .lucchetto{position:absolute;inset:48px 12px 12px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink-soft);font-weight:800;font-size:15px;border:3px dashed var(--tint-line);border-radius:12px}
+.abc .parte:not(.bloccata) .lucchetto{display:none}
+.abc .btn-meteo{font-size:20px;align-self:flex-start}
+.abc .previsione{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
+.abc .previsione .ic{font-size:52px;line-height:1}
+.abc .riguarda{background:none;border:0;color:var(--ink-soft);text-decoration:underline;font-weight:700;padding:0;align-self:flex-start;font-size:14px}
+.abc .target{display:flex;gap:6px;flex-wrap:wrap;font-weight:800;font-size:15px}
+.abc .target .blk{padding:3px 8px}
+.abc .robot{font-size:34px;line-height:1}
+@media (max-width:820px){.abc{grid-template-columns:1fr}.abc .parte.bloccata{min-height:110px}}
+/* la ricezione dei dati meteo */
+.radio{position:fixed;inset:0;z-index:150;background:rgba(39,43,54,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+.radio-box{background:var(--card);border:3px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:16px 20px;width:min(620px,100%);text-align:center}
+.radio-box h3{margin:0 0 8px;font-size:24px}
+.radio-scena{position:relative;height:170px;margin:4px 0 12px;background:linear-gradient(#cfe3ee,#eef4ea);border:3px solid var(--line);border-radius:16px;overflow:hidden}
+.radio .antenna{position:absolute;left:14px;bottom:0;width:70px;height:125px}
+.radio .onde i{position:absolute;left:24px;top:2px;width:60px;height:60px;border-radius:50%;border:4px solid var(--pink);border-left-color:transparent;border-bottom-color:transparent;border-top-color:transparent;opacity:0;animation:onda 1.6s linear infinite}
+.radio .onde i:nth-child(2){animation-delay:.4s}.radio .onde i:nth-child(3){animation-delay:.8s}.radio .onde i:nth-child(4){animation-delay:1.2s}
+@keyframes onda{0%{transform:scale(.4);opacity:.9}100%{transform:scale(4.2) translateX(6px);opacity:0}}
+.radio .dati{position:absolute;inset:0}
+.radio .dati span{position:absolute;left:90px;font:800 18px/1 ui-monospace,Consolas,monospace;color:var(--sky-d);animation:bit 1.5s linear forwards;white-space:nowrap}
+@keyframes bit{0%{transform:translateX(0);opacity:0}10%{opacity:1}85%{opacity:1}100%{transform:translateX(var(--fino,380px));opacity:0}}
+.radio .schermo{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:110px;height:96px;background:#2a2433;border:4px solid var(--line);border-radius:12px;color:#9ff2b4;display:flex;align-items:center;justify-content:center;font:800 16px/1.2 ui-monospace,Consolas,monospace;text-align:center;padding:4px}
+.radio .schermo .ic{font-size:48px;line-height:1}
+.radio .schermo.pronto{background:#fffaf2;animation:popin .4s}
+#radio-fill{transition:width .2s linear}
+.radio-txt{margin:8px 0 0;font-weight:800;color:var(--ink-soft)}
+.radio-esito{margin-top:10px}
+.radio-esito .grande{display:flex;align-items:center;justify-content:center;gap:12px;font-size:28px;font-weight:900}
+.radio-esito .grande .ic{font-size:72px;line-height:1;animation:popin .5s}
+/* gli avvisi degli eventi (gara, concorrenza, turisti, ASL) con il conto alla rovescia */
+.avvisi{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.avviso{display:flex;align-items:center;gap:10px;background:#fff4d9;border:3px solid var(--yellow-d);border-radius:14px;padding:6px 10px;font-size:16px}
+.avviso .ic{font-size:30px;line-height:1}
+.avviso>div{flex:1}
+.avviso small{font-size:13px;color:var(--ink-soft);font-weight:700}
+.avviso .conta{min-width:54px;height:54px;border-radius:12px;background:var(--ink);color:#fff;font-size:26px;font-weight:900;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.avviso .conta small{color:#fff;font-size:11px;font-weight:800}
+.fday .ev{position:absolute;top:-10px;right:-6px;font-style:normal;font-size:15px;line-height:1;background:#fff;border:2px solid var(--line);border-radius:99px;padding:1px 3px}
+.flag{width:22px;height:15px;vertical-align:-2px;border:1px solid rgba(0,0,0,.25);border-radius:2px}
+.materia{margin-top:12px;text-align:left;background:#e6f2e4;border:3px solid var(--mint-d);border-radius:14px;padding:8px 12px}
+.materia h4{margin:0 0 4px;color:var(--mint-d);font-size:17px}
+.materia p{margin:0;font-size:15px}
+.modal .avviso{text-align:left}
+.cust .fumetto{position:absolute;top:-20px;left:4px;background:#fff;border:2px solid var(--line);border-radius:8px;padding:1px 2px;line-height:0}
+.cust .fumetto .flag{width:18px;height:12px}
+.sim-top .pill.evento{background:#fff4d9}
 /* panoramica iniziale: la scena a tutta larghezza con le didascalie */
 #scr-sim.intro .sim-grid{grid-template-columns:1fr}
 #scr-sim.intro .sim-side,#scr-sim.intro .speed-row,#scr-sim.intro .sim-top,#scr-sim.intro .stockbar,#scr-sim.intro .sky-weather{display:none!important}
@@ -406,7 +464,11 @@ select,input{font-family:inherit}
       <h2 class="passo-tit"><span class="n">2</span> Regole del robot</h2>
       <p class="hint">Il robot legge le regole dall'alto in basso. Se nessuna regola dice di produrre, non fa coni!</p>
       <div class="rules" id="rules"></div>
-      <button class="btn yellow" id="btn-add">➕ Aggiungi regola</button>
+      <div class="btns-regole">
+        <button class="btn yellow" id="btn-add">➕ Aggiungi regola</button>
+        <button class="btn yellow hidden" id="btn-help">✨ Aiutami</button>
+      </div>
+      <p class="err hidden" id="coach-err"></p>
     </div>
     <div class="card passo passo-3">
       <h2 class="passo-tit"><span class="n">3</span> Partiamo!</h2>
@@ -422,6 +484,7 @@ select,input{font-family:inherit}
   <div class="sim-top">
     <span class="pill" id="s-day">Giorno 1</span>
     <span class="pill" id="s-clock">🕗 08:00</span>
+    <span class="pill evento hidden" id="s-evento"></span>
     <span class="pill cash" id="s-cash">💰 500 €</span>
   </div>
   <div class="sim-grid">
@@ -455,7 +518,7 @@ select,input{font-family:inherit}
         <div class="night" id="night"></div>
         <!-- grafica 3D: etichette, schermo intero e menu della grafica (il disegno lo fa src/diorama) -->
         <div class="d3-hud d3" aria-live="polite">
-          <span class="fs" id="f-day">📅 Giorno 1</span><span class="fs" id="f-clock">🕗 08:00</span><span class="fs" id="f-cash">💰 500 €</span>
+          <span class="fs" id="f-day">📅 Giorno 1</span><span class="fs" id="f-clock">🕗 08:00</span><span class="fs" id="f-cash">💰 500 €</span><span class="fs hidden" id="f-evento"></span>
           <span class="hidden" id="d3-camion">🚚</span>
           <span class="tel" id="d3-coni">🍦 0 coni</span><span class="tel no" id="d3-negozio">CHIUSO</span>
         </div>
@@ -523,6 +586,25 @@ select,input{font-family:inherit}
   </div>
 </section>
 
+<!-- tutorial: la ricezione dei dati meteo (antenna, onde, numeri che arrivano, poi la previsione) -->
+<div class="radio hidden" id="radio" role="dialog" aria-label="Ricezione dati meteo">
+  <div class="radio-box">
+    <h3>📡 Ricezione dati meteo…</h3>
+    <div class="radio-scena">
+      <svg class="antenna" viewBox="0 0 80 140" aria-hidden="true">
+        <path d="M40 40 L18 136 M40 40 L62 136 M27 96 L53 96 M23 116 L57 116 M32 72 L48 72 M28 92 L52 76 M26 112 L54 96" stroke="#3a4150" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <circle cx="40" cy="30" r="11" fill="#ff6fa5" stroke="#3a4150" stroke-width="4"/>
+        <line x1="40" y1="19" x2="40" y2="4" stroke="#3a4150" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div class="onde"><i></i><i></i><i></i><i></i></div>
+      <div class="dati" id="radio-dati"></div>
+      <div class="schermo"><span id="radio-schermo">…</span></div>
+    </div>
+    <div class="car-bar"><div id="radio-fill"></div></div>
+    <p class="radio-txt" id="radio-txt">Collegamento con la stazione meteo…</p>
+    <div class="radio-esito hidden" id="radio-esito"></div>
+  </div>
+</div>
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 <img id="logo-scuola" src="data:image/jpeg;base64,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" alt="" hidden>
@@ -5012,6 +5094,7 @@ const GEL = { x: 13.0, y: 5.4, w: 4.4, d: 2.6, h: 2.8, porta: 16.35 };
 const FORN = { x: -3.3, y: -1.3, w: 2.7, d: 2.9, h: 1.55 };
 const CASSE = { x: 18.35, y: 6.95 };
 const BANCO = { x: 13.05, y: 8.1 };                               // lascia libero il neon accanto alla porta
+const RIVALE = { x: 5.45, y: 7.5 };                               // il chiosco della concorrenza, nel giardino della scuola
 const LAMPIONI = [[2.5, 8.25, 0], [10.95, 8.25, 0], [17.75, 8.25, 0], [6.75, 4.95, Z2], [10.75, 4.95, Z2], [-0.55, 1.85, 0]];
 const POZZE = [[4.5, 10.0, 0, 0.55], [9.0, 10.7, 0, 0.7], [13.6, 10.1, 0, 0.5], [1.2, 5.6, 0, 0.45], [20.1, 4.2, 0, 0.5], [-1.6, 4.4, 0, 0.45], [8.8, 4.4, Z2, 0.45], [15.4, 4.0, Z2, 0.4], [12.2, 0.4, Z3, 0.35]];
 
@@ -5049,6 +5132,9 @@ const ANDATA = percorso([
   { linea: [[-1.6, 2.6], [0.0, 2.6]] }, { arco: { c: [0.0, 3.8], r: rA, da: -Math.PI / 2, a: 0 } }, { linea: [[xS, 3.8], [xS, cyF]] },
   { arco: { c: [2.4, cyF], r: rA, da: Math.PI, a: Math.PI / 2 } }, { linea: [[2.4, yF], [FERMATA, yF]] },
 ]);
+// il pullman dei turisti: scende dalla strada di sinistra e si ferma in cima alla strada davanti (ferma = dove si ferma)
+const BUS = percorso([{ linea: [[xS, 4.4], [xS, cyF]] }, { arco: { c: [2.4, cyF], r: rA, da: Math.PI, a: Math.PI / 2 } }, { linea: [[2.4, yF], [xR, yF]] }]);
+BUS.ferma = (cyF - 4.4) + rA * Math.PI / 2 + (5.2 - 2.4);
 // ritorno: prosegue a destra, risale, passa dietro la città e rientra dal fornitore
 const RITORNO = percorso([
   { linea: [[FERMATA, yF], [xR, yF]] }, { arco: { c: [xR, cyF], r: rA, da: Math.PI / 2, a: 0 } }, { linea: [[xD, cyF], [xD, cyB]] },
@@ -5580,7 +5666,7 @@ function verde(L, O) {
   for (const s of [-0.5, 0.5]) metti(p, scatolaGeo(0.07, 0.36, 0.26, 0.02), PAL.ardesia, [s, 0.18, 0]);
   // i fiori: sbocciano col sole (si animano: restano fuori dalla fusione)
   const fr = rng(21), fiori = [];
-  for (let i = 0; i < 18; i++) fiori.push([2.7 + fr() * 3.4, 6.2 + fr() * 1.55, 0]);
+  for (let i = 0; i < 18; i++) { const f = [2.7 + fr() * 3.4, 6.2 + fr() * 1.55, 0]; if (Math.abs(f[0] - RIVALE.x) > 0.6 || Math.abs(f[1] - RIVALE.y) > 0.45) fiori.push(f); }
   for (let i = 0; i < 7; i++) fiori.push([2.6 + fr() * 1.2, 4.2 + fr() * 0.9, Z2]);
   for (let i = 0; i < 10; i++) fiori.push([-3.2 + fr() * 2.6, 6.0 + fr() * 3.2, 0]);
   // fiori sul bordo della strada: ciuffi sul lato esterno dell'anello
@@ -5641,6 +5727,7 @@ window.Diorama = (() => {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
     camion: { attivo: false, kg: 0, ore: 0 }, pila: 0, portaOgni: 4, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
     speed: 1, qualita: 'alta', auto: true, manuale: null, inquadratura: 'auto', negozioAuto: true, pausa: false,
+    bus: { modo: null, t0: 0 }, rivale: { vis: false, t0: -99 },
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
   const O = {};                                                     // tutto ciò che si anima
@@ -5794,6 +5881,68 @@ window.Diorama = (() => {
       o.position.set(at[0] + (opz.drift || 0) * eta * eta, at[1] + opz.rise * eta, at[2] + (opz.driftZ || 0) * eta); o.scale.setScalar(Math.max(s, 1e-4)); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
     } };
   }
+  // il pullman dei turisti: lungo, azzurro, con la fascia dei finestrini. x locale = "avanti", la porta sul lato del marciapiede (-z)
+  function autobus(padre) {
+    const g = new THREE.Group(), corpo = new THREE.Group(); g.userData.vivo = true; g.visible = false; padre.add(g); g.add(corpo);
+    const col = '#5f8fae', vetro = vernice(PAL.vetro, 0.5);
+    metti(corpo, scatolaGeo(3.1, 0.98, 0.96, 0.16), col, [0, 0.73, 0]);
+    metti(corpo, scatolaGeo(2.9, 0.1, 0.86, 0.05), PAL.crema, [-0.05, 1.25, 0]);                 // il tetto chiaro
+    metti(corpo, scatolaGeo(2.62, 0.36, 0.98, 0.05), vetro, [-0.16, 0.93, 0]);                     // i finestrini
+    for (const x of [-1.05, -0.5, 0.05, 0.6]) metti(corpo, scatolaGeo(0.07, 0.37, 0.99, 0.01), col, [x, 0.93, 0]);
+    metti(corpo, scatolaGeo(0.06, 0.52, 0.84, 0.03), vetro, [1.53, 0.86, 0]);                      // il parabrezza
+    metti(corpo, scatolaGeo(3.12, 0.1, 0.98, 0.04), PAL.senape, [0, 0.52, 0]);                     // la fascia gialla
+    metti(corpo, scatolaGeo(0.36, 0.68, 0.02, 0.02), vetro, [1.12, 0.62, -0.49]);                  // la porta, dal lato del marciapiede
+    const fari = luminosa('#fff3d6', '#fff0c8'); fari.emissiveIntensity = 1.2;
+    for (const s of [1, -1]) metti(corpo, new THREE.CylinderGeometry(0.06, 0.06, 0.04, 12), fari, [1.56, 0.38, s * 0.32], [0, 0, Math.PI / 2]);
+    const ruote = [];
+    for (const [x, z] of [[1.0, 0.42], [1.0, -0.42], [-1.0, 0.42], [-1.0, -0.42]]) {
+      const w = new THREE.Group(); w.position.set(x, 0.21, z); g.add(w); ruote.push(w);
+      metti(w, new THREE.CylinderGeometry(0.21, 0.21, 0.16, 18), PAL.scuro, [0, 0, 0], [Math.PI / 2, 0, 0]);
+      metti(w, new THREE.CylinderGeometry(0.1, 0.1, 0.18, 12), PAL.crema, [0, 0, 0], [Math.PI / 2, 0, 0]);
+    }
+    return { g, corpo, ruote };
+  }
+  // il chiosco della Gelateria Rivale (la concorrenza): un carretto a righe con l'ombrellone e il cartello del prezzo
+  function chiosco(padre) {
+    const g = new THREE.Group(), corpo = new THREE.Group(); g.userData.vivo = true; g.visible = false; g.position.set(RIVALE.x, 0.02, RIVALE.y); padre.add(g); g.add(corpo);
+    metti(corpo, scatolaGeo(0.92, 0.52, 0.5, 0.06), '#8fbcd4', [0, 0.44, 0]);
+    for (const x of [-0.3, -0.1, 0.1, 0.3]) metti(corpo, scatolaGeo(0.09, 0.5, 0.01, 0.005), '#ffffff', [x, 0.44, 0.255], null, false);
+    metti(corpo, scatolaGeo(0.98, 0.07, 0.56, 0.03), PAL.crema, [0, 0.73, 0]);
+    for (const x of [-0.32, 0.32]) { const w = metti(corpo, new THREE.CylinderGeometry(0.13, 0.13, 0.06, 14), PAL.scuro, [x, 0.13, 0.27], [Math.PI / 2, 0, 0]); w.castShadow = false; }
+    for (const [x, c] of [[-0.25, PAL.menta], [0, PAL.pistacchio], [0.25, PAL.cioccolato]]) { const k = new THREE.Group(); k.position.set(x, 0.88, 0.05); corpo.add(k); metti(k, geo().cono, PAL.cialda, [0, -0.07, 0], [Math.PI, 0, 0]); metti(k, geo().pallina, c, [0, 0.04, 0]); }
+    metti(corpo, new THREE.CylinderGeometry(0.02, 0.02, 1.05, 6), PAL.scuro, [0.36, 1.2, -0.14]);
+    metti(corpo, new THREE.SphereGeometry(0.62, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), '#5f8fae', [0.36, 1.62, -0.14]).scale.y = 0.42;
+    const cartello = texCanvas(512, 200, (ctx, W, H) => {
+      ctx.fillStyle = '#2a2433'; ctx.beginPath(); ctx.roundRect(4, 4, W - 8, H - 8, 30); ctx.fill();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#9fd3ee'; ctx.font = fontGrassetto(56); ctx.fillText('RIVALE', W / 2, 58);
+      ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50 €', W / 2, 138);
+    });
+    metti(corpo, rettangoloGeo(0.78, 0.31, 0.04), new THREE.MeshStandardMaterial({ map: cartello, roughness: 0.6, emissive: '#ffffff', emissiveMap: cartello, emissiveIntensity: 0.25 }), [-0.08, 1.1, 0.08], null, false);
+    return { g, corpo };
+  }
+  // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
+  function fumetto(lingua) {
+    return texCanvas(256, 210, (ctx, W) => {
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#3a4150'; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.roundRect(8, 8, W - 16, 150, 34); ctx.moveTo(108, 156); ctx.lineTo(128, 200); ctx.lineTo(150, 156); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(112, 146, 34, 14);
+      const fx = 68, fy = 24, fw = 120, fh = 72;
+      if (lingua === 'fr') { [['#2b4ea2', 0], ['#ffffff', 1], ['#e4343e', 2]].forEach(([c, i]) => { ctx.fillStyle = c; ctx.fillRect(fx + i * fw / 3, fy, fw / 3 + 1, fh); }); }
+      else {
+        ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, fw, fh); ctx.clip();
+        ctx.fillStyle = '#26418f'; ctx.fillRect(fx, fy, fw, fh);
+        const diag = (c, w) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx + fw, fy + fh); ctx.moveTo(fx + fw, fy); ctx.lineTo(fx, fy + fh); ctx.stroke(); };
+        diag('#ffffff', 16); diag('#d8303d', 6);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(fx + fw / 2 - 12, fy, 24, fh); ctx.fillRect(fx, fy + fh / 2 - 12, fw, 24);
+        ctx.fillStyle = '#d8303d'; ctx.fillRect(fx + fw / 2 - 7, fy, 14, fh); ctx.fillRect(fx, fy + fh / 2 - 7, fw, 14);
+        ctx.restore();
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 3; ctx.strokeRect(fx, fy, fw, fh);
+      ctx.fillStyle = '#272b36'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = fontGrassetto(40);
+      ctx.fillText(lingua === 'fr' ? 'Bonjour!' : 'Hello!', W / 2, 126);
+    });
+  }
   const saltello = (u, da, a, alt) => { u = clamp(u); const e = easeInOut(u); return [da[0] + (a[0] - da[0]) * e, alt * Math.sin(Math.PI * u), da[1] + (a[1] - da[1]) * e]; };
 
   /* ---------------------------------------------------------------
@@ -5846,6 +5995,12 @@ window.Diorama = (() => {
     });
     O.gelataio = mascotte(L);
     O.passante = piolo(L, PAL.foglie[1], PAL.tronco); O.passante.position.set(4.0, 0.25, 7.5); O.passante.userData.corpo.rotation.x = 0.05;   // seduto sulla panchina
+    // i turisti hanno il fumetto con la bandiera; il pullman li porta in cima alla strada; il chiosco della concorrenza nel giardino
+    O.matHello = new THREE.SpriteMaterial({ map: fumetto('gb'), depthTest: false, depthWrite: false, fog: false });
+    O.matBonjour = new THREE.SpriteMaterial({ map: fumetto('fr'), depthTest: false, depthWrite: false, fog: false });
+    O.clienti.forEach((p) => { const f = new THREE.Sprite(O.matHello); f.position.set(0, 1.36, 0); f.scale.set(0.78, 0.64, 1); f.renderOrder = 19; f.visible = false; p.add(f); p.userData.fumetto = f; });
+    O.bus = autobus(L);
+    O.chiosco = chiosco(L);
 
     // la pioggia: trattini sottili che cadono; pozzanghere lucide che si allargano
     // gocce abbastanza spesse da vedersi anche da lontano, e uno spruzzo (un anellino) quando toccano terra
@@ -6185,6 +6340,7 @@ window.Diorama = (() => {
       const sf = 0.85 * grandezzaSegni() * Math.max(0.001, easeOutBack(clamp(u * 5))); f.scale.set(sf * (f.userData.ax || 1), sf * (f.userData.ay || 1), 1);
     });
     aggiornaClienti(t, dt);
+    aggiornaBus();
     aggiornaRagazzi(t, h);
     aggiornaCampane(t);
 
@@ -6438,13 +6594,28 @@ window.Diorama = (() => {
     g.userData.bocca.rotation.z = stato.finito ? 0 : Math.PI; g.userData.bocca.position.y = stato.finito ? 0.76 : 0.8;
   }
 
+  // il pullman: arriva giù per la strada di sinistra e si ferma in cima alla strada davanti; la sera riparte verso destra e sparisce
+  function aggiornaBus() {
+    const B = O.bus, sb = stato.bus;
+    // il chiosco della concorrenza: compare con un balzo, sparisce rimpicciolendo
+    const ur = (tGioco - stato.rivale.t0) / 0.8, kc = stato.rivale.vis ? easeOutBack(clamp(ur)) : 1 - liscio(0, 1, ur);
+    O.chiosco.g.visible = kc > 0.01; O.chiosco.g.scale.setScalar(Math.max(0.001, kc));
+    if (!sb.modo) { B.g.visible = false; return; }
+    let s = BUS.ferma, sc = 1;
+    if (sb.modo === 'arriva') { const u = clamp((tGioco - sb.t0) / 2.6); s = BUS.ferma * trap(u, 0.05, 0.45); sc = easeOutBack(clamp(u / 0.15)); if (u >= 1) sb.modo = 'fermo'; }
+    else if (sb.modo === 'parte') { const u = clamp((tGioco - sb.t0) / 3.2); s = lerp(BUS.ferma, BUS.len, trap(u, 0.45, 0.02)); sc = 1 - liscio(0.75, 1, u); if (u >= 1) { sb.modo = null; B.g.visible = false; return; } }
+    B.g.visible = true;
+    const p = BUS.a(s); B.g.position.set(p.x, 0.05, p.y); B.g.rotation.y = angolo(p.ang); B.g.scale.setScalar(Math.max(0.001, sc));
+    B.ruote.forEach((w) => { w.rotation.z = -s / 0.21; });
+  }
   // i clienti: arrivano saltellando lungo il marciapiede fino al bancone; se serviti ripartono col cono, se no tornano indietro a testa bassa
+  // (i turisti scendono dal pullman con il fumetto della loro lingua; chi va dalla concorrenza si ferma al chiosco e torna indietro)
   function aggiornaClienti(t, dt) {
     // mentre i ragazzi attraversano, chi arriva si mette in coda prima delle strisce (uno ogni 0,72), senza sovrapporsi
     for (const e of eventi) e.limite = null;
     if (stato.ragazziInStrada) {
-      eventi.filter((e) => e.fase === 'va' && e.x < 7.96).sort((a, b) => b.x - a.x).forEach((e, k) => { e.limite = 7.9 - 0.72 * k; });
-      eventi.filter((e) => e.fase === 'torna' && e.x > 9.64).sort((a, b) => a.x - b.x).forEach((e, k) => { e.limite = 9.7 + 0.72 * k; });
+      eventi.filter((e) => !e.rivale && e.fase === 'va' && e.x < 7.96).sort((a, b) => b.x - a.x).forEach((e, k) => { e.limite = 7.9 - 0.72 * k; });
+      eventi.filter((e) => !e.rivale && e.fase === 'torna' && e.x > 9.64).sort((a, b) => a.x - b.x).forEach((e, k) => { e.limite = 9.7 + 0.72 * k; });
     }
     for (let i = eventi.length - 1; i >= 0; i--) {
       const e = eventi[i], p = e.piolo, corpo = p.userData.corpo;
@@ -6454,21 +6625,21 @@ window.Diorama = (() => {
       const u = e.el / e.dur;
       if (u >= 1) { p.visible = false; eventi.splice(i, 1); continue; }
       p.visible = true;
-      const da = [2.6, 8.95 + e.dz], banco = [BANCO.x + 1.1 + e.dx, 9.0 + e.dz], via = e.servito ? [19.0, 8.95 + e.dz] : da;
+      const da = e.da || [2.6, 8.95 + e.dz], banco = e.banco || [BANCO.x + 1.1 + e.dx, 9.0 + e.dz], via = e.servito ? (e.via || [19.0, 8.95 + e.dz]) : da;
       let pos, testa = 0, verso = 0;
       const passi = (a, b, k, n, alt) => { const f = (k * n) % 1, q = Math.floor(k * n); return saltello(f, [lerp(a[0], b[0], q / n), lerp(a[1], b[1], q / n)], [lerp(a[0], b[0], (q + 1) / n), lerp(a[1], b[1], (q + 1) / n)], alt); };
       e.fase = u < 0.45 ? 'va' : u > 0.6 && !e.servito ? 'torna' : '';
-      if (u < 0.45) { pos = passi(da, banco, u / 0.45, 9, 0.16); verso = 0; }
+      if (u < 0.45) { pos = passi(da, banco, u / 0.45, e.rivale ? 5 : 9, 0.16); verso = banco[0] < da[0] ? Math.PI : 0; }
       else if (u < 0.6) {
         pos = [banco[0], 0, banco[1]]; verso = Math.PI / 2 * liscio(0.45, 0.5, u);
         if (!e.servito) testa = liscio(0.52, 0.6, u);
         if (!e.alBancoFatto && u > 0.5) { e.alBancoFatto = true; if (e.alBanco) e.alBanco(); }       // per il gioco: il cliente è al bancone
-        if (e.servito && !e.venduto && u > 0.5) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
+        if (e.servito && !e.venduto && u > 0.5 && !e.rivale) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
         // appena prende il gelato (o capisce che non c'è) dalla testa esce la faccina
         if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); }
       } else {
         const k = (u - 0.6) / 0.4;
-        if (e.servito) { pos = passi(banco, via, k, 6, 0.22); verso = 0; }
+        if (e.servito) { pos = passi(banco, via, k, e.rivale ? 4 : 6, 0.22); verso = via[0] < banco[0] ? Math.PI : 0; }
         else { pos = [lerp(banco[0], via[0], easeInOut(k)), 0, lerp(banco[1], via[1], easeInOut(k))]; verso = Math.PI; testa = 1; }
       }
       e.xLibero = pos[0];                                             // dove sarebbe senza fermarsi
@@ -6480,6 +6651,7 @@ window.Diorama = (() => {
       const comparsa = Math.min(liscio(0, 0.06, u), 1 - liscio(0.92, 1, u));
       p.scale.setScalar(1.25 * Math.max(1e-3, comparsa));
       p.userData.cono.visible = e.servito && u > 0.55;
+      p.userData.fumetto.visible = !!e.turista && (u < 0.44 || u > 0.62);
     }
   }
   // i ragazzi attraversano sulle strisce ed entrano a scuola; escono dopo pranzo
@@ -6551,14 +6723,26 @@ window.Diorama = (() => {
     setMeteo(m) { stato.meteo = m; },
     setOra(h) { stato.ora = h; },
     camion(attivo, kg, ore, nPacchi) { stato.camion.attivo = !!attivo; stato.camion.kg = kg || 0; stato.camion.ore = ore || 0; stato.camion.n = nPacchi ?? 5; },
-    cliente(servito, durataMs, alBanco) {
+    // opz: { turista: 'gb' | 'fr' } (scende dal pullman con il fumetto), { rivale: true } (va al chiosco della concorrenza)
+    cliente(servito, durataMs, alBanco, opz = {}) {
       if (!O.clienti) return;
-      if (stato.finito) servito = false;                         // coni finiti: resta senza (e si arrabbia)
+      if (stato.finito && !opz.rivale) servito = false;          // coni finiti: resta senza (e si arrabbia)
       const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
       if (!libero) return;
-      const n = eventi.length;
-      eventi.push({ piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 });
+      const n = eventi.length, e = { piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 };
+      if (opz.turista) { e.turista = opz.turista; e.da = [3.9 + (n % 3) * 0.3, 9.5]; libero.userData.fumetto.material = opz.turista === 'fr' ? O.matBonjour : O.matHello; }
+      if (opz.rivale) { e.rivale = true; e.banco = [RIVALE.x + ((n % 3) - 1) * 0.28, 8.35]; e.via = [2.6, 8.95 + e.dz]; e.dur *= 0.8; }
+      eventi.push(e);
     },
+    // il pullman dei turisti: true arriva e si ferma, false riparte, null sparisce subito
+    autobus(v) {
+      const b = stato.bus;
+      if (v === null) { b.modo = null; return; }
+      if (v && (!b.modo || b.modo === 'parte')) { b.modo = 'arriva'; b.t0 = tGioco; }
+      else if (!v && (b.modo === 'arriva' || b.modo === 'fermo')) { b.modo = 'parte'; b.t0 = tGioco; }
+    },
+    // il chiosco della concorrenza
+    rivale(v) { if (!!v !== stato.rivale.vis) { stato.rivale.vis = !!v; stato.rivale.t0 = tGioco - (O.chiosco ? 0 : 99); } },
     setConi(n, max) { if (max) stato.coniMax = max; if (Math.round(n) !== Math.round(stato.coni) || max) { stato.coni = n; disegnaConi(); } },
     setFinito(v) { if (!!v !== stato.finito) { stato.finito = !!v; if (O.finito) O.finito.userData.quando = tGioco; disegnaConi(); } },
     setVenduto(v) { stato.venduto = !!v; },
@@ -6590,7 +6774,7 @@ window.Diorama = (() => {
     // la regia della camera: { x, y (coordinate della città), h (altezza), zoom (1 = tutta la piastrella), az (gradi), lento } oppure null
     regia(r) { stato.regia = r || null; },
     // toglie dalla scena clienti in giro e faccine (quando si passa da una scena all'altra)
-    svuota() { eventi.length = 0; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
+    svuota() { eventi.length = 0; stato.bus.modo = null; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
     setPortaOgni(n) { stato.portaOgni = Math.max(0, Math.round(n)); },
     onRifornito: null,
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
@@ -6667,39 +6851,48 @@ const CONFIG = {
   durataNotteMs: 500,
   durataGiornoTutorialMs: 7000,
 
-  // LA SFIDA A FASI: ogni pochi giorni si sblocca qualcosa di nuovo da gestire (la somma dei giorni fa 30).
-  //   cond / azioni = blocchi nuovi per le regole · auto = il fornitore riempie da solo il magazzino ogni notte
+  // LA SFIDA A FASI: ogni 3-4 giorni si sblocca qualcosa di nuovo da gestire (la somma dei giorni fa 30).
+  //   cond / azioni = blocchi nuovi per le regole · auto = il fornitore riporta da solo il magazzino a 40 kg ogni notte
   //   previsioni = si vede il meteo dei giorni della fase
   fasi: [
     { giorni:4, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
-      testo:'Il robot guarda il <b>meteo</b> e decide quanti coni fare. Scrivi una regola per ogni tempo: ☀️ sole, ⛅ nuvoloso, 🌧️ pioggia.',
+      testo:'Il robot guarda il <b>meteo</b> e decide quanti coni fare. Attento: ora la stagione è iniziata e arriva <b>molta più gente</b> che nella prova! Col sole anche più di 80 clienti.',
       esempio:{ c:'meteo', cv:'sole', a:'produci', av:100 } },
-    { giorni:4, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
-      testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
-      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:140 } },
     { giorni:4, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
       testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
       esempio:{ c:'giorno', cv:'weekend', a:'piu', av:30 } },
-    { giorni:5, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
-      testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
-      esempio:{ c:'magazzino', op:'<', cv:30, a:'riordina', av:60 } },
-    { giorni:4, cond:[], azioni:['prezzo'], auto:false, previsioni:true, titolo:'💶 Il prezzo',
+    { giorni:3, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
+      testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
+      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:140 } },
+    { giorni:4, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'💶 Il prezzo',
       testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50 €). Più caro = più guadagno a cono, ma meno clienti!',
       esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
-    { giorni:4, cond:['ieri'], azioni:[], auto:false, previsioni:true, titolo:'🍨 Ieri',
+    { giorni:4, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
+      testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
+      esempio:{ c:'magazzino', op:'<', cv:30, a:'riordina', av:40 } },
+    { giorni:3, cond:['ieri'], azioni:[], auto:false, previsioni:true, titolo:'🍨 Ieri',
       testo:'Novità: il robot si ricorda di <b>ieri</b>. Se ieri il gelato è finito, oggi produci di più; se l\'hai buttato, produci meno.',
       esempio:{ c:'ieri', cv:'finito', a:'piu', av:20 } },
-    { giorni:5, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
-      testo:'Ultima fase: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
+    { giorni:8, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
+      testo:'Ultima fase, 8 giorni: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
   ],
 
-  // tutorial: 3 giorni con meteo noto
+  // GLI EVENTI DELLE ALTRE MATERIE DEL CORSO SIA: vengono annunciati durante una giornata (mai nel giorno in cui
+  // arriva una novità del gioco) e da lì in poi si vedono nel gestionale con il conto alla rovescia.
+  eventi: {
+    gara:        { annuncio:8,  giorno:13, molt:1.6 },                          // 🏅 Educazione fisica: più clienti
+    concorrenza: { annuncio:14, da:17, prezzo:2.5, sensibilita:0.6 },           // 🆚 Economia politica: oltre 2,50 € si perdono clienti
+    turisti:     { annuncio:15, giorni:[15,18,21,26,29], extra:35 },            // 🚌 Inglese e Francese: il pullman dei turisti
+    asl:         { annuncio:18, giorno:24, scadenza:5, multa:100 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
+  },
+
+  // tutorial: 3 giorni con meteo noto e un numero fisso di clienti (niente affitto: si impara solo a usare le regole)
   tutorial: {
-    magazzino: 25, cassa: 500,
+    magazzino: 40, cassa: 500,
     giorni: [
-      { meteo: 'sole',     temp: 31, caso: 0.92, dow: 0 },
-      { meteo: 'pioggia',  temp: 19, caso: 1.0,  dow: 1 },
-      { meteo: 'nuvoloso', temp: 25, caso: 1.0,  dow: 2 }
+      { meteo: 'sole',     temp: 31, clienti: 20, dow: 0 },
+      { meteo: 'pioggia',  temp: 19, clienti: 8,  dow: 1 },
+      { meteo: 'nuvoloso', temp: 25, clienti: 15, dow: 2 }
     ]
   }
 };
@@ -6718,7 +6911,11 @@ const FATTI = {
   dati: "Il grafico dei tuoi giorni è un'<b>analisi dei dati</b>. In SIA impari a farla con il foglio di calcolo, come nelle aziende vere.",
   database: "La classifica è salvata in un piccolo <b>database</b>. In SIA impari a progettare database veri, quelli che usano banche e negozi online.",
   automazione: "I supermercati riordinano la merce <b>in automatico</b>, proprio come la tua gelateria: lo fa il gestionale aziendale, un programma come il tuo!",
-  ricavi: "<b>Ricavi − Costi = Profitto</b>. È la formula più importante dell'Economia aziendale… e ora la conosci già!"
+  ricavi: "<b>Ricavi − Costi = Profitto</b>. È la formula più importante dell'Economia aziendale… e ora la conosci già!",
+  legge: "Anche un'azienda deve rispettare le <b>leggi</b>: igiene, scadenze, scontrini, contratti. In <b>Diritto</b>, al SIA, impari quali sono e perché esistono.",
+  concorrenza: "Quando più negozi vendono la stessa cosa, i clienti scelgono chi offre di più a meno: è la <b>concorrenza</b>. In <b>Economia politica</b> impari come funziona il mercato.",
+  sport: "Al SIA c'è la <b>curvatura sportiva</b>: 2 ore in più a settimana di educazione fisica con un esperto di uno sport, ogni anno diverso.",
+  lingue: "Al SIA si studiano <b>due lingue straniere</b>, inglese e francese: servono per lavorare con clienti e aziende di tutto il mondo. <i>Hello! Bonjour!</i>"
 };
 const FATTI_PROGRAMMA = ['programmazione','variabili','automazione','costiFissi','scorte','prezzo','debug'];
 
@@ -6734,7 +6931,9 @@ const COND = {
   meteo:     { label:'☁️ meteo è', values:['sole','nuvoloso','pioggia'], fmt:v=>METEO[v].ic+' '+METEO[v].nome, def:{cv:'pioggia'} },
   magazzino: { label:'📦 magazzino', ops:['<','>'], values:range(0,100,5), fmt:v=>v+' kg', def:{op:'<',cv:30} },
   giorno:    { label:'📅 oggi è', values:['weekend','feriale'], fmt:v=>v==='weekend'?'weekend':'giorno feriale', def:{cv:'weekend'} },
-  ieri:      { label:'🍨 ieri', values:['finito','buttato'], fmt:v=>v==='finito'?'ho finito il gelato':'ho buttato gelato', def:{cv:'finito'} }
+  ieri:      { label:'🍨 ieri', values:['finito','buttato'], fmt:v=>v==='finito'?'ho finito il gelato':'ho buttato gelato', def:{cv:'finito'} },
+  gara:      { label:'🏅 oggi', values:['gara'], fmt:()=>"c'è la gara", def:{cv:'gara'} },
+  turisti:   { label:'🚌 oggi', values:['turisti'], fmt:()=>'arrivano i turisti', def:{cv:'turisti'} }
 };
 const AZIONI = {
   produci:  { label:'🍦 produci', values:range(0,200,10), fmt:v=>v+' coni', def:100 },
@@ -6747,7 +6946,7 @@ function nuovaRegola(){
   // la prima condizione disponibile, e per il meteo il primo tempo che non ha ancora una regola
   const D = blocchiDisponibili(), c = D.cond.includes('meteo') ? 'meteo' : D.cond[0];
   if(c === 'meteo'){ const coperti = S.prog.regole.filter(r=>r.c==='meteo').map(r=>r.cv); const cv = ['sole','nuvoloso','pioggia'].find(m=>!coperti.includes(m)) || 'sole';
-    return { c:'meteo', op:'>', cv, a:'produci', av:{sole:100,nuvoloso:60,pioggia:20}[cv] }; }
+    return { c:'meteo', op:'>', cv, a:'produci', av:(S.mode==='tutorial' ? {sole:30,nuvoloso:20,pioggia:10} : {sole:100,nuvoloso:60,pioggia:20})[cv] }; }
   return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'produci', av:100 };
 }
 function testoRegola(r){
@@ -6780,13 +6979,14 @@ function generaGiorni(seed){
     const [tmin,tmax] = CONFIG.temperature[meteo];
     const temp = tmin + Math.floor(rng()*(tmax-tmin+1));
     const caso = D.casualeMin + rng()*(D.casualeMax-D.casualeMin);
-    const dow = i % 7;
-    out.push({ n:i+1, meteo, temp, caso, dow, weekend: dow>=5 });
+    const dow = i % 7, n = i+1, E = CONFIG.eventi;
+    out.push({ n, meteo, temp, caso, dow, weekend: dow>=5,
+      gara: n === E.gara.giorno, turisti: E.turisti.giorni.includes(n), concorrenza: n >= E.concorrenza.da, asl: n === E.asl.giorno });
   }
   return out;
 }
 function giorniTutorial(){
-  return CONFIG.tutorial.giorni.map((g,i)=>({ n:i+1, meteo:g.meteo, temp:g.temp, caso:g.caso, dow:g.dow, weekend:g.dow>=5 }));
+  return CONFIG.tutorial.giorni.map((g,i)=>({ n:i+1, meteo:g.meteo, temp:g.temp, caso:1, clientiFissi:g.clienti, dow:g.dow, weekend:g.dow>=5 }));
 }
 
 function condVera(r, ctx){
@@ -6796,6 +6996,8 @@ function condVera(r, ctx){
     case 'magazzino': return r.op==='<' ? ctx.stock < r.cv : ctx.stock > r.cv;
     case 'giorno':    return r.cv==='weekend' ? ctx.weekend : !ctx.weekend;
     case 'ieri':      return r.cv==='finito' ? ctx.ieri.persi > 0 : ctx.ieri.avanzati >= CONFIG.sogliaSpreco;
+    case 'gara':      return !!ctx.gara;
+    case 'turisti':   return !!ctx.turisti;
   }
   return false;
 }
@@ -6812,73 +7014,103 @@ function eseguiProgramma(prog, ctx){
   });
   return { produzione, prezzo, riordina, fired };
 }
+// quanti clienti arrivano: { tot, turisti (compresi in tot), rivale (andati alla concorrenza, NON compresi in tot) }
 function clientiDelGiorno(g, prezzo){
-  const D = CONFIG.domanda;
+  const D = CONFIG.domanda, E = CONFIG.eventi;
+  if(g.clientiFissi != null) return { tot:g.clientiFissi, turisti:0, rivale:0 };
   let pot = Math.max(D.minimo, D.base + D.perGrado*(g.temp - D.tempRif));
   pot *= D.meteo[g.meteo];
   if(g.weekend) pot *= D.weekend;
   pot *= g.caso;
+  if(g.gara) pot *= E.gara.molt;                                         // 🏅 la gara: atleti e tifosi
+  const tur = g.turisti ? E.turisti.extra * D.meteo[g.meteo] * g.caso : 0; // 🚌 il pullman dei turisti
   const effPrezzo = clamp(1 - D.sensibilitaPrezzo*(prezzo - D.prezzoRif), 0, D.effettoPrezzoMax);
-  return Math.round(pot * effPrezzo);
+  // 🆚 la concorrenza: se il tuo cono costa più del suo, molti vanno da lei
+  const effRivale = g.concorrenza && prezzo > E.concorrenza.prezzo ? clamp(1 - E.concorrenza.sensibilita*(prezzo - E.concorrenza.prezzo), 0, 1) : 1;
+  const tot = Math.round((pot + tur) * effPrezzo * effRivale);
+  return { tot, turisti: Math.min(tot, Math.round(tur * effPrezzo * effRivale)), rivale: Math.round((pot + tur) * effPrezzo) - tot };
 }
 function statoIniziale(opz={}){
-  return { stock: opz.magazzino ?? CONFIG.magazzinoIniziale, cassa: opz.cassa ?? CONFIG.cassaIniziale,
+  const stock = opz.magazzino ?? CONFIG.magazzinoIniziale;
+  return { stock, cassa: opz.cassa ?? CONFIG.cassaIniziale, lotti: [{ kg:stock, arr:1 }],
            ordini: [], ieri: { persi:0, avanzati:0 } };
 }
+// il magazzino è fatto di "lotti" (le consegne): si usano prima i più vecchi
+const kgLotti = L => round1(L.reduce((s,l)=>s+l.kg, 0));
+function prelevaLotti(L, kg){
+  while(kg > 1e-6 && L.length){ const l = L[0], x = Math.min(l.kg, kg); l.kg = round1(l.kg - x); kg -= x; if(l.kg <= 0.05) L.shift(); }
+}
+// giorni da cui sono fermi gli ingredienti più vecchi
+function etaMagazzino(st, giorno){ const L = st.lotti || []; return L.length ? giorno - L[0].arr : 0; }
 // Simula una lista di giorni. Restituisce i risultati giorno per giorno e lo stato finale.
-// opz.auto = il fornitore riempie da solo il magazzino ogni notte (senza costo di consegna); le regole "riordina" non servono
+// opz.auto = il fornitore riporta da solo il magazzino a 40 kg ogni notte (senza costo di consegna); le regole "riordina" non servono
+// opz.affitto = affitto al giorno (nel tutorial 0)
 function simula(prog, giorni, stato0, opz={}){
-  const C = CONFIG, costoCono = C.costoKg / C.coniPerKg;
+  const C = CONFIG, E = C.eventi, costoCono = C.costoKg / C.coniPerKg;
   const st = JSON.parse(JSON.stringify(stato0 || statoIniziale()));
+  if(!st.lotti) st.lotti = st.stock > 0 ? [{ kg:st.stock, arr:giorni.length ? giorni[0].n : 1 }] : [];
   const res = [];
   for(const g of giorni){
     // 1. arrivano i camion ordinati ieri
     let arrivo = 0;
     st.ordini = st.ordini.filter(o => { if(o.arriva <= g.n){ arrivo += o.kg; return false; } return true; });
     const stockPrimaArrivo = st.stock;
-    st.stock += arrivo;
+    if(arrivo > 0) st.lotti.push({ kg:arrivo, arr:g.n });
+    st.stock = kgLotti(st.lotti);
     let eccesso = 0;
-    if(st.stock > C.magazzinoMax){ eccesso = st.stock - C.magazzinoMax; st.stock = C.magazzinoMax; }
+    if(st.stock > C.magazzinoMax){                                       // il congelatore è pieno: l'ultima consegna non ci sta tutta
+      eccesso = round1(st.stock - C.magazzinoMax);
+      const ul = st.lotti[st.lotti.length-1]; ul.kg = round1(ul.kg - eccesso); st.stock = C.magazzinoMax;
+    }
+    // 1b. 🕵️ il controllo dell'ASL: gli ingredienti arrivati da troppi giorni sono scaduti, si buttano e c'è la multa
+    let scaduti = 0, multa = 0;
+    if(g.asl){
+      st.lotti = st.lotti.filter(l => { if(g.n - l.arr >= E.asl.scadenza){ scaduti += l.kg; return false; } return true; });
+      scaduti = round1(scaduti); st.stock = kgLotti(st.lotti);
+      if(scaduti > 0) multa = E.asl.multa;
+    }
     const stockInizio = st.stock;
     // 2. il programma decide
-    const ctx = { temp:g.temp, meteo:g.meteo, stock:st.stock, weekend:g.weekend, ieri:st.ieri };
+    const ctx = { temp:g.temp, meteo:g.meteo, stock:st.stock, weekend:g.weekend, ieri:st.ieri, gara:g.gara, turisti:g.turisti };
     const dec = eseguiProgramma(prog, ctx);
-    // 3. produzione (limitata dal magazzino)
+    // 3. produzione (limitata dal magazzino): si usano prima gli ingredienti più vecchi
     const maxConi = Math.floor(st.stock*C.coniPerKg + 1e-6);
     const prodotti = Math.min(dec.produzione, maxConi);
     const limitato = prodotti < dec.produzione;
-    st.stock = round1(st.stock - prodotti/C.coniPerKg);
+    prelevaLotti(st.lotti, prodotti/C.coniPerKg);
+    st.stock = kgLotti(st.lotti);
     // 4. clienti e vendite
-    const clienti = clientiDelGiorno(g, dec.prezzo);
+    const cl = clientiDelGiorno(g, dec.prezzo), clienti = cl.tot;
     const venduti = Math.min(clienti, prodotti);
     const persi = clienti - venduti;
     const avanzati = prodotti - venduti;
     // 5. riordino: arriva domani mattina
-    const ordine = opz.auto ? Math.max(0, Math.round(C.magazzinoMax - st.stock)) : dec.riordina;
+    const ordine = opz.auto ? Math.max(0, Math.round(C.magazzinoIniziale - st.stock)) : dec.riordina;
     if(ordine > 0) st.ordini.push({ kg:ordine, arriva:g.n+1 });
     // 6. conti
     const ricavi = venduti * dec.prezzo;
     const cIngredienti = venduti * costoCono;
-    const cSpreco = avanzati * costoCono + eccesso * C.costoKg;
+    const cSpreco = avanzati * costoCono + eccesso * C.costoKg + scaduti * C.costoKg;
     const cConsegna = ordine > 0 && !opz.auto ? C.costoConsegna : 0;
-    const cAffitto = C.affittoGiorno;
-    const costi = cIngredienti + cSpreco + cConsegna + cAffitto;
+    const cAffitto = opz.affitto ?? C.affittoGiorno;
+    const cMulta = multa;
+    const costi = cIngredienti + cSpreco + cConsegna + cAffitto + cMulta;
     const profitto = ricavi - costi;
     const cassaInizio = st.cassa;
     st.cassa += profitto;
     res.push({ ...g, prezzo:dec.prezzo, obiettivo:dec.produzione, fired:dec.fired, prodotti, limitato,
-      clienti, venduti, persi, avanzati, arrivo, eccesso, ordine, stockPrimaArrivo, stockInizio, stockFine:st.stock,
-      ricavi, cIngredienti, cSpreco, cConsegna, cAffitto, costi, profitto, cassaInizio, cassaFine:st.cassa, auto:!!opz.auto });
+      clienti, turistiN:cl.turisti, rivale:cl.rivale, venduti, persi, avanzati, arrivo, eccesso, scaduti, multa, ordine, stockPrimaArrivo, stockInizio, stockFine:st.stock,
+      ricavi, cIngredienti, cSpreco, cConsegna, cAffitto, cMulta, costi, profitto, cassaInizio, cassaFine:st.cassa, auto:!!opz.auto });
     st.ieri = { persi, avanzati };
   }
   return { giorni:res, tot:totali(res), stato:st };
 }
 function totali(res){
-  const tot = { ricavi:0, cIngredienti:0, cSpreco:0, cConsegna:0, cAffitto:0, profitto:0, venduti:0, persi:0, avanzati:0, eccesso:0, ordini:0 };
+  const tot = { ricavi:0, cIngredienti:0, cSpreco:0, cConsegna:0, cAffitto:0, cMulta:0, profitto:0, venduti:0, persi:0, avanzati:0, eccesso:0, scaduti:0, rivale:0, ordini:0 };
   for(const d of res){
     tot.ricavi+=d.ricavi; tot.cIngredienti+=d.cIngredienti; tot.cSpreco+=d.cSpreco; tot.cConsegna+=d.cConsegna;
-    tot.cAffitto+=d.cAffitto; tot.profitto+=d.profitto; tot.venduti+=d.venduti; tot.persi+=d.persi;
-    tot.avanzati+=d.avanzati; tot.eccesso+=d.eccesso; if(d.ordine>0 && !d.auto) tot.ordini++;
+    tot.cAffitto+=d.cAffitto; tot.cMulta+=d.cMulta||0; tot.profitto+=d.profitto; tot.venduti+=d.venduti; tot.persi+=d.persi;
+    tot.avanzati+=d.avanzati; tot.eccesso+=d.eccesso; tot.scaduti+=d.scaduti||0; tot.rivale+=d.rivale||0; if(d.ordine>0 && !d.auto) tot.ordini++;
   }
   return tot;
 }
@@ -6894,7 +7126,7 @@ function analizza(sim){
     out.push({ peso: persi*(d.prezzo-costoCono) + 1000, ic:'📦', tema:'scorte',
       t:`Giorno ${d.n}: ingredienti finiti! Hai potuto fare solo ${d.prodotti} coni.`,
       x:`Con il magazzino vuoto hai perso ${persi} clienti in ${vuoti.length} ${vuoti.length===1?'giorno':'giorni'}.`,
-      fix:'🔧 Prova: SE 📦 magazzino < 30 kg ALLORA 🚚 riordina 60 kg (il camion arriva il giorno dopo!)' });
+      fix:'🔧 Prova: SE 📦 magazzino < 30 kg ALLORA 🚚 riordina 40 kg (il camion arriva il giorno dopo!)' });
   }
   // gelato finito (non per colpa del magazzino)
   const esauriti = G.filter(d => d.persi > 0 && !d.limitato);
@@ -6927,12 +7159,36 @@ function analizza(sim){
   // prezzo
   const prezzoMedio = G.reduce((s,d)=>s+d.prezzo,0)/G.length;
   if(prezzoMedio >= 3.75){
-    out.push({ peso: 120, ic:'💸', tema:'prezzo', t:`Prezzo alto (in media ${eur(prezzoMedio,2)}): molti clienti sono andati dalla concorrenza.`,
+    out.push({ peso: 120, ic:'💸', tema:'prezzo', t:`Prezzo alto (in media ${eur(prezzoMedio,2)}): molti clienti non hanno comprato il gelato.`,
       x:'Guadagni tanto su ogni cono, ma ne vendi pochi.', fix:'🔧 Prova un prezzo un po\' più basso.' });
   } else if(prezzoMedio <= 2.25){
     out.push({ peso: 100, ic:'💰', tema:'prezzo', t:`Prezzo basso (in media ${eur(prezzoMedio,2)}): vendi tanto ma guadagni poco su ogni cono.`,
       x:`Ogni cono ti costa ${eur(costoCono,2)} di ingredienti.`, fix:'🔧 Prova ad alzare un po\' il prezzo.' });
   }
+  // 🕵️ il controllo dell'ASL
+  if(T.cMulta > 0){
+    out.push({ peso: T.cMulta + T.scaduti*CONFIG.costoKg + 200, ic:'⚖️', tema:'legge',
+      t:`Controllo ASL: ${round1(T.scaduti)} kg di ingredienti scaduti e una multa di ${eur(T.cMulta)}!`,
+      x:`Gli ingredienti erano fermi in magazzino da ${CONFIG.eventi.asl.scadenza} giorni o più: il magazzino era troppo pieno.`,
+      fix:'🔧 Riordina meno kg alla volta, così gli ingredienti restano freschi: per esempio SE 📦 magazzino < 30 kg ALLORA 🚚 riordina 30 kg.' });
+  }
+  // 🆚 la concorrenza
+  if(T.rivale >= 20){
+    const d = G.filter(x=>x.rivale>0).reduce((a,b)=> b.rivale > a.rivale ? b : a);
+    out.push({ peso: T.rivale*(d.prezzo-costoCono), ic:'🆚', tema:'concorrenza',
+      t:`${T.rivale} clienti sono andati alla Gelateria Rivale!`,
+      x:`Dal giorno ${CONFIG.eventi.concorrenza.da} la concorrenza vende il cono a ${eur(CONFIG.eventi.concorrenza.prezzo,2)}: il giorno ${d.n} il tuo costava ${eur(d.prezzo,2)}.`,
+      fix:`🔧 Quando c'è la concorrenza, non alzare il prezzo sopra ${eur(CONFIG.eventi.concorrenza.prezzo,2)}.` });
+  }
+  // 🏅 la gara e 🚌 i turisti
+  const gara = G.find(d=>d.gara);
+  if(gara && gara.persi >= 10) out.push({ peso: gara.persi*(gara.prezzo-costoCono) + 50, ic:'🏅', tema:'sport',
+    t:`Giorno della gara: ${gara.persi} clienti sono rimasti senza gelato!`, x:`Con la gara a Todi sono arrivati ${gara.clienti} clienti.`,
+    fix:'🔧 Prova: SE 🏅 oggi c\'è la gara ALLORA ➕ produci in più 100 coni.' });
+  const tur = G.filter(d=>d.turisti), persiTur = tur.reduce((s,d)=>s+Math.min(d.persi, d.turistiN),0);
+  if(persiTur >= 15) out.push({ peso: persiTur*(2.5-costoCono) + 30, ic:'🚌', tema:'lingue',
+    t:`Nei giorni dei pullman ${persiTur} turisti sono rimasti senza gelato!`, x:'I turisti inglesi e francesi sono clienti in più.',
+    fix:'🔧 Prova: SE 🚌 oggi arrivano i turisti ALLORA ➕ produci in più 30 coni.' });
   // troppe consegne
   if(T.ordini >= 7){
     out.push({ peso: T.cConsegna, ic:'🚚', tema:'scorte', t:`Hai chiamato il camion ${T.ordini} volte: ${eur(T.cConsegna)} di consegne!`,
@@ -6969,7 +7225,7 @@ function salvaGiocatore(){
   if(!S.nick) return;
   salvaSessione();
   const all = load(KEY_PLAYERS, {});
-  all[S.nick.toLowerCase()] = { nick:S.nick, prog:S.prog, tutorialFatto:S.tutorialFatto, tentativi:S.tentativi, best:S.best, maxFase:S.maxFase };
+  all[S.nick.toLowerCase()] = { nick:S.nick, prog:S.prog, tutorialFatto:S.tutorialFatto, tentativi:S.tentativi, best:S.best, maxFase:S.maxFase, annunci:S.annunci };
   save(KEY_PLAYERS, all);
 }
 const norm = s => String(s||'').trim().toLowerCase();
@@ -7033,7 +7289,8 @@ const S = {
   giorniSfida: generaGiorni(SEED),
   ultimaSim:null, factIdx:0,
   sfida:null,                  // la sfida in corso: { fase, stato, giorni:[risultati dei giorni già giocati] }
-  maxFase:0                    // la fase più avanzata raggiunta (i blocchi sbloccati restano disponibili nei tentativi dopo)
+  maxFase:0,                   // la fase più avanzata raggiunta (i blocchi sbloccati restano disponibili nei tentativi dopo)
+  annunci:[]                   // gli eventi delle materie già annunciati (nei tentativi dopo non si ripete il messaggio lungo)
 };
 // niente valori di base da impostare: se nessuna regola dice di produrre, il robot fa 0 coni
 function progBase(){ return { prezzo:CONFIG.prezzoBase, produzione:0, regole:[] }; }
@@ -7107,7 +7364,7 @@ async function entra(saltaTutorial){
   S.tutorialFatto = d ? d.tutorialFatto : false;
   S.tentativi = d ? d.tentativi : 0;
   S.best = d ? d.best : null;
-  S.maxFase = d && d.maxFase || 0; S.prog.produzione = 0;
+  S.maxFase = d && d.maxFase || 0; S.prog.produzione = 0; S.annunci = d && d.annunci || [];
   await provaGrafica();
   if(saltaTutorial || S.tutorialFatto){ S.tutorialFatto = true; salvaGiocatore(); vaiAlGioco(); }
   else iniziaTutorial();
@@ -7132,7 +7389,45 @@ function blocchiDisponibili(){
   if(S.mode === 'tutorial') return { cond:['meteo'], azioni:['produci'] };
   const f = Math.max(S.sfida ? S.sfida.fase : 0, S.maxFase || 0), cond = [], azioni = [];
   for(let i=0;i<=f;i++){ cond.push(...FASI[i].cond); azioni.push(...FASI[i].azioni); }
+  // i blocchi degli eventi: dopo l'annuncio
+  const da = faseInfo(f).da;
+  if(eventoNoto('gara', da)) cond.push('gara');
+  if(eventoNoto('turisti', da)) cond.push('turisti');
   return { cond, azioni };
+}
+/* ---------- gli eventi delle materie ---------- */
+const EV = CONFIG.eventi;
+// un evento si conosce dal giorno del suo annuncio (o se è già stato annunciato in un tentativo precedente)
+const eventoNoto = (id, giorno) => EV[id].annuncio <= giorno || (S.annunci || []).includes(id);
+const bandiera = p => p === 'fr'
+  ? '<svg class="flag" viewBox="0 0 30 20" aria-label="Francia"><rect width="10" height="20" fill="#2b4ea2"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#e4343e"/></svg>'
+  : '<svg class="flag" viewBox="0 0 60 30" aria-label="Regno Unito"><clipPath id="uk-c"><path d="M0,0v30h60V0z"/></clipPath><clipPath id="uk-t"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><g clip-path="url(#uk-c)"><path d="M0,0v30h60V0z" fill="#26418f"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 60,30M60,0 0,30" clip-path="url(#uk-t)" stroke="#d8303d" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#d8303d" stroke-width="6"/></g></svg>';
+// le icone degli eventi di un giorno (solo quelli già annunciati quel giorno: oggi = il giorno da cui si guarda)
+function iconeEventi(g, oggi){
+  const ic = [];
+  if(g.gara && eventoNoto('gara', oggi)) ic.push('🏅');
+  if(g.turisti && eventoNoto('turisti', oggi)) ic.push('🚌');
+  if(g.asl && eventoNoto('asl', oggi)) ic.push('🕵️');
+  if(g.n === EV.concorrenza.da && eventoNoto('concorrenza', oggi)) ic.push('🆚');
+  return ic.join('');
+}
+const traGiorni = (giorno, oggi) => giorno === oggi ? '<b>OGGI</b>' : giorno === oggi + 1 ? '<b>domani</b>' : `tra <b>${giorno - oggi} giorni</b>`;
+// gli avvisi del gestionale (con il conto alla rovescia) visti dal giorno "oggi"
+function avvisiHTML(oggi){
+  const r = [];
+  if(eventoNoto('gara', oggi) && EV.gara.giorno >= oggi)
+    r.push(`<div class="avviso"><span class="ic">🏅</span><div><b>Gara a Todi</b> (Giochi studenteschi): ${traGiorni(EV.gara.giorno, oggi)} · giorno ${EV.gara.giorno}<br><small>Arriveranno molti più clienti! Puoi usare la regola SE 🏅 oggi c'è la gara.</small></div><span class="conta">${EV.gara.giorno - oggi}<small>${(EV.gara.giorno - oggi) === 1 ? "giorno" : "giorni"}</small></span></div>`);
+  if(eventoNoto('concorrenza', oggi)){
+    if(EV.concorrenza.da > oggi) r.push(`<div class="avviso"><span class="ic">🆚</span><div><b>Apre la Gelateria Rivale</b>: ${traGiorni(EV.concorrenza.da, oggi)} · giorno ${EV.concorrenza.da}<br><small>Venderà il cono a ${eur(EV.concorrenza.prezzo,2)}: se il tuo costa di più, perdi clienti!</small></div><span class="conta">${EV.concorrenza.da - oggi}<small>${(EV.concorrenza.da - oggi) === 1 ? "giorno" : "giorni"}</small></span></div>`);
+    else r.push(`<div class="avviso"><span class="ic">🆚</span><div><b>C'è la concorrenza</b>: la Gelateria Rivale vende il cono a ${eur(EV.concorrenza.prezzo,2)}.<br><small>Se il tuo prezzo è più alto, molti clienti vanno da lei!</small></div></div>`);
+  }
+  if(eventoNoto('turisti', oggi)){
+    const prossimi = EV.turisti.giorni.filter(n => n >= oggi);
+    if(prossimi.length) r.push(`<div class="avviso"><span class="ic">🚌</span><div><b>Pullman di turisti</b> ${bandiera('gb')} ${bandiera('fr')}: giorni ${prossimi.join(', ')}<br><small>Più clienti! Puoi usare la regola SE 🚌 oggi arrivano i turisti.</small></div><span class="conta">${prossimi[0] - oggi}<small>${(prossimi[0] - oggi) === 1 ? "giorno" : "giorni"}</small></span></div>`);
+  }
+  if(eventoNoto('asl', oggi) && EV.asl.giorno >= oggi)
+    r.push(`<div class="avviso"><span class="ic">🕵️</span><div><b>Controllo ASL</b>: ${traGiorni(EV.asl.giorno, oggi)} · giorno ${EV.asl.giorno}<br><small>Gli ingredienti arrivati da ${EV.asl.scadenza} giorni o più sono scaduti: multa di ${eur(EV.asl.multa)}! Non riempire troppo il magazzino.</small></div><span class="conta">${EV.asl.giorno - oggi}<small>${(EV.asl.giorno - oggi) === 1 ? "giorno" : "giorni"}</small></span></div>`);
+  return r.length ? `<div class="avvisi"><div class="hint">📣 Avvisi</div>${r.join('')}</div>` : '';
 }
 // cosa si mostra nella simulazione: la temperatura, il magazzino, il prezzo… solo quando servono
 function cosaVedi(){
@@ -7194,7 +7489,8 @@ function renderPrevisioni(box, giorni, visibili, attuale, conTemp){
   let html = '<div class="forecast">';
   giorni.forEach((g,i)=>{
     const vis = i < visibili;
-    html += `<div class="fday ${vis?'':'unk'} ${attuale===i?'now':''}" data-d="${i}">${GIORNI_SETT[g.dow]} ${g.n}
+    const ev = attuale != null ? iconeEventi(g, giorni[attuale].n) : '';
+    html += `<div class="fday ${vis?'':'unk'} ${attuale===i?'now':''}" data-d="${i}">${ev ? `<i class="ev">${ev}</i>` : ''}${GIORNI_SETT[g.dow]} ${g.n}
       <span class="ic">${vis ? METEO[g.meteo].ic : '❓'}</span>${vis && conTemp ? g.temp+'°' : ''}</div>`;
   });
   html += '</div>';
@@ -7223,15 +7519,18 @@ function renderFase(){
      <p class="say">Fase ${S.sfida.fase+1} di ${FASI.length} · giorni ${F.da}–${F.a} · ${F.titolo}</p>
      <p style="margin:0 0 6px">${F.testo}</p>${es}</div>`;
   const giorni = S.giorniSfida.slice(F.da-1, F.a);
-  $('#forecast-box').innerHTML = F.previsioni
-    ? `<div class="hint">📡 Previsioni dei prossimi giorni</div><div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday">${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">${METEO[g.meteo].ic}</span>${V.temp ? g.temp+'°' : ''}</div>`).join('')}</div>`
-    : `<div class="station-note">📡💥 Niente previsioni: il programma deve funzionare con qualsiasi tempo.</div>`;
+  const evIc = g => { const ic = iconeEventi(g, F.da); return ic ? `<i class="ev">${ic}</i>` : ''; };
+  $('#forecast-box').innerHTML = (F.previsioni
+    ? `<div class="hint">📡 Previsioni dei prossimi giorni</div><div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">${METEO[g.meteo].ic}</span>${V.temp ? g.temp+'°' : ''}</div>`).join('')}</div>`
+    : `<div class="station-note">📡💥 Niente previsioni: il programma deve funzionare con qualsiasi tempo.</div>
+       <div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday unk">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`).join('')}</div>`) + avvisiHTML(F.da);
   const chips = [`<span>📅 Giorni ${F.da}–${F.a} di ${CONFIG.giorni}</span>`];
   if(S.sfida.giorni.length) chips.push(`<span>💰 ${eur(S.sfida.stato.cassa)}</span>`);
-  if(V.magazzino) chips.push(`<span>📦 ${round1(S.sfida.stato.stock)} kg</span>`);
+  if(V.magazzino) chips.push(`<span>📦 ${round1(S.sfida.stato.stock)} kg${eventoNoto('asl', F.da) && S.sfida.stato.stock > 0 ? ` · i più vecchi arrivati ${etaMagazzino(S.sfida.stato, F.da) || 'oggi'}${etaMagazzino(S.sfida.stato, F.da) ? ' giorni fa' : ''}` : ''}</span>`);
   $('#start-chips').innerHTML = chips.join('');
   $('#btn-run').textContent = `▶ AVVIA GIORNI ${F.da}–${F.a}`;
   $('#btn-add').classList.remove('pulse');
+  $('#btn-help').classList.add('hidden'); pulisciErroreCoach();
   $('#card-fact').classList.remove('hidden');
   renderRegole(); nuovoFatto();
   show('program');
@@ -7247,6 +7546,10 @@ async function controllaPrima(){
   return scelta === 1;
 }
 $('#btn-run').onclick = async ()=>{
+  if(S.mode==='tutorial' && !(S.tut.meteo || [])[S.tut.giorno]){     // prima si guarda il meteo (parte A)
+    const e = $('#coach-err'); e.textContent = '📡 Prima premi «Ricevi dati meteo» per sapere che tempo farà domani.'; e.classList.remove('hidden');
+    $('#btn-meteo').classList.add('pulse'); return;
+  }
   if(!(await controllaPrima())) return;
   if(S.mode==='tutorial') return avviaGiornoTutorial();
   avviaSfida();
@@ -7256,27 +7559,25 @@ $('#btn-run').onclick = async ()=>{
    TUTORIAL (3 giorni con meteo noto)
    ===================================================================== */
 // il tutorial: 3 giorni, una regola sul meteo al giorno. Il magazzino lo riempie il fornitore da solo.
+// Il primo passo del gestionale è diviso in tre parti: A guarda il meteo · B decidi cosa fare · C insegna al robot
 const TUT = [
-  { target:{ c:'meteo', cv:'sole', a:'produci', av:100 },
-    say:`Domani c'è il ☀️ <b>sole</b>: arriveranno <b>tantissimi</b> clienti! Ma il robot non ha regole: così <b>non produce nessun cono</b>.`,
-    task:'Insegnagli cosa fare con questa regola:',
+  { target:{ c:'meteo', cv:'sole', a:'produci', av:30 },
+    decidi:`Se domani c'è il ☀️ <b>sole</b>: arriveranno <b>tantissimi</b> clienti! Bisogna dire al robot cosa fare.`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='sole');
       if(!ok) return 'Manca la regola SE ☁️ meteo è ☀️ sole. Premi ➕ Aggiungi regola (o ✨ Aiutami).';
-      if(d.persi > 8) return 'La regola c\'è, ma i coni sono pochi: col sole arrivano circa 100 clienti!';
+      if(d.obiettivo < 20) return 'La regola c\'è, ma i coni sono pochi: prova 30 coni!';
       return null; } },
-  { target:{ c:'meteo', cv:'pioggia', a:'produci', av:20 },
-    say:`Domani 🌧️ <b>piove</b>: verranno <b>pochi</b> clienti. Se il robot fa troppi coni, quelli avanzati si buttano!`,
-    task:'Aggiungi questa regola:',
+  { target:{ c:'meteo', cv:'pioggia', a:'produci', av:10 },
+    decidi:`Se domani 🌧️ <b>piove</b>: verranno <b>pochi</b> clienti. Se il robot fa troppi coni, quelli avanzati si buttano!`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='pioggia');
       if(!ok) return 'Manca la regola SE ☁️ meteo è 🌧️ pioggia.';
-      if(d.avanzati > 15) return 'La regola c\'è, ma produci troppo: con la pioggia arrivano circa 15 clienti.';
+      if(d.avanzati > 6) return 'La regola c\'è, ma produci troppo: con la pioggia arrivano pochi clienti. Prova 10 coni.';
       return null; } },
-  { target:{ c:'meteo', cv:'nuvoloso', a:'produci', av:60 },
-    say:`Domani è ⛅ <b>nuvoloso</b>: arriverà una via di mezzo di clienti. Manca solo la regola per questo tempo!`,
-    task:'Aggiungi l\'ultima regola:',
+  { target:{ c:'meteo', cv:'nuvoloso', a:'produci', av:20 },
+    decidi:`Se domani è ⛅ <b>nuvoloso</b>: arriverà una via di mezzo di clienti. Manca solo la regola per questo tempo!`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='nuvoloso');
       if(!ok) return 'Manca la regola SE ☁️ meteo è ⛅ nuvoloso.';
-      if(d.persi > 12 || d.avanzati > 20) return 'Quasi! Con le nuvole arrivano circa 55 clienti: prova 60 coni.';
+      if(d.persi > 5 || d.avanzati > 10) return 'Quasi! Con le nuvole arriva una via di mezzo: prova 20 coni.';
       return null; } }
 ];
 function bloccoTarget(r){
@@ -7286,69 +7587,131 @@ function bloccoTarget(r){
 async function iniziaTutorial(){
   S.mode = 'tutorial';
   S.prog = progBase();
-  S.tut.giorno = 0;
+  S.tut.giorno = 0; S.tut.meteo = [];
   S.tut.stato = statoIniziale({ magazzino:CONFIG.tutorial.magazzino, cassa:CONFIG.tutorial.cassa });
   await introPanoramica();                           // prima una panoramica lenta della città e di una giornata
   show('program');
   renderTutorial();
   await modal(`<div class="ic">🍦🤖</div><h3>Ciao ${esc(S.nick)}!</h3>
-    <p>La tua gelateria è <b>automatica</b>: un <b>robot</b> decide ogni mattina quanti coni fare.</p>
+    <p>La tua gelateria è <b>automatica</b>: un <b>robot</b> prepara ogni mattina i coni gelato.</p>
     <p>Tu gli scrivi le <b>regole</b>. Facciamo una prova di <b>3 giorni</b> insieme!</p>`, [{t:'Iniziamo! ▶'}]);
   await modal(`<div class="ic">🤖</div><h3>Le regole</h3>
     <p>Una regola dice: <b>SE</b> succede qualcosa, <b>ALLORA</b> il robot fa qualcosa.</p>
-    <p>Per esempio: SE c'è il sole ALLORA produci 100 coni.</p>
+    <p>Per esempio: SE c'è il sole ALLORA produci 30 coni.</p>
     <p>Senza regole il robot <b>non fa niente</b>!</p>`, [{t:'Ho capito! ▶'}]);
   renderRegole();
+  $('#btn-meteo').classList.add('pulse');
 }
 function renderTutorial(){
   salvaSessione();
-  const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k];
+  const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k], ricevuto = !!(S.tut.meteo || [])[k];
   $('#card-fact').classList.add('hidden');
-  $('#forecast-box').innerHTML = `<div class="domani"><span class="ic">${METEO[g.meteo].ic}</span><div>Domani (giorno ${k+1} di 3):<br>${METEO[g.meteo].nome}</div></div>`;
+  $('#forecast-box').innerHTML = '';
   const coach = $('#coach');
   coach.classList.remove('hidden');
-  coach.innerHTML = `<div class="mascot">🍦</div><div class="body">
-     <p class="say">${T.say}</p>
-     <div>${T.task}</div><div class="target">${bloccoTarget(T.target)}</div>
-     <div class="btns"><button class="btn yellow" id="btn-help">✨ Aiutami</button></div>
-     <p class="err hidden" id="coach-err"></p></div>`;
-  $('#btn-help').onclick = ()=>{
-    const t = T.target;
-    const idx = S.prog.regole.findIndex(r => r.c===t.c && r.cv===t.cv);
-    if(idx >= 0) S.prog.regole[idx] = { ...t, op:t.op||'>' };
-    else S.prog.regole.push({ ...t, op:t.op||'>' });
-    renderRegole(); salvaGiocatore(); pulisciErroreCoach();
-  };
+  coach.innerHTML = `<div class="abc">
+    <div class="parte ${ricevuto ? '' : 'attiva'}">
+      <h3><span class="lettera">A</span> Guarda il meteo</h3>
+      ${ricevuto
+        ? `<div class="previsione"><span class="ic">${METEO[g.meteo].ic}</span><div>Domani (giorno ${k+1} di 3):<br>${METEO[g.meteo].nome}</div></div>
+           <button class="riguarda" id="btn-meteo">📡 Ricevi di nuovo i dati</button>`
+        : `<p>Che tempo farà domani? Chiedilo alla stazione meteo!</p>
+           <button class="btn sky btn-meteo" id="btn-meteo">📡 Ricevi dati meteo</button>`}
+    </div>
+    <div class="parte ${ricevuto ? 'attiva' : 'bloccata'}">
+      <h3><span class="lettera">B</span> Decidi cosa fare</h3>
+      <p>${T.decidi}</p>
+      <div class="lucchetto">🔒 Prima ricevi i dati meteo</div>
+    </div>
+    <div class="parte ${ricevuto ? 'attiva' : 'bloccata'}">
+      <h3><span class="lettera">C</span> Insegna al robot</h3>
+      <p><span class="robot">🤖</span> Il robot preparerà i coni gelato già pronti per essere venduti. Ma tu gli devi dire <b>quanti coni preparare</b>, il giorno prima per il giorno dopo.</p>
+      <div>Insegnagli cosa fare con questa regola:</div>
+      <div class="target">${bloccoTarget(T.target)}</div>
+      <div class="lucchetto">🔒 Prima ricevi i dati meteo</div>
+    </div>
+  </div>`;
+  $('#btn-meteo').onclick = () => riceviMeteo();
+  $('#btn-help').classList.remove('hidden');
+  $('#btn-help').disabled = !ricevuto;
   $('#start-chips').innerHTML = '';
   $('#btn-run').textContent = `▶ AVVIA GIORNO ${k+1}`;
-  $('#btn-add').classList.toggle('pulse', true);
+  $('#btn-add').classList.toggle('pulse', ricevuto);
+  pulisciErroreCoach();
   renderRegole();
+}
+$('#btn-help').onclick = ()=>{
+  if(S.mode !== 'tutorial') return;
+  const t = TUT[S.tut.giorno].target;
+  const idx = S.prog.regole.findIndex(r => r.c===t.c && r.cv===t.cv);
+  if(idx >= 0) S.prog.regole[idx] = { ...t, op:t.op||'>' };
+  else S.prog.regole.push({ ...t, op:t.op||'>' });
+  $('#btn-add').classList.remove('pulse');
+  renderRegole(); salvaGiocatore(); pulisciErroreCoach();
+};
+// A · la ricezione dei dati meteo: l'antenna manda onde, arrivano i numeri, sullo schermo compare la previsione
+async function riceviMeteo(){
+  const k = S.tut.giorno, g = S.tut.giorni[k], ov = $('#radio'), dati = $('#radio-dati'), schermo = $('#radio-schermo');
+  const attesa = ms => new Promise(r => setTimeout(r, ms));
+  $('#btn-meteo').classList.remove('pulse');
+  ov.classList.remove('hidden'); $('#radio-esito').classList.add('hidden'); $('#radio-esito').innerHTML = '';
+  schermo.parentElement.classList.remove('pronto'); schermo.innerHTML = '…'; $('#radio-fill').style.width = '0%';
+  const fasi = ['Collegamento con la stazione meteo…', 'Ricevo i dati: temperatura, vento, nuvole…', 'Il computer calcola la previsione…'];
+  const largo = () => Math.max(120, $('.radio-scena').clientWidth - 230);
+  const t0 = performance.now(), DUR = 3200;
+  let ultimo = 0;
+  while(performance.now() - t0 < DUR){
+    const p = (performance.now() - t0) / DUR;
+    $('#radio-fill').style.width = Math.round(p * 100) + '%';
+    $('#radio-txt').textContent = fasi[Math.min(2, Math.floor(p * 3))];
+    if(performance.now() - ultimo > 140){             // un pacchetto di dati che viaggia sulle onde
+      ultimo = performance.now();
+      const b = document.createElement('span');
+      b.textContent = Array.from({length:4}, () => Math.random() < .5 ? '0' : '1').join('');
+      b.style.top = (18 + Math.random() * 120) + 'px'; b.style.setProperty('--fino', largo() + 'px');
+      dati.appendChild(b); setTimeout(() => b.remove(), 1600);
+      schermo.textContent = Array.from({length:3}, () => Array.from({length:6}, () => Math.random() < .5 ? '0' : '1').join('')).join('\n');
+    }
+    await new Promise(r => requestAnimationFrame(r));
+  }
+  $('#radio-fill').style.width = '100%';
+  schermo.parentElement.classList.add('pronto'); schermo.innerHTML = `<span class="ic">${METEO[g.meteo].ic}</span>`;
+  $('#radio-txt').textContent = '✅ Dati ricevuti!';
+  await attesa(500);
+  $('#radio-esito').innerHTML = `<div class="grande"><span class="ic">${METEO[g.meteo].ic}</span><div>Domani:<br>${METEO[g.meteo].nome.toUpperCase()}</div></div>
+    <div class="res-actions" style="margin-top:12px"><button class="btn big pink" id="radio-ok">Ho capito! ▶</button></div>`;
+  $('#radio-esito').classList.remove('hidden');
+  await new Promise(r => { $('#radio-ok').onclick = r; });
+  ov.classList.add('hidden'); dati.innerHTML = '';
+  (S.tut.meteo ??= [])[k] = true;
+  renderTutorial();
 }
 function pulisciErroreCoach(){ const e = $('#coach-err'); if(e) e.classList.add('hidden'); }
 async function avviaGiornoTutorial(){
   const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k];
-  const prova = simula(S.prog, [g], S.tut.stato, { auto:true });
+  const prova = simula(S.prog, [g], S.tut.stato, { auto:true, affitto:0 });
   const err = T.check(prova.giorni[0], S.prog);
   if(err){
     const e = $('#coach-err'); e.textContent = '🙈 ' + err; e.classList.remove('hidden');
-    $('#coach').classList.remove('shake'); void $('#coach').offsetWidth; $('#coach').classList.add('shake');
+    $('#card-rules').classList.remove('shake'); void $('#card-rules').offsetWidth; $('#card-rules').classList.add('shake');
     return;
   }
   // cosa sarebbe successo senza la nuova regola?
   const senza = { ...S.prog, regole: S.prog.regole.filter(r => !(r.c===T.target.c && r.cv===T.target.cv)) };
-  const d0 = simula(senza, [g], S.tut.stato, { auto:true }).giorni[0];
+  const d0 = simula(senza, [g], S.tut.stato, { auto:true, affitto:0 }).giorni[0];
   const d = prova.giorni[0];
   await animaSimulazione(prova, { tutorial:true, giorniVisibili:S.tut.giorni.length, tuttiGiorni:S.tut.giorni, vedi:{ temp:false, magazzino:false, prezzo:false } });
   S.tut.stato = prova.stato; salvaSessione();
   let html;
   if(k===0) html = `<div class="ic">😋</div><h3>Giorno 1: fatto!</h3>
-     <div class="stats"><span>👥 ${d.clienti} clienti</span><span>🍦 ${d.venduti} venduti</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
-     <p>Senza la regola il robot non avrebbe fatto coni e avresti perso <b>${d0.persi} clienti</b>!</p><div class="card fact"><p>${FATTI.programmazione}</p></div>`;
+     <div class="stats"><span>👥 ${d.clienti} clienti</span><span>🍦 ${d.venduti} venduti</span><span>🗑️ ${d.avanzati} avanzati</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
+     <p>Senza la regola il robot non avrebbe fatto coni e avresti perso <b>${d0.persi} clienti</b>!</p>
+     ${d.avanzati ? `<p>Sono avanzati <b>${d.avanzati} coni</b>: il gelato non si tiene per domani e si butta. Meglio qualcuno in più che clienti senza gelato… ma non troppi!</p>` : ''}
+     <div class="card fact"><p>${FATTI.programmazione}</p></div>`;
   else if(k===1) html = `<div class="ic">🌧️</div><h3>Giorno 2: fatto!</h3>
-     <div class="stats"><span>🍦 ${d.venduti} venduti</span><span>🗑️ ${d.avanzati} buttati</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
-     <p>Senza la regola avresti buttato <b>${d0.avanzati} coni</b> (${eur(d0.avanzati*CONFIG.costoKg/CONFIG.coniPerKg)})!</p>
-     <p>Oggi sei in perdita lo stesso: l'affitto di ${eur(CONFIG.affittoGiorno)} si paga anche quando piove.</p>
-     <div class="card fact"><p>${FATTI.costiFissi}</p></div>`;
+     <div class="stats"><span>👥 ${d.clienti} clienti</span><span>🍦 ${d.venduti} venduti</span><span>🗑️ ${d.avanzati} buttati</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
+     <p>Con la pioggia sono venuti solo <b>${d.clienti} clienti</b>. Se il robot avesse fatto ${TUT[0].target.av} coni come col sole, ne avresti buttati <b>${Math.max(0, TUT[0].target.av - d.clienti)}</b> (${eur(Math.max(0, TUT[0].target.av - d.clienti)*CONFIG.costoKg/CONFIG.coniPerKg,2)})!</p>
+     <div class="card fact"><p>${FATTI.spreco}</p></div>`;
   else html = `<div class="ic">⛅</div><h3>Giorno 3: fatto!</h3>
      <div class="stats"><span>🍦 ${d.venduti} venduti</span><span>😞 ${d.persi} persi</span><span>🗑️ ${d.avanzati} buttati</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
      <p>Ora il robot sa cosa fare con <b>ogni</b> tempo: ☀️ sole, ⛅ nuvole e 🌧️ pioggia!</p>
@@ -7360,7 +7723,8 @@ async function avviaGiornoTutorial(){
   S.tutorialFatto = true; salvaGiocatore();
   await modal(`<div class="ic">🏁</div><h3>Ora tocca a te!</h3>
     <p>La sfida vera dura <b>${CONFIG.giorni} giorni</b>. Le tue 3 regole sono già nel programma.</p>
-    <p>Ogni pochi giorni arriva una <b>novità</b> da gestire: la temperatura, il weekend, il magazzino…</p>
+    <p>Attento: nella prova la gelateria era appena aperta. Ora inizia la stagione e arriveranno <b>molti più clienti</b>!</p>
+    <p>Ogni 3-4 giorni arriva una <b>novità</b> da gestire: il weekend, la temperatura, il prezzo, il magazzino… e qualche sorpresa!</p>
     <p>Alla fine conta quanto hai guadagnato in tutto!</p>`, [{t:'Alla sfida! 🚀', cls:'mint'}]);
   vaiAlGioco();
 }
@@ -7411,10 +7775,10 @@ function setTruck(oreTrascorse){
   const mancano = Math.max(0, Math.ceil(24 - oreTrascorse));
   $('#truck-label').textContent = $('#d3-camion').textContent = mancano > 0 ? `🚚 ${truck.kg} kg · arriva tra ${mancano} h` : `🚚 ${truck.kg} kg · arrivato!`;
 }
-function spawnCliente(servito, durata){
+function spawnCliente(servito, durata, turista){
   const el = document.createElement('div');
   el.className = 'cust';
-  el.innerHTML = CLIENTI_EMOJI[Math.floor(Math.random()*CLIENTI_EMOJI.length)];
+  el.innerHTML = CLIENTI_EMOJI[Math.floor(Math.random()*CLIENTI_EMOJI.length)] + (turista ? `<b class="fumetto">${bandiera(turista)}</b>` : '');
   $('#street').appendChild(el);
   const w = $('#street').clientWidth;
   const anim = el.animate([
@@ -7431,6 +7795,10 @@ function renderDecisione(d, V = {}){
   if(V.prezzo) rows.push(`<div><span>💶 Prezzo</span><span>${eur(d.prezzo,2)}</span></div>`);
   if(V.magazzino) rows.push(`<div><span>🚚 Riordino</span><span>${d.ordine ? d.ordine+' kg' : '—'}</span></div>`);
   if(d.limitato) rows.push(`<div class="warn"><span>⚠️ Ingredienti finiti!</span><span>solo ${d.prodotti}</span></div>`);
+  if(d.gara) rows.push(`<div><span>🏅 Gara a Todi</span><span>${d.clienti} clienti</span></div>`);
+  if(d.turistiN > 0) rows.push(`<div><span>🚌 Turisti</span><span>${d.turistiN}</span></div>`);
+  if(d.rivale > 0) rows.push(`<div class="warn"><span>🆚 Andati alla Rivale</span><span>${d.rivale} clienti</span></div>`);
+  if(d.asl) rows.push(d.multa ? `<div class="warn"><span>🕵️ ASL: ${round1(d.scaduti)} kg scaduti</span><span>multa −${eur(d.multa)}</span></div>` : `<div><span>🕵️ Controllo ASL</span><span>✅ in regola</span></div>`);
   if(d.eccesso > 0) rows.push(`<div class="warn"><span>❄️ Congelatore pieno</span><span>−${round1(d.eccesso)} kg</span></div>`);
   $('#s-decision').innerHTML = rows.join('');
 }
@@ -7469,8 +7837,11 @@ async function animaGiorno(d, opz){
   // apertura: clienti dalle 9 alle 20
   const nVis = clamp(Math.round(d.clienti/7), d.clienti>0?2:0, 14);
   const soglie = Array.from({length:nVis}, (_,k)=>(k+0.5)/nVis);
+  const quotaTur = d.clienti ? (d.turistiN||0) / d.clienti : 0;
   let spawned = 0;
   const durApertura = durata*0.76;
+  if(d.turisti) floater('🚌 Turisti!', 18, 40, '#33586c');
+  if(d.rivale > 0) floater(`🆚 −${d.rivale} alla Rivale`, 30, 22, '#e04a58');
   await tween(durApertura, p=>{
     const ora = 9 + 11*p; setClock(ora);
     const arrivati = d.clienti*p;
@@ -7481,7 +7852,8 @@ async function animaGiorno(d, opz){
     if(truck.attivo) setTruck(ora - 8);
     while(spawned < nVis && p >= soglie[spawned]){
       const servito = soglie[spawned]*d.clienti <= d.prodotti;
-      spawnCliente(servito, Math.min(1400, durApertura*0.5)/speed);
+      const tur = Math.floor((spawned+1)*quotaTur + 0.5) > Math.floor(spawned*quotaTur + 0.5) ? (spawned % 2 ? 'fr' : 'gb') : null;
+      spawnCliente(servito, Math.min(1400, durApertura*0.5)/speed, tur);
       spawned++;
     }
   });
@@ -7532,7 +7904,7 @@ function impostaGrafica(modo, salva){
   aggiornaMenuGrafica();
 }
 function iniziaSimulazione3D(){
-  Diorama.svuota(); Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setFinito(false); Diorama.setConi(0, 1); Diorama.setSpeed(speed);
+  Diorama.svuota(); Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setFinito(false); Diorama.setConi(0, 1); Diorama.setSpeed(speed); Diorama.rivale(false);
 }
 // i numeri che volano partono dal posto giusto del diorama
 // aspetta il diorama, ma mai più del doppio del previsto (se la grafica cambia a metà, il gioco va avanti lo stesso)
@@ -7542,6 +7914,8 @@ async function animaGiorno3D(d, opz){
   const k = opz.tutorial ? 0 : 1;
   $('#s-day').textContent = $('#f-day').textContent = `📅 Giorno ${d.n}${opz.tutorial?'':'/'+opz.tuttiGiorni.length} · ${GIORNI_SETT[d.dow]}`;
   Diorama.setMeteo(d.meteo); Diorama.nuovoGiorno();
+  Diorama.rivale(!!d.concorrenza);                   // 🆚 il chiosco della concorrenza
+  if(d.turisti) Diorama.autobus(true);               // 🚌 il pullman arriva la mattina e si ferma in cima alla strada
   $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${opz.vedi.temp ? d.temp+' °C' : METEO[d.meteo].nome}</span>`;
   $('#scene').classList.toggle('senza-magazzino', !opz.vedi.magazzino);
   renderPrevisioni($('#s-forecast'), opz.tuttiGiorni, Math.max(opz.giorniVisibili, d.n), d.n-1, opz.vedi.temp);
@@ -7563,12 +7937,15 @@ async function animaGiorno3D(d, opz){
   Diorama.setPacchi(pacchiDi(d.stockFine)); Diorama.setConi(d.prodotti, Math.max(1, d.prodotti));
   setStock(d.stockFine);
   if(d.ordine > 0){ truck.attivo = true; truck.kg = d.ordine; setTruck(0); }
-  // aperto: clienti dalle 9 alle 20
+  // aperto: clienti dalle 9 alle 20 (alcuni sono turisti; chi va dalla concorrenza si ferma al chiosco)
   const nVis = clamp(Math.round(d.clienti/7), d.clienti>0?2:0, 14);
   const soglie = Array.from({length:nVis}, (_,i)=>(i+0.5)/nVis);
-  let spawned = 0, finiti = false;
+  const quotaTur = d.clienti ? (d.turistiN||0) / d.clienti : 0, nRiv = clamp(Math.round((d.rivale||0)/7), d.rivale>0?1:0, 6);
+  const turista = i => Math.floor((i+1)*quotaTur + 0.5) > Math.floor(i*quotaTur + 0.5) ? (i % 2 ? 'fr' : 'gb') : null;
+  let spawned = 0, finiti = false, rivali = 0;
   const durApertura = GRAFICA3D.giornoMs[k];
   await tween(durApertura, p=>{
+    while(rivali < nRiv && p >= (rivali+0.3)/nRiv){ Diorama.cliente(true, GRAFICA3D.clienteMs[k]/speed, null, { rivale:true }); rivali++; }
     const ora = 9 + 11*p; setClock(ora);
     const arrivati = d.clienti*p, serviti = Math.min(arrivati, d.prodotti);
     Diorama.setConi(Math.max(0, Math.round(d.prodotti - serviti)));
@@ -7576,7 +7953,7 @@ async function animaGiorno3D(d, opz){
     setCash(d.cassaInizio + Math.round(serviti)*d.prezzo);
     if(truck.attivo) setTruck(ora - 8);
     while(spawned < nVis && p >= soglie[spawned]){
-      Diorama.cliente(soglie[spawned]*d.clienti <= d.prodotti, GRAFICA3D.clienteMs[k]/speed);
+      Diorama.cliente(soglie[spawned]*d.clienti <= d.prodotti, GRAFICA3D.clienteMs[k]/speed, null, { turista: turista(spawned) });
       spawned++;
     }
   });
@@ -7586,6 +7963,7 @@ async function animaGiorno3D(d, opz){
   floater(eurS(d.profitto), 20, 30, d.profitto >= 0 ? '#3f866c' : '#e04a58');
   setCash(d.cassaFine);
   const durC = GRAFICA3D.chiusuraMs[k];
+  if(d.turisti) Diorama.autobus(false);              // il pullman riparte
   await Promise.all([ aspetta3D(Diorama.chiudi(durC), durC), tween(durC, p=>setClock(20 + 0.5*p)) ]);
   // notte: se c'è un ordine il furgone parte dal fornitore e scarica i pacchi sul pallet prima dell'alba
   const nP = d.ordine > 0 ? Math.max(1, pacchiDi(Math.min(CONFIG.magazzinoMax, d.stockFine + d.ordine)) - pacchiDi(d.stockFine)) : 0;
@@ -7764,10 +8142,77 @@ async function animaSimulazione(sim, opz){
   $('#street').innerHTML = '';
   show('sim');
   if(G3.attivo){ await prepara3D(); if(G3.pronto) iniziaSimulazione3D(); }
+  aggiornaPillEvento(null);
   for(const d of sim.giorni){
+    if(!opz.tutorial){
+      $('#s-day').textContent = $('#f-day').textContent = `📅 Giorno ${d.n}/${opz.tuttiGiorni.length} · ${GIORNI_SETT[d.dow]}`;
+      setClock(8); aggiornaPillEvento(d.n); await eventiDelGiorno(d);
+    }
     await animaGiorno(d, opz);
   }
   await sleep(300);
+}
+
+/* =====================================================================
+   GLI EVENTI DELLE ALTRE MATERIE DEL CORSO SIA, durante la simulazione
+   ===================================================================== */
+const ANNUNCI = {
+  gara: () => `<div class="ic">📣🏅</div><h3>Giochi studenteschi: gara a Todi!</h3>
+    <p>Tra <b>${EV.gara.giorno - EV.gara.annuncio} giorni</b> (il giorno ${EV.gara.giorno}) a Todi c'è la <b>gara dei Giochi studenteschi</b>: arriveranno atleti, allenatori e tifosi… cioè <b>tantissimi clienti</b>!</p>
+    <p>Da ora nel gestionale c'è il <b>conto alla rovescia</b>, e potrai usare la regola <b>SE 🏅 oggi c'è la gara</b>. Preparati!</p>
+    <div class="materia"><h4>🏃 Educazione fisica al SIA</h4><p>Al Ciuffelli-Einaudi il SIA ha la <b>curvatura sportiva</b>: <b>2 ore in più a settimana</b> di educazione fisica con un <b>esperto</b> di uno sport, ogni anno uno sport diverso!</p></div>`,
+  concorrenza: () => `<div class="ic">📣🆚</div><h3>Arriva la concorrenza!</h3>
+    <p>Tra <b>${EV.concorrenza.da - EV.concorrenza.annuncio} giorni</b> (il giorno ${EV.concorrenza.da}) in piazza apre un'altra gelateria: la <b>Gelateria Rivale</b>.</p>
+    <p>Venderà il cono a <b>${eur(EV.concorrenza.prezzo,2)}</b>. Se il tuo prezzo è più alto, <b>molti clienti andranno da lei</b>!</p>
+    <div class="materia"><h4>📈 Economia politica al SIA</h4><p>Si studia come funziona il <b>mercato</b>: quando più negozi vendono la stessa cosa, i clienti scelgono chi offre di più a meno. Si chiama <b>concorrenza</b>, ed è quello che tiene bassi i prezzi.</p></div>`,
+  turisti: () => `<div class="ic">📣🚌</div><h3>Arrivano i turisti!</h3>
+    <p>Un pullman si ferma in cima alla strada: sono turisti <b>inglesi</b> ${bandiera('gb')} e <b>francesi</b> ${bandiera('fr')} venuti a vedere Todi. Oggi arrivano <b>più clienti</b>!</p>
+    <p>Torneranno nei giorni ${EV.turisti.giorni.filter(n=>n>EV.turisti.annuncio).join(', ')}: nel calendario li riconosci dal 🚌. Dalla prossima fase potrai usare la regola <b>SE 🚌 oggi arrivano i turisti</b>.</p>
+    <div class="materia"><h4>🗣️ Inglese e Francese al SIA</h4><p>Al SIA si studiano <b>due lingue straniere</b>: servono per parlare con clienti e aziende di tutto il mondo. <i>Hello! = Ciao! · Bonjour! = Buongiorno!</i></p></div>`,
+  asl: () => `<div class="ic">📣🕵️</div><h3>Arriva il controllo dell'ASL!</h3>
+    <p>Tra <b>${EV.asl.giorno - EV.asl.annuncio} giorni</b> (il giorno ${EV.asl.giorno}) arriva l'ispettore dell'<b>ASL</b> (Azienda Sanitaria Locale) a controllare il magazzino.</p>
+    <p>La legge dice: gli ingredienti freschi vanno usati <b>entro ${EV.asl.scadenza} giorni</b> dall'arrivo. Se trova ingredienti scaduti, li butta via e ti dà una <b>multa di ${eur(EV.asl.multa)}</b>!</p>
+    <p>Consiglio: non riempire troppo il magazzino, <b>ordina poco e spesso</b>. Il robot usa sempre prima gli ingredienti più vecchi.</p>
+    <div class="materia"><h4>⚖️ Diritto al SIA</h4><p>Si studiano le <b>leggi</b>: le regole che valgono per tutti, anche per le aziende (igiene, contratti, lavoro). Il tuo robot segue le tue regole… ma la gelateria deve seguire anche quelle della legge!</p></div>`
+};
+const ANNUNCI_BREVI = {
+  gara: `📣🏅 Il giorno ${EV.gara.giorno} c'è la gara a Todi!`, concorrenza: `📣🆚 Il giorno ${EV.concorrenza.da} apre la Gelateria Rivale`,
+  turisti: '📣🚌 Arrivano i turisti! Hello! Bonjour!', asl: `📣🕵️ Il giorno ${EV.asl.giorno} arriva il controllo ASL`
+};
+async function eventiDelGiorno(d){
+  for(const id of ['gara','concorrenza','turisti','asl']){
+    if(EV[id].annuncio !== d.n) continue;
+    if((S.annunci || []).includes(id)){ toast(ANNUNCI_BREVI[id], 2600); continue; }   // già visto in un tentativo precedente
+    await modal(ANNUNCI[id](), [{t:'Ho capito! ▶', cls:'mint'}]);
+    (S.annunci ??= []).push(id); salvaGiocatore();
+  }
+  if(d.gara) toast('🏅 Oggi c\'è la gara a Todi: arrivano atleti e tifosi!', 3200);
+  if(d.n === EV.concorrenza.da) toast(`🆚 Oggi apre la Gelateria Rivale: cono a ${eur(EV.concorrenza.prezzo,2)}`, 3200);
+  if(d.turisti && d.n !== EV.turisti.annuncio) toast(`🚌 Arriva un pullman di turisti! ${bandiera('gb')} Hello! ${bandiera('fr')} Bonjour!`, 3200);
+  if(d.asl){
+    await modal(d.multa
+      ? `<div class="ic">🕵️❌</div><h3>Controllo ASL: ingredienti scaduti!</h3>
+         <p>L'ispettore ha trovato <b>${round1(d.scaduti)} kg</b> di ingredienti arrivati da ${EV.asl.scadenza} giorni o più.</p>
+         <p>Li butta via e ti dà una <b>multa di ${eur(d.multa)}</b>.</p><p>La prossima volta: riordina meno kg alla volta!</p>`
+      : `<div class="ic">🕵️✅</div><h3>Controllo ASL: tutto in regola!</h3>
+         <p>Nessun ingrediente scaduto in magazzino. Bravo: niente multa!</p>`, [{t:'Avanti ▶', cls:'mint'}]);
+  }
+}
+// la pillola sopra la scena: il prossimo evento con il conto alla rovescia
+function aggiornaPillEvento(n){
+  const el = $('#s-evento'), fs = $('#f-evento');
+  let txt = '';
+  if(n != null){
+    const c = [];
+    if(eventoNoto('gara', n) && EV.gara.giorno >= n) c.push([EV.gara.giorno, EV.gara.giorno === n ? '🏅 OGGI la gara!' : `🏅 Gara tra ${EV.gara.giorno - n} ${EV.gara.giorno - n === 1 ? 'giorno' : 'giorni'}`]);
+    if(eventoNoto('concorrenza', n) && EV.concorrenza.da >= n) c.push([EV.concorrenza.da, EV.concorrenza.da === n ? '🆚 OGGI apre la Rivale' : `🆚 Rivale tra ${EV.concorrenza.da - n} ${EV.concorrenza.da - n === 1 ? 'giorno' : 'giorni'}`]);
+    if(eventoNoto('asl', n) && EV.asl.giorno >= n) c.push([EV.asl.giorno, EV.asl.giorno === n ? '🕵️ OGGI il controllo ASL' : `🕵️ ASL tra ${EV.asl.giorno - n} ${EV.asl.giorno - n === 1 ? 'giorno' : 'giorni'}`]);
+    if(eventoNoto('turisti', n) && EV.turisti.giorni.includes(n)) c.push([n, '🚌 Oggi i turisti']);
+    c.sort((a,b)=>a[0]-b[0]);
+    if(c.length) txt = c[0][1];
+  }
+  el.textContent = fs.textContent = txt;
+  el.classList.toggle('hidden', !txt); fs.classList.toggle('hidden', !txt);
 }
 
 /* =====================================================================
@@ -7819,6 +8264,7 @@ function mostraRisultati(sim, recordPrima, pos){
     <tr><td>🗑️ Spreco <span class="tag">variabile</span></td><td class="neg">−${eur(T.cSpreco)}</td></tr>
     <tr><td>🚚 Consegne <span class="tag">${T.ordini}×</span></td><td class="neg">−${eur(T.cConsegna)}</td></tr>
     <tr><td>🏠 Affitto <span class="tag">fisso</span></td><td class="neg">−${eur(T.cAffitto)}</td></tr>
+    ${T.cMulta ? `<tr><td>⚖️ Multa ASL <span class="tag">${round1(T.scaduti)} kg scaduti</span></td><td class="neg">−${eur(T.cMulta)}</td></tr>` : ''}
     <tr class="tot"><td>= Profitto</td><td class="${T.profitto>=0?'pos':'neg'}">${eurS(T.profitto)}</td></tr>`;
   $('#r-chart').innerHTML = graficoSVG(sim.giorni);
   const msgs = analizza(sim);
@@ -7848,7 +8294,7 @@ async function aggiornaOnline(profitto){
   }catch(e){ box.textContent = '☁️ Salvato online.'; }
 }
 function graficoSVG(G){
-  const W=720, H=250, pl=50, pr=10, pt=18, pb=46;
+  const W=720, H=262, pl=50, pr=10, pt=32, pb=46;
   const vals = G.map(d=>d.profitto);
   const max = Math.max(50, ...vals), min = Math.min(-50, ...vals);
   const y = v => pt + (max - v)/(max - min)*(H-pt-pb);
@@ -7865,12 +8311,13 @@ function graficoSVG(G){
     if(d.persi > 0) s += `<text x="${x+w/2}" y="${Math.min(y0,y1)-4}" font-size="13" text-anchor="middle">😞</text>`;
     s += `<text x="${x+w/2}" y="${H-26}" font-size="16" text-anchor="middle">${METEO[d.meteo].ic}</text>`;
     s += `<text x="${x+w/2}" y="${H-8}" font-size="12" text-anchor="middle" fill="#6b5f80" font-weight="700">${d.n}</text>`;
+    const ev = iconeEventi(d, 99); if(ev) s += `<text x="${x+w/2}" y="14" font-size="13" text-anchor="middle">${ev}</text>`;
   });
   return s + '</svg>';
 }
 function diarioHTML(G){
   return `<h2>📒 Diario dei giorni</h2><div style="overflow-x:auto"><table class="diary"><tr><th>Giorno</th><th>Meteo</th><th>Prodotti</th><th>Clienti</th><th>Venduti</th><th>😞 Persi</th><th>🗑️ Buttati</th><th>🚚</th><th>Profitto</th></tr>` +
-    G.map(d=>`<tr><td>${GIORNI_SETT[d.dow]} ${d.n}</td><td>${METEO[d.meteo].ic} ${d.temp}°</td><td>${d.prodotti}${d.limitato?' ⚠️':''}</td><td>${d.clienti}</td><td>${d.venduti}</td>
+    G.map(d=>`<tr><td>${GIORNI_SETT[d.dow]} ${d.n} ${iconeEventi(d, 99)}</td><td>${METEO[d.meteo].ic} ${d.temp}°</td><td>${d.prodotti}${d.limitato?' ⚠️':''}</td><td>${d.clienti}</td><td>${d.venduti}</td>
       <td>${d.persi||''}</td><td>${d.avanzati||''}</td><td>${d.ordine?d.ordine+' kg':''}</td><td class="${d.profitto>=0?'pos':'neg'}"><b>${eurS(d.profitto)}</b></td></tr>`).join('') +
     `</table></div>`;
 }
@@ -7946,7 +8393,7 @@ async function riprendiPartita(x){
   S.tutorialFatto = d ? d.tutorialFatto : false;
   S.tentativi = d ? d.tentativi : 0;
   S.best = d ? d.best : null;
-  S.maxFase = d && d.maxFase || 0; S.prog.produzione = 0;
+  S.maxFase = d && d.maxFase || 0; S.prog.produzione = 0; S.annunci = d && d.annunci || [];
   await provaGrafica();
   if(S.tutorialFatto){ vaiAlGioco(); return; }
   S.mode = 'tutorial';

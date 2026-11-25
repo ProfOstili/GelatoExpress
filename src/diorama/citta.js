@@ -14,6 +14,7 @@ const GEL = { x: 13.0, y: 5.4, w: 4.4, d: 2.6, h: 2.8, porta: 16.35 };
 const FORN = { x: -3.3, y: -1.3, w: 2.7, d: 2.9, h: 1.55 };
 const CASSE = { x: 18.35, y: 6.95 };
 const BANCO = { x: 13.05, y: 8.1 };                               // lascia libero il neon accanto alla porta
+const RIVALE = { x: 5.45, y: 7.5 };                               // il chiosco della concorrenza, nel giardino della scuola
 const LAMPIONI = [[2.5, 8.25, 0], [10.95, 8.25, 0], [17.75, 8.25, 0], [6.75, 4.95, Z2], [10.75, 4.95, Z2], [-0.55, 1.85, 0]];
 const POZZE = [[4.5, 10.0, 0, 0.55], [9.0, 10.7, 0, 0.7], [13.6, 10.1, 0, 0.5], [1.2, 5.6, 0, 0.45], [20.1, 4.2, 0, 0.5], [-1.6, 4.4, 0, 0.45], [8.8, 4.4, Z2, 0.45], [15.4, 4.0, Z2, 0.4], [12.2, 0.4, Z3, 0.35]];
 
@@ -51,6 +52,9 @@ const ANDATA = percorso([
   { linea: [[-1.6, 2.6], [0.0, 2.6]] }, { arco: { c: [0.0, 3.8], r: rA, da: -Math.PI / 2, a: 0 } }, { linea: [[xS, 3.8], [xS, cyF]] },
   { arco: { c: [2.4, cyF], r: rA, da: Math.PI, a: Math.PI / 2 } }, { linea: [[2.4, yF], [FERMATA, yF]] },
 ]);
+// il pullman dei turisti: scende dalla strada di sinistra e si ferma in cima alla strada davanti (ferma = dove si ferma)
+const BUS = percorso([{ linea: [[xS, 4.4], [xS, cyF]] }, { arco: { c: [2.4, cyF], r: rA, da: Math.PI, a: Math.PI / 2 } }, { linea: [[2.4, yF], [xR, yF]] }]);
+BUS.ferma = (cyF - 4.4) + rA * Math.PI / 2 + (5.2 - 2.4);
 // ritorno: prosegue a destra, risale, passa dietro la città e rientra dal fornitore
 const RITORNO = percorso([
   { linea: [[FERMATA, yF], [xR, yF]] }, { arco: { c: [xR, cyF], r: rA, da: Math.PI / 2, a: 0 } }, { linea: [[xD, cyF], [xD, cyB]] },
@@ -582,7 +586,7 @@ function verde(L, O) {
   for (const s of [-0.5, 0.5]) metti(p, scatolaGeo(0.07, 0.36, 0.26, 0.02), PAL.ardesia, [s, 0.18, 0]);
   // i fiori: sbocciano col sole (si animano: restano fuori dalla fusione)
   const fr = rng(21), fiori = [];
-  for (let i = 0; i < 18; i++) fiori.push([2.7 + fr() * 3.4, 6.2 + fr() * 1.55, 0]);
+  for (let i = 0; i < 18; i++) { const f = [2.7 + fr() * 3.4, 6.2 + fr() * 1.55, 0]; if (Math.abs(f[0] - RIVALE.x) > 0.6 || Math.abs(f[1] - RIVALE.y) > 0.45) fiori.push(f); }
   for (let i = 0; i < 7; i++) fiori.push([2.6 + fr() * 1.2, 4.2 + fr() * 0.9, Z2]);
   for (let i = 0; i < 10; i++) fiori.push([-3.2 + fr() * 2.6, 6.0 + fr() * 3.2, 0]);
   // fiori sul bordo della strada: ciuffi sul lato esterno dell'anello

@@ -18,6 +18,7 @@ window.Diorama = (() => {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
     camion: { attivo: false, kg: 0, ore: 0 }, pila: 0, portaOgni: 4, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
     speed: 1, qualita: 'alta', auto: true, manuale: null, inquadratura: 'auto', negozioAuto: true, pausa: false,
+    bus: { modo: null, t0: 0 }, rivale: { vis: false, t0: -99 },
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
   const O = {};                                                     // tutto ciò che si anima
@@ -171,6 +172,68 @@ window.Diorama = (() => {
       o.position.set(at[0] + (opz.drift || 0) * eta * eta, at[1] + opz.rise * eta, at[2] + (opz.driftZ || 0) * eta); o.scale.setScalar(Math.max(s, 1e-4)); o.updateMatrix(); m.setMatrixAt(i, o.matrix);
     } };
   }
+  // il pullman dei turisti: lungo, azzurro, con la fascia dei finestrini. x locale = "avanti", la porta sul lato del marciapiede (-z)
+  function autobus(padre) {
+    const g = new THREE.Group(), corpo = new THREE.Group(); g.userData.vivo = true; g.visible = false; padre.add(g); g.add(corpo);
+    const col = '#5f8fae', vetro = vernice(PAL.vetro, 0.5);
+    metti(corpo, scatolaGeo(3.1, 0.98, 0.96, 0.16), col, [0, 0.73, 0]);
+    metti(corpo, scatolaGeo(2.9, 0.1, 0.86, 0.05), PAL.crema, [-0.05, 1.25, 0]);                 // il tetto chiaro
+    metti(corpo, scatolaGeo(2.62, 0.36, 0.98, 0.05), vetro, [-0.16, 0.93, 0]);                     // i finestrini
+    for (const x of [-1.05, -0.5, 0.05, 0.6]) metti(corpo, scatolaGeo(0.07, 0.37, 0.99, 0.01), col, [x, 0.93, 0]);
+    metti(corpo, scatolaGeo(0.06, 0.52, 0.84, 0.03), vetro, [1.53, 0.86, 0]);                      // il parabrezza
+    metti(corpo, scatolaGeo(3.12, 0.1, 0.98, 0.04), PAL.senape, [0, 0.52, 0]);                     // la fascia gialla
+    metti(corpo, scatolaGeo(0.36, 0.68, 0.02, 0.02), vetro, [1.12, 0.62, -0.49]);                  // la porta, dal lato del marciapiede
+    const fari = luminosa('#fff3d6', '#fff0c8'); fari.emissiveIntensity = 1.2;
+    for (const s of [1, -1]) metti(corpo, new THREE.CylinderGeometry(0.06, 0.06, 0.04, 12), fari, [1.56, 0.38, s * 0.32], [0, 0, Math.PI / 2]);
+    const ruote = [];
+    for (const [x, z] of [[1.0, 0.42], [1.0, -0.42], [-1.0, 0.42], [-1.0, -0.42]]) {
+      const w = new THREE.Group(); w.position.set(x, 0.21, z); g.add(w); ruote.push(w);
+      metti(w, new THREE.CylinderGeometry(0.21, 0.21, 0.16, 18), PAL.scuro, [0, 0, 0], [Math.PI / 2, 0, 0]);
+      metti(w, new THREE.CylinderGeometry(0.1, 0.1, 0.18, 12), PAL.crema, [0, 0, 0], [Math.PI / 2, 0, 0]);
+    }
+    return { g, corpo, ruote };
+  }
+  // il chiosco della Gelateria Rivale (la concorrenza): un carretto a righe con l'ombrellone e il cartello del prezzo
+  function chiosco(padre) {
+    const g = new THREE.Group(), corpo = new THREE.Group(); g.userData.vivo = true; g.visible = false; g.position.set(RIVALE.x, 0.02, RIVALE.y); padre.add(g); g.add(corpo);
+    metti(corpo, scatolaGeo(0.92, 0.52, 0.5, 0.06), '#8fbcd4', [0, 0.44, 0]);
+    for (const x of [-0.3, -0.1, 0.1, 0.3]) metti(corpo, scatolaGeo(0.09, 0.5, 0.01, 0.005), '#ffffff', [x, 0.44, 0.255], null, false);
+    metti(corpo, scatolaGeo(0.98, 0.07, 0.56, 0.03), PAL.crema, [0, 0.73, 0]);
+    for (const x of [-0.32, 0.32]) { const w = metti(corpo, new THREE.CylinderGeometry(0.13, 0.13, 0.06, 14), PAL.scuro, [x, 0.13, 0.27], [Math.PI / 2, 0, 0]); w.castShadow = false; }
+    for (const [x, c] of [[-0.25, PAL.menta], [0, PAL.pistacchio], [0.25, PAL.cioccolato]]) { const k = new THREE.Group(); k.position.set(x, 0.88, 0.05); corpo.add(k); metti(k, geo().cono, PAL.cialda, [0, -0.07, 0], [Math.PI, 0, 0]); metti(k, geo().pallina, c, [0, 0.04, 0]); }
+    metti(corpo, new THREE.CylinderGeometry(0.02, 0.02, 1.05, 6), PAL.scuro, [0.36, 1.2, -0.14]);
+    metti(corpo, new THREE.SphereGeometry(0.62, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), '#5f8fae', [0.36, 1.62, -0.14]).scale.y = 0.42;
+    const cartello = texCanvas(512, 200, (ctx, W, H) => {
+      ctx.fillStyle = '#2a2433'; ctx.beginPath(); ctx.roundRect(4, 4, W - 8, H - 8, 30); ctx.fill();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#9fd3ee'; ctx.font = fontGrassetto(56); ctx.fillText('RIVALE', W / 2, 58);
+      ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50 €', W / 2, 138);
+    });
+    metti(corpo, rettangoloGeo(0.78, 0.31, 0.04), new THREE.MeshStandardMaterial({ map: cartello, roughness: 0.6, emissive: '#ffffff', emissiveMap: cartello, emissiveIntensity: 0.25 }), [-0.08, 1.1, 0.08], null, false);
+    return { g, corpo };
+  }
+  // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
+  function fumetto(lingua) {
+    return texCanvas(256, 210, (ctx, W) => {
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#3a4150'; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.roundRect(8, 8, W - 16, 150, 34); ctx.moveTo(108, 156); ctx.lineTo(128, 200); ctx.lineTo(150, 156); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(112, 146, 34, 14);
+      const fx = 68, fy = 24, fw = 120, fh = 72;
+      if (lingua === 'fr') { [['#2b4ea2', 0], ['#ffffff', 1], ['#e4343e', 2]].forEach(([c, i]) => { ctx.fillStyle = c; ctx.fillRect(fx + i * fw / 3, fy, fw / 3 + 1, fh); }); }
+      else {
+        ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, fw, fh); ctx.clip();
+        ctx.fillStyle = '#26418f'; ctx.fillRect(fx, fy, fw, fh);
+        const diag = (c, w) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx + fw, fy + fh); ctx.moveTo(fx + fw, fy); ctx.lineTo(fx, fy + fh); ctx.stroke(); };
+        diag('#ffffff', 16); diag('#d8303d', 6);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(fx + fw / 2 - 12, fy, 24, fh); ctx.fillRect(fx, fy + fh / 2 - 12, fw, 24);
+        ctx.fillStyle = '#d8303d'; ctx.fillRect(fx + fw / 2 - 7, fy, 14, fh); ctx.fillRect(fx, fy + fh / 2 - 7, fw, 14);
+        ctx.restore();
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 3; ctx.strokeRect(fx, fy, fw, fh);
+      ctx.fillStyle = '#272b36'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = fontGrassetto(40);
+      ctx.fillText(lingua === 'fr' ? 'Bonjour!' : 'Hello!', W / 2, 126);
+    });
+  }
   const saltello = (u, da, a, alt) => { u = clamp(u); const e = easeInOut(u); return [da[0] + (a[0] - da[0]) * e, alt * Math.sin(Math.PI * u), da[1] + (a[1] - da[1]) * e]; };
 
   /* ---------------------------------------------------------------
@@ -223,6 +286,12 @@ window.Diorama = (() => {
     });
     O.gelataio = mascotte(L);
     O.passante = piolo(L, PAL.foglie[1], PAL.tronco); O.passante.position.set(4.0, 0.25, 7.5); O.passante.userData.corpo.rotation.x = 0.05;   // seduto sulla panchina
+    // i turisti hanno il fumetto con la bandiera; il pullman li porta in cima alla strada; il chiosco della concorrenza nel giardino
+    O.matHello = new THREE.SpriteMaterial({ map: fumetto('gb'), depthTest: false, depthWrite: false, fog: false });
+    O.matBonjour = new THREE.SpriteMaterial({ map: fumetto('fr'), depthTest: false, depthWrite: false, fog: false });
+    O.clienti.forEach((p) => { const f = new THREE.Sprite(O.matHello); f.position.set(0, 1.36, 0); f.scale.set(0.78, 0.64, 1); f.renderOrder = 19; f.visible = false; p.add(f); p.userData.fumetto = f; });
+    O.bus = autobus(L);
+    O.chiosco = chiosco(L);
 
     // la pioggia: trattini sottili che cadono; pozzanghere lucide che si allargano
     // gocce abbastanza spesse da vedersi anche da lontano, e uno spruzzo (un anellino) quando toccano terra
@@ -562,6 +631,7 @@ window.Diorama = (() => {
       const sf = 0.85 * grandezzaSegni() * Math.max(0.001, easeOutBack(clamp(u * 5))); f.scale.set(sf * (f.userData.ax || 1), sf * (f.userData.ay || 1), 1);
     });
     aggiornaClienti(t, dt);
+    aggiornaBus();
     aggiornaRagazzi(t, h);
     aggiornaCampane(t);
 
@@ -815,13 +885,28 @@ window.Diorama = (() => {
     g.userData.bocca.rotation.z = stato.finito ? 0 : Math.PI; g.userData.bocca.position.y = stato.finito ? 0.76 : 0.8;
   }
 
+  // il pullman: arriva giù per la strada di sinistra e si ferma in cima alla strada davanti; la sera riparte verso destra e sparisce
+  function aggiornaBus() {
+    const B = O.bus, sb = stato.bus;
+    // il chiosco della concorrenza: compare con un balzo, sparisce rimpicciolendo
+    const ur = (tGioco - stato.rivale.t0) / 0.8, kc = stato.rivale.vis ? easeOutBack(clamp(ur)) : 1 - liscio(0, 1, ur);
+    O.chiosco.g.visible = kc > 0.01; O.chiosco.g.scale.setScalar(Math.max(0.001, kc));
+    if (!sb.modo) { B.g.visible = false; return; }
+    let s = BUS.ferma, sc = 1;
+    if (sb.modo === 'arriva') { const u = clamp((tGioco - sb.t0) / 2.6); s = BUS.ferma * trap(u, 0.05, 0.45); sc = easeOutBack(clamp(u / 0.15)); if (u >= 1) sb.modo = 'fermo'; }
+    else if (sb.modo === 'parte') { const u = clamp((tGioco - sb.t0) / 3.2); s = lerp(BUS.ferma, BUS.len, trap(u, 0.45, 0.02)); sc = 1 - liscio(0.75, 1, u); if (u >= 1) { sb.modo = null; B.g.visible = false; return; } }
+    B.g.visible = true;
+    const p = BUS.a(s); B.g.position.set(p.x, 0.05, p.y); B.g.rotation.y = angolo(p.ang); B.g.scale.setScalar(Math.max(0.001, sc));
+    B.ruote.forEach((w) => { w.rotation.z = -s / 0.21; });
+  }
   // i clienti: arrivano saltellando lungo il marciapiede fino al bancone; se serviti ripartono col cono, se no tornano indietro a testa bassa
+  // (i turisti scendono dal pullman con il fumetto della loro lingua; chi va dalla concorrenza si ferma al chiosco e torna indietro)
   function aggiornaClienti(t, dt) {
     // mentre i ragazzi attraversano, chi arriva si mette in coda prima delle strisce (uno ogni 0,72), senza sovrapporsi
     for (const e of eventi) e.limite = null;
     if (stato.ragazziInStrada) {
-      eventi.filter((e) => e.fase === 'va' && e.x < 7.96).sort((a, b) => b.x - a.x).forEach((e, k) => { e.limite = 7.9 - 0.72 * k; });
-      eventi.filter((e) => e.fase === 'torna' && e.x > 9.64).sort((a, b) => a.x - b.x).forEach((e, k) => { e.limite = 9.7 + 0.72 * k; });
+      eventi.filter((e) => !e.rivale && e.fase === 'va' && e.x < 7.96).sort((a, b) => b.x - a.x).forEach((e, k) => { e.limite = 7.9 - 0.72 * k; });
+      eventi.filter((e) => !e.rivale && e.fase === 'torna' && e.x > 9.64).sort((a, b) => a.x - b.x).forEach((e, k) => { e.limite = 9.7 + 0.72 * k; });
     }
     for (let i = eventi.length - 1; i >= 0; i--) {
       const e = eventi[i], p = e.piolo, corpo = p.userData.corpo;
@@ -831,21 +916,21 @@ window.Diorama = (() => {
       const u = e.el / e.dur;
       if (u >= 1) { p.visible = false; eventi.splice(i, 1); continue; }
       p.visible = true;
-      const da = [2.6, 8.95 + e.dz], banco = [BANCO.x + 1.1 + e.dx, 9.0 + e.dz], via = e.servito ? [19.0, 8.95 + e.dz] : da;
+      const da = e.da || [2.6, 8.95 + e.dz], banco = e.banco || [BANCO.x + 1.1 + e.dx, 9.0 + e.dz], via = e.servito ? (e.via || [19.0, 8.95 + e.dz]) : da;
       let pos, testa = 0, verso = 0;
       const passi = (a, b, k, n, alt) => { const f = (k * n) % 1, q = Math.floor(k * n); return saltello(f, [lerp(a[0], b[0], q / n), lerp(a[1], b[1], q / n)], [lerp(a[0], b[0], (q + 1) / n), lerp(a[1], b[1], (q + 1) / n)], alt); };
       e.fase = u < 0.45 ? 'va' : u > 0.6 && !e.servito ? 'torna' : '';
-      if (u < 0.45) { pos = passi(da, banco, u / 0.45, 9, 0.16); verso = 0; }
+      if (u < 0.45) { pos = passi(da, banco, u / 0.45, e.rivale ? 5 : 9, 0.16); verso = banco[0] < da[0] ? Math.PI : 0; }
       else if (u < 0.6) {
         pos = [banco[0], 0, banco[1]]; verso = Math.PI / 2 * liscio(0.45, 0.5, u);
         if (!e.servito) testa = liscio(0.52, 0.6, u);
         if (!e.alBancoFatto && u > 0.5) { e.alBancoFatto = true; if (e.alBanco) e.alBanco(); }       // per il gioco: il cliente è al bancone
-        if (e.servito && !e.venduto && u > 0.5) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
+        if (e.servito && !e.venduto && u > 0.5 && !e.rivale) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
         // appena prende il gelato (o capisce che non c'è) dalla testa esce la faccina
         if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); }
       } else {
         const k = (u - 0.6) / 0.4;
-        if (e.servito) { pos = passi(banco, via, k, 6, 0.22); verso = 0; }
+        if (e.servito) { pos = passi(banco, via, k, e.rivale ? 4 : 6, 0.22); verso = via[0] < banco[0] ? Math.PI : 0; }
         else { pos = [lerp(banco[0], via[0], easeInOut(k)), 0, lerp(banco[1], via[1], easeInOut(k))]; verso = Math.PI; testa = 1; }
       }
       e.xLibero = pos[0];                                             // dove sarebbe senza fermarsi
@@ -857,6 +942,7 @@ window.Diorama = (() => {
       const comparsa = Math.min(liscio(0, 0.06, u), 1 - liscio(0.92, 1, u));
       p.scale.setScalar(1.25 * Math.max(1e-3, comparsa));
       p.userData.cono.visible = e.servito && u > 0.55;
+      p.userData.fumetto.visible = !!e.turista && (u < 0.44 || u > 0.62);
     }
   }
   // i ragazzi attraversano sulle strisce ed entrano a scuola; escono dopo pranzo
@@ -928,14 +1014,26 @@ window.Diorama = (() => {
     setMeteo(m) { stato.meteo = m; },
     setOra(h) { stato.ora = h; },
     camion(attivo, kg, ore, nPacchi) { stato.camion.attivo = !!attivo; stato.camion.kg = kg || 0; stato.camion.ore = ore || 0; stato.camion.n = nPacchi ?? 5; },
-    cliente(servito, durataMs, alBanco) {
+    // opz: { turista: 'gb' | 'fr' } (scende dal pullman con il fumetto), { rivale: true } (va al chiosco della concorrenza)
+    cliente(servito, durataMs, alBanco, opz = {}) {
       if (!O.clienti) return;
-      if (stato.finito) servito = false;                         // coni finiti: resta senza (e si arrabbia)
+      if (stato.finito && !opz.rivale) servito = false;          // coni finiti: resta senza (e si arrabbia)
       const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
       if (!libero) return;
-      const n = eventi.length;
-      eventi.push({ piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 });
+      const n = eventi.length, e = { piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 };
+      if (opz.turista) { e.turista = opz.turista; e.da = [3.9 + (n % 3) * 0.3, 9.5]; libero.userData.fumetto.material = opz.turista === 'fr' ? O.matBonjour : O.matHello; }
+      if (opz.rivale) { e.rivale = true; e.banco = [RIVALE.x + ((n % 3) - 1) * 0.28, 8.35]; e.via = [2.6, 8.95 + e.dz]; e.dur *= 0.8; }
+      eventi.push(e);
     },
+    // il pullman dei turisti: true arriva e si ferma, false riparte, null sparisce subito
+    autobus(v) {
+      const b = stato.bus;
+      if (v === null) { b.modo = null; return; }
+      if (v && (!b.modo || b.modo === 'parte')) { b.modo = 'arriva'; b.t0 = tGioco; }
+      else if (!v && (b.modo === 'arriva' || b.modo === 'fermo')) { b.modo = 'parte'; b.t0 = tGioco; }
+    },
+    // il chiosco della concorrenza
+    rivale(v) { if (!!v !== stato.rivale.vis) { stato.rivale.vis = !!v; stato.rivale.t0 = tGioco - (O.chiosco ? 0 : 99); } },
     setConi(n, max) { if (max) stato.coniMax = max; if (Math.round(n) !== Math.round(stato.coni) || max) { stato.coni = n; disegnaConi(); } },
     setFinito(v) { if (!!v !== stato.finito) { stato.finito = !!v; if (O.finito) O.finito.userData.quando = tGioco; disegnaConi(); } },
     setVenduto(v) { stato.venduto = !!v; },
@@ -967,7 +1065,7 @@ window.Diorama = (() => {
     // la regia della camera: { x, y (coordinate della città), h (altezza), zoom (1 = tutta la piastrella), az (gradi), lento } oppure null
     regia(r) { stato.regia = r || null; },
     // toglie dalla scena clienti in giro e faccine (quando si passa da una scena all'altra)
-    svuota() { eventi.length = 0; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
+    svuota() { eventi.length = 0; stato.bus.modo = null; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
     setPortaOgni(n) { stato.portaOgni = Math.max(0, Math.round(n)); },
     onRifornito: null,
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
