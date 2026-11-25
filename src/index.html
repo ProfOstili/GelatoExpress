@@ -2002,7 +2002,7 @@ async function introPanoramica(){
    ===================================================================== */
 const Musica = (() => {
   let ctx = null, master = null, timer = null, prossima = 0, battuta = 0, t0 = 0, rumore = null, volume = 0.5, muto = false;
-  let stile = (() => { try { return localStorage.getItem('gelateria-musica') || 'sfida'; } catch(e){ return 'sfida'; } })();
+  let stile = (() => { try { return localStorage.getItem('gelateria-musica') || 'arcade'; } catch(e){ return 'arcade'; } })();   // di base: 👾 Arcade 8-bit
   const f = m => 440 * Math.pow(2, (m - 69) / 12);
   function init(){
     if(ctx) return true;
@@ -2080,7 +2080,7 @@ const Musica = (() => {
       if(sez === 'colpo'){ kick(t, 1.3, 35, 0.8); tom(t, 33, 1); noise(t, 2, 0.4, 'lowpass', 2000); A.forEach(m => tono(t, m + 12, BAR*0.9, 'sawtooth', 0.06, 2000)); }
     } }
   };
-  const S = () => STILI[stile] || STILI.sfida;
+  const S = () => STILI[stile] || STILI.arcade;
   return {
     STILI,
     get stile(){ return stile; }, set stile(v){ if(STILI[v]){ stile = v; try { localStorage.setItem('gelateria-musica', v); } catch(e){ /* niente */ } } },
