@@ -289,6 +289,12 @@ select,input{font-family:inherit}
 .domani .ic{font-size:56px;line-height:1}
 .rule select option:disabled{color:#aaa}
 .btns-regole{display:flex;gap:10px;flex-wrap:wrap}
+/* la moneta del gioco: l'Einaudi (il logo della scuola, in oro) */
+.ei{display:inline-block;width:1.2em;height:.86em;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%2072%27%3E%3Cpath%20d%3D%27M47%2064C30%2044%2016%2035%203%2032C17%2047%2031%2059%2047%2064Z%27%20fill%3D%27%23f5c84c%27/%3E%3Cpath%20d%3D%27M53%2064C70%2044%2084%2035%2097%2032C83%2047%2069%2059%2053%2064Z%27%20fill%3D%27%23f5c84c%27/%3E%3Cpath%20d%3D%27M46%2062C35%2042%2031%2022%2033%203C44%2021%2048%2041%2046%2062Z%27%20fill%3D%27%23d9a21b%27/%3E%3Cpath%20d%3D%27M54%2062C65%2042%2069%2022%2067%203C56%2021%2052%2041%2054%2062Z%27%20fill%3D%27%23d9a21b%27/%3E%3Cpath%20d%3D%27M39%2057L50%2070L61%2057L50%2063Z%27%20fill%3D%27%238a6410%27/%3E%3C/svg%3E") center/contain no-repeat;vertical-align:-.06em;margin-left:.1em}
+.prezzo-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff4d9;border:3px solid var(--yellow-d);border-radius:14px;padding:8px 12px;margin:0 0 10px;font-weight:800;font-size:17px}
+.prezzo-box .val{min-width:96px;text-align:center;font-size:22px;font-weight:900;background:#fff;border:3px dashed var(--line);border-radius:12px;padding:2px 6px}
+.prezzo-box button{width:42px;height:42px;border-radius:12px;border:3px solid var(--line);background:var(--yellow);font-size:24px;font-weight:900;line-height:1;box-shadow:0 3px 0 var(--line)}
+.prezzo-box small{flex-basis:100%;color:var(--ink-soft);font-size:13px}
 #coach-err{color:var(--red);font-weight:800;margin:10px 0 0;font-size:17px}
 /* tutorial: il primo passo diviso in tre parti A · B · C */
 .coach>.abc{flex:1;min-width:0}
@@ -508,6 +514,9 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
     </div>
     <div class="card passo" id="card-rules">
       <h2 class="passo-tit"><span class="n">2</span> Regole del robot</h2>
+      <div class="prezzo-box hidden" id="prezzo-box">🏷️ Prezzo del gelato in Einaudi:
+        <button id="prezzo-meno" aria-label="Prezzo più basso">−</button><span class="val" id="prezzo-val"></span><button id="prezzo-piu" aria-label="Prezzo più alto">+</button>
+        <small>È il prezzo di tutti i giorni. Una regola «metti il prezzo a» lo cambia solo nei giorni in cui è vera.</small></div>
       <p class="hint">Il robot legge le regole dall'alto in basso. Se nessuna regola dice di produrre, non fa coni!</p>
       <div class="rules" id="rules"></div>
       <div class="btns-regole">
@@ -531,7 +540,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
     <span class="pill" id="s-day">Giorno 1</span>
     <span class="pill" id="s-clock">🕗 08:00</span>
     <span class="pill evento hidden" id="s-evento"></span>
-    <span class="pill cash" id="s-cash">💰 500 €</span>
+    <span class="pill cash" id="s-cash">💰 500<i class="ei"></i></span>
   </div>
   <div class="sim-grid">
     <div>
@@ -564,7 +573,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
         <div class="night" id="night"></div>
         <!-- grafica 3D: etichette, schermo intero e menu della grafica (il disegno lo fa src/diorama) -->
         <div class="d3-hud d3" aria-live="polite">
-          <span class="fs" id="f-day">📅 Giorno 1</span><span class="fs" id="f-clock">🕗 08:00</span><span class="fs" id="f-cash">💰 500 €</span><span class="fs hidden" id="f-evento"></span>
+          <span class="fs" id="f-day">📅 Giorno 1</span><span class="fs" id="f-clock">🕗 08:00</span><span class="fs" id="f-cash">💰 500<i class="ei"></i></span><span class="fs hidden" id="f-evento"></span>
           <span class="hidden" id="d3-camion">🚚</span>
           <span class="tel" id="d3-coni">🍦 0 coni</span><span class="tel no" id="d3-negozio">CHIUSO</span>
         </div>
@@ -592,7 +601,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
     <div class="col">
       <div class="card profit-hero">
         <div class="lbl">Profitto in 30 giorni</div>
-        <div class="val" id="r-profit">0 €</div>
+        <div class="val" id="r-profit">0<i class="ei"></i></div>
         <div class="rec" id="r-record"></div>
         <div class="rec" id="r-rank"></div>
         <div class="muted" id="r-online" style="font-weight:700;font-size:14px;margin-top:4px"></div>
@@ -667,12 +676,12 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
   <div class="promo-evento" id="promo-evento"></div>
   <div class="promo-meteo" id="promo-meteo"></div>
   <div class="promo-tag" id="promo-tag"></div>
-  <div class="promo-multa" id="promo-multa">🕵️ CONTROLLO ASL<br><b>MULTA 50 €</b></div>
+  <div class="promo-multa" id="promo-multa">🕵️ CONTROLLO ASL<br><b>MULTA 50<i class="ei"></i></b></div>
   <div class="promo-fine" id="promo-fine">
     <h1>Chi vincerà?!</h1>
     <ol class="promo-classifica">
-      <li><span>🥇</span>GelatoKing<b>+1.120 €</b></li><li><span>🥈</span>RoboCono<b>+1.045 €</b></li><li><span>🥉</span>Pistacchio99<b>+980 €</b></li>
-      <li><span>4°</span>SuperGelato<b>+910 €</b></li><li class="tu"><span>?</span>Tu?<b>…</b></li>
+      <li><span>🥇</span>GelatoKing<b>+1.120<i class="ei"></i></b></li><li><span>🥈</span>RoboCono<b>+1.045<i class="ei"></i></b></li><li><span>🥉</span>Pistacchio99<b>+980<i class="ei"></i></b></li>
+      <li><span>4°</span>SuperGelato<b>+910<i class="ei"></i></b></li><li class="tu"><span>?</span>Tu?<b>…</b></li>
     </ol>
     <p>Ti aspetto all'<b>open day dell'ITCG Einaudi di Todi</b> per sfidarmi!</p>
   </div>
@@ -6017,7 +6026,8 @@ window.Diorama = (() => {
       ctx.fillStyle = '#2a2433'; ctx.beginPath(); ctx.roundRect(4, 4, W - 8, H - 8, 30); ctx.fill();
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#9fd3ee'; ctx.font = fontGrassetto(56); ctx.fillText('RIVALE', W / 2, 58);
-      ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50 €', W / 2, 138);
+      ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50', W / 2 - 50, 138);
+      monetaEinaudi(ctx, W / 2 + 120, 138, 1.15);                       // il prezzo è in Einaudi, la moneta del gioco
     });
     metti(corpo, rettangoloGeo(0.78, 0.31, 0.04), new THREE.MeshStandardMaterial({ map: cartello, roughness: 0.6, emissive: '#ffffff', emissiveMap: cartello, emissiveIntensity: 0.25 }), [-0.08, 1.1, 0.08], null, false);
     cartellone(g, ['GELATI', 'PIÙ BUONI!'], '#5f8fae', '#ffffff', -0.45, -0.8, 1.9, 0.8, 2.0);        // il cartellone dietro il chiosco della concorrenza
@@ -6086,6 +6096,14 @@ window.Diorama = (() => {
     });
     metti(g, rettangoloGeo(w, h, 0.03), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }), [0, alto + h / 2 - 0.05, 0], null, false);
     return g;
+  }
+  // la moneta del gioco, l'Einaudi: il logo della scuola in oro (disegnato su una tela, centrato in x, y)
+  function monetaEinaudi(ctx, x, y, k = 1) {
+    ctx.save(); ctx.translate(x - 50 * k, y - 36 * k); ctx.scale(k, k);
+    [['M47 64C30 44 16 35 3 32C17 47 31 59 47 64Z', '#f5c84c'], ['M53 64C70 44 84 35 97 32C83 47 69 59 53 64Z', '#f5c84c'],
+     ['M46 62C35 42 31 22 33 3C44 21 48 41 46 62Z', '#d9a21b'], ['M54 62C65 42 69 22 67 3C56 21 52 41 54 62Z', '#d9a21b'], ['M39 57L50 70L61 57L50 63Z', '#8a6410']]
+      .forEach(([d, c]) => { ctx.fillStyle = c; ctx.fill(new Path2D(d)); });
+    ctx.restore();
   }
   // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
   function fumetto(lingua) {
@@ -7078,8 +7096,8 @@ const CONFIG = {
     { giorni:3, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
       testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
       esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:70 } },
-    { giorni:4, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'💶 Il prezzo',
-      testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50 €). Più caro = più guadagno a cono, ma meno clienti!',
+    { giorni:4, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'🏷️ Il prezzo',
+      testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50<i class="ei"></i>). Più caro = più guadagno a cono, ma meno clienti!',
       esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
     { giorni:4, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
       testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
@@ -7153,7 +7171,7 @@ const AZIONI = {
   produci:  { label:'🍦 produci', values:range(0,150,5), fmt:v=>v+' coni', def:50 },
   piu:      { label:'➕ produci in più', values:range(5,100,5), fmt:v=>v+' coni', def:10 },
   meno:     { label:'➖ produci in meno', values:range(5,100,5), fmt:v=>v+' coni', def:10 },
-  prezzo:   { label:'💶 metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>eur(v,2), def:3 },
+  prezzo:   { label:'🏷️ metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>v.toLocaleString('it-IT',{minimumFractionDigits:2})+' Einaudi', def:3 },
   riordina: { label:'🚚 riordina', values:range(5,50,5), fmt:v=>v+' kg', def:20 }
 };
 function nuovaRegola(){
@@ -7176,7 +7194,7 @@ const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
 const round1 = x => Math.round(x*10)/10;
 function eur(x, dec=0){
   const s = Math.abs(x).toLocaleString('it-IT',{minimumFractionDigits:dec,maximumFractionDigits:dec});
-  return (x < -0.004 ? '−' : '') + s + ' €';
+  return (x < -0.004 ? '−' : '') + s + '<i class="ei" title="Einaudi"></i>';
 }
 function eurS(x){ return (x > 0.004 ? '+' : '') + eur(x); }
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
@@ -7612,7 +7630,8 @@ function blocchiDisponibili(){
 /* ---------- gli eventi delle materie ---------- */
 const EV = CONFIG.eventi;
 // un evento si conosce dal giorno del suo annuncio (o se è già stato annunciato in un tentativo precedente)
-const eventoNoto = (id, giorno) => EV[id].annuncio <= giorno || (S.annunci || []).includes(id);
+// (l'annuncio arriva nel gestionale, all'inizio della fase dopo il giorno dell'annuncio)
+const eventoNoto = (id, giorno) => EV[id].annuncio < giorno || (S.annunci || []).includes(id);
 const bandiera = p => p === 'fr'
   ? '<svg class="flag" viewBox="0 0 30 20" aria-label="Francia"><rect width="10" height="20" fill="#2b4ea2"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#e4343e"/></svg>'
   : '<svg class="flag" viewBox="0 0 60 30" aria-label="Regno Unito"><clipPath id="uk-c"><path d="M0,0v30h60V0z"/></clipPath><clipPath id="uk-t"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><g clip-path="url(#uk-c)"><path d="M0,0v30h60V0z" fill="#26418f"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 60,30M60,0 0,30" clip-path="url(#uk-t)" stroke="#d8303d" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#d8303d" stroke-width="6"/></g></svg>';
@@ -7649,7 +7668,18 @@ function cosaVedi(){
   const D = blocchiDisponibili(), F = FASI[S.sfida.fase];
   return { temp:D.cond.includes('temp'), magazzino:!F.auto, prezzo:D.azioni.includes('prezzo') };
 }
+function renderPrezzo(){
+  const D = blocchiDisponibili(), C = CONFIG;
+  $('#prezzo-box').classList.toggle('hidden', !D.azioni.includes('prezzo'));
+  $('#prezzo-val').innerHTML = eur(S.prog.prezzo, 2);
+  $('#prezzo-meno').disabled = S.prog.prezzo <= C.prezzoMin + 1e-9; $('#prezzo-piu').disabled = S.prog.prezzo >= C.prezzoMax - 1e-9;
+}
+for(const [id, k] of [['#prezzo-meno', -1], ['#prezzo-piu', 1]]) $(id).onclick = () => {
+  S.prog.prezzo = clamp(Math.round((S.prog.prezzo + k * CONFIG.prezzoPasso) * 100) / 100, CONFIG.prezzoMin, CONFIG.prezzoMax);
+  renderPrezzo(); salvaGiocatore();
+};
 function renderRegole(){
+  renderPrezzo();
   const box = $('#rules'), R = S.prog.regole, D = blocchiDisponibili();
   if(!R.length){
     box.innerHTML = `<div class="empty-rules">Nessuna regola: il robot non sa cosa fare e <b>non produce coni</b>.<br>Premi <b>➕ Aggiungi regola</b>!</div>`;
@@ -7965,7 +7995,7 @@ const CLIENTI_EMOJI = ['🧒','👧','👦','🧑','👩','👨','👵','👴','
 
 function floater(text, xPct, yPct, color){
   const el = document.createElement('div');
-  el.className = 'floater'; el.textContent = text;
+  el.className = 'floater'; el.innerHTML = text;
   el.style.left = xPct+'%'; el.style.top = yPct+'%'; if(color) el.style.color = color;
   $('#scene').appendChild(el);
   setTimeout(()=>el.remove(), 1300);
@@ -7976,7 +8006,7 @@ function setStock(kg){
   $('#s-stockfill').classList.toggle('low', kg < 15);
   $('#s-stocktxt').textContent = `📦 Magazzino ${round1(kg).toLocaleString('it-IT')} kg`;
 }
-function setCash(x){ $('#s-cash').textContent = $('#f-cash').textContent = '💰 ' + eur(x); }
+function setCash(x){ $('#s-cash').innerHTML = $('#f-cash').innerHTML = '💰 ' + eur(x); }
 function setClock(h){ const hh = Math.floor(h)%24; $('#s-clock').textContent = $('#f-clock').textContent = '🕗 ' + String(hh).padStart(2,'0') + ':00'; if(G3.attivo && G3.pronto) Diorama.setOra(h); }
 // camion: ore trascorse dall'ordine (0 → 24)
 const truck = { attivo:false, kg:0, mostra:true };   // mostra = l'avviso del camion si vede solo quando il magazzino lo gestisce il giocatore
@@ -8023,7 +8053,7 @@ function vendite(d, nVis, mostra){
 }
 function renderDecisione(d, V = {}){
   const rows = [ `<div><span>🍦 Produzione</span><span>${d.obiettivo} coni</span></div>` ];
-  if(V.prezzo) rows.push(`<div><span>💶 Prezzo</span><span>${eur(d.prezzo,2)}</span></div>`);
+  if(V.prezzo) rows.push(`<div><span>🏷️ Prezzo</span><span>${eur(d.prezzo,2)}</span></div>`);
   if(V.magazzino) rows.push(`<div><span>🚚 Riordino</span><span>${d.ordine ? d.ordine+' kg' : '—'}</span></div>`);
   if(d.limitato) rows.push(`<div class="warn"><span>⚠️ Ingredienti finiti!</span><span>solo ${d.prodotti}</span></div>`);
   if(d.gara) rows.push(`<div><span>🏅 Gara a Todi</span><span>${d.clienti} clienti</span></div>`);
@@ -8619,48 +8649,46 @@ async function animaSimulazione(sim, opz){
 /* =====================================================================
    GLI EVENTI DELLE ALTRE MATERIE DEL CORSO SIA, durante la simulazione
    ===================================================================== */
+// gli annunci delle materie: compaiono nel gestionale (oggi = il primo giorno della fase che sta per iniziare)
+const maiuscola = t => t.charAt(0).toUpperCase() + t.slice(1);
 const ANNUNCI = {
-  gara: () => `<div class="ic">📣🏅</div><h3>Giochi studenteschi: gara a Todi!</h3>
-    <p>Tra <b>${EV.gara.giorno - EV.gara.annuncio} giorni</b> (il giorno ${EV.gara.giorno}) a Todi c'è la <b>gara dei Giochi studenteschi</b>: arriveranno atleti, allenatori e tifosi… cioè <b>tantissimi clienti</b>!</p>
-    <p>Da ora nel gestionale c'è il <b>conto alla rovescia</b>, e potrai usare la regola <b>SE 🏅 oggi c'è la gara</b>. Preparati!</p>
+  gara: oggi => `<div class="ic">📣🏅</div><h3>Giochi studenteschi: gara a Todi!</h3>
+    <p>${maiuscola(traGiorni(EV.gara.giorno, oggi))} (il giorno ${EV.gara.giorno}) a Todi c'è la <b>gara dei Giochi studenteschi</b>: arriveranno atleti, allenatori e tifosi… cioè <b>tantissimi clienti</b>!</p>
+    <p>Nel gestionale c'è il <b>conto alla rovescia</b>, e puoi usare la regola <b>SE 🏅 oggi c'è la gara</b>. Preparati!</p>
     <div class="materia"><h4>🏃 Educazione fisica al SIA</h4><p>Al Ciuffelli-Einaudi il SIA ha la <b>curvatura sportiva</b>: <b>2 ore in più a settimana</b> di educazione fisica con un <b>esperto</b> di uno sport, ogni anno uno sport diverso!</p></div>`,
-  concorrenza: () => `<div class="ic">📣🆚</div><h3>Arriva la concorrenza!</h3>
-    <p>Tra <b>${EV.concorrenza.da - EV.concorrenza.annuncio} giorni</b> (il giorno ${EV.concorrenza.da}) in piazza apre un'altra gelateria: la <b>Gelateria Rivale</b>.</p>
+  concorrenza: oggi => `<div class="ic">📣🆚</div><h3>Arriva la concorrenza!</h3>
+    <p>${maiuscola(traGiorni(EV.concorrenza.da, oggi))} (il giorno ${EV.concorrenza.da}) in piazza apre un'altra gelateria: la <b>Gelateria Rivale</b>.</p>
     <p>Venderà il cono a <b>${eur(EV.concorrenza.prezzo,2)}</b>. Se il tuo prezzo è più alto, <b>molti clienti andranno da lei</b>!</p>
     <div class="materia"><h4>📈 Economia politica al SIA</h4><p>Si studia come funziona il <b>mercato</b>: quando più negozi vendono la stessa cosa, i clienti scelgono chi offre di più a meno. Si chiama <b>concorrenza</b>, ed è quello che tiene bassi i prezzi.</p></div>`,
-  turisti: () => `<div class="ic">📣🚌</div><h3>Arrivano i turisti!</h3>
-    <p>Un pullman si ferma in cima alla strada: sono turisti <b>inglesi</b> ${bandiera('gb')} e <b>francesi</b> ${bandiera('fr')} venuti a vedere Todi. Oggi arrivano <b>più clienti</b>!</p>
-    <p>Torneranno nei giorni ${EV.turisti.giorni.filter(n=>n>EV.turisti.annuncio).join(', ')}: nel calendario li riconosci dal 🚌. Dalla prossima fase potrai usare la regola <b>SE 🚌 oggi arrivano i turisti</b>.</p>
+  turisti: oggi => `<div class="ic">📣🚌</div><h3>Sono arrivati i turisti!</h3>
+    <p>Il giorno ${EV.turisti.giorni[0]} un pullman si è fermato in cima alla strada: turisti <b>inglesi</b> ${bandiera('gb')} e <b>francesi</b> ${bandiera('fr')} venuti a vedere Todi… e a mangiare il gelato!</p>
+    <p>Torneranno nei giorni <b>${EV.turisti.giorni.filter(n => n >= oggi).join(', ')}</b>: nel calendario li riconosci dal 🚌. Ora puoi usare la regola <b>SE 🚌 oggi arrivano i turisti</b>.</p>
     <div class="materia"><h4>🗣️ Inglese e Francese al SIA</h4><p>Al SIA si studiano <b>due lingue straniere</b>: servono per parlare con clienti e aziende di tutto il mondo. <i>Hello! = Ciao! · Bonjour! = Buongiorno!</i></p></div>`,
-  asl: () => `<div class="ic">📣🕵️</div><h3>Arriva il controllo dell'ASL!</h3>
-    <p>Tra <b>${EV.asl.giorno - EV.asl.annuncio} giorni</b> (il giorno ${EV.asl.giorno}) arriva l'ispettore dell'<b>ASL</b> (Azienda Sanitaria Locale) a controllare il magazzino.</p>
+  asl: oggi => `<div class="ic">📣🕵️</div><h3>Arriva il controllo dell'ASL!</h3>
+    <p>${maiuscola(traGiorni(EV.asl.giorno, oggi))} (il giorno ${EV.asl.giorno}) arriva l'ispettore dell'<b>ASL</b> (Azienda Sanitaria Locale) a controllare il magazzino.</p>
     <p>La legge dice: gli ingredienti freschi vanno usati <b>entro ${EV.asl.scadenza} giorni</b> dall'arrivo. Se trova ingredienti scaduti, li butta via e ti dà una <b>multa di ${eur(EV.asl.multa)}</b>!</p>
     <p>Consiglio: non riempire troppo il magazzino, <b>ordina poco e spesso</b>. Il robot usa sempre prima gli ingredienti più vecchi.</p>
     <div class="materia"><h4>⚖️ Diritto al SIA</h4><p>Si studiano le <b>leggi</b>: le regole che valgono per tutti, anche per le aziende (igiene, contratti, lavoro). Il tuo robot segue le tue regole… ma la gelateria deve seguire anche quelle della legge!</p></div>`
 };
-const ANNUNCI_BREVI = {
-  gara: `📣🏅 Il giorno ${EV.gara.giorno} c'è la gara a Todi!`, concorrenza: `📣🆚 Il giorno ${EV.concorrenza.da} apre la Gelateria Rivale`,
-  turisti: '📣🚌 Arrivano i turisti! Hello! Bonjour!', asl: `📣🕵️ Il giorno ${EV.asl.giorno} arriva il controllo ASL`
-};
-async function eventiDelGiorno(d){
+// nel gestionale, all'inizio di una fase: gli annunci degli eventi arrivati durante la fase appena giocata (una volta sola)
+async function annunciNelGestionale(daGiorno, aGiorno, oggi){
   for(const id of ['gara','concorrenza','turisti','asl']){
-    if(EV[id].annuncio !== d.n) continue;
-    if((S.annunci || []).includes(id)){ toast(ANNUNCI_BREVI[id], 2600); continue; }   // già visto in un tentativo precedente
-    await modal(ANNUNCI[id](), [{t:'Ho capito! ▶', cls:'mint'}]);
-    (S.annunci ??= []).push(id); salvaGiocatore();
-  }
-  if(d.gara) toast('🏅 Oggi c\'è la gara a Todi: arrivano atleti e tifosi!', 3200);
-  if(d.n === EV.concorrenza.da) toast(`🆚 Oggi apre la Gelateria Rivale: cono a ${eur(EV.concorrenza.prezzo,2)}`, 3200);
-  if(d.turisti && d.n !== EV.turisti.annuncio) toast(`🚌 Arriva un pullman di turisti! ${bandiera('gb')} Hello! ${bandiera('fr')} Bonjour!`, 3200);
-  if(d.asl){
-    await modal(d.multa
-      ? `<div class="ic">🕵️❌</div><h3>Controllo ASL: ingredienti scaduti!</h3>
-         <p>L'ispettore ha trovato <b>${round1(d.scaduti)} kg</b> di ingredienti arrivati da ${EV.asl.scadenza} giorni o più.</p>
-         <p>Li butta via e ti dà una <b>multa di ${eur(d.multa)}</b>.</p><p>La prossima volta: riordina meno kg alla volta!</p>`
-      : `<div class="ic">🕵️✅</div><h3>Controllo ASL: tutto in regola!</h3>
-         <p>Nessun ingrediente scaduto in magazzino. Bravo: niente multa!</p>`, [{t:'Avanti ▶', cls:'mint'}]);
+    if(EV[id].annuncio < daGiorno || EV[id].annuncio > aGiorno || (S.annunci || []).includes(id)) continue;
+    await modal(ANNUNCI[id](oggi), [{t:'Ho capito! ▶', cls:'mint'}]);
+    (S.annunci ??= []).push(id); salvaGiocatore(); renderFase();
   }
 }
+// durante la simulazione: solo avvisi brevi che non fermano il gioco
+async function eventiDelGiorno(d){
+  if(d.gara) toast('🏅 Oggi c\'è la gara a Todi: arrivano atleti e tifosi!', 3200);
+  if(d.n === EV.concorrenza.da) toast(`🆚 Oggi apre la Gelateria Rivale: cono a ${eur(EV.concorrenza.prezzo,2)}`, 3200);
+  if(d.turisti) toast(`🚌 Arriva un pullman di turisti! ${bandiera('gb')} Hello! ${bandiera('fr')} Bonjour!`, 3200);
+  if(d.asl) toast(d.multa ? `🕵️❌ Controllo ASL: ${round1(d.scaduti)} kg scaduti, multa di ${eur(d.multa)}!` : '🕵️✅ Controllo ASL: tutto in regola!', 3600);
+}
+// il risultato del controllo ASL, nel riepilogo della fase
+const esitoASL = giorni => { const d = giorni.find(x => x.asl); if(!d) return '';
+  return d.multa ? `<div class="avviso" style="margin-top:10px"><span class="ic">🕵️</span><div><b>Controllo ASL: ingredienti scaduti!</b><br><small>L'ispettore ha trovato ${round1(d.scaduti)} kg di ingredienti arrivati da ${EV.asl.scadenza} giorni o più: li ha buttati e ti ha dato una multa di ${eur(d.multa)}. Riordina meno kg alla volta!</small></div></div>`
+    : `<div class="avviso" style="margin-top:10px"><span class="ic">🕵️</span><div><b>Controllo ASL: tutto in regola!</b><br><small>Nessun ingrediente scaduto in magazzino: niente multa.</small></div></div>`; };
 // la pillola sopra la scena: il prossimo evento con il conto alla rovescia
 function aggiornaPillEvento(n){
   const el = $('#s-evento'), fs = $('#f-evento');
@@ -8697,7 +8725,9 @@ async function avviaSfida(){
     show('program'); renderFase();
     await modal(`<div class="ic">✅</div><h3>Giorni ${F.da}–${F.a}: fatto!</h3>
       <div class="stats"><span class="${sim.tot.profitto>=0?'pos':'neg'}">${eurS(sim.tot.profitto)}</span><span>🍦 ${sim.tot.venduti} venduti</span><span>😞 ${sim.tot.persi} persi</span><span>🗑️ ${sim.tot.avanzati} buttati</span></div>
-      <h3 style="margin-top:14px">🆕 ${N.titolo}</h3><p>${N.testo}</p>${es}`, [{t:'Aggiorno le regole ▶', cls:'mint'}]);
+      ${esitoASL(sim.giorni)}
+      <h3 style="margin-top:14px">🆕 ${N.titolo}</h3><p>${N.testo}</p>${es}`, [{t:'Avanti ▶', cls:'mint'}]);
+    await annunciNelGestionale(F.da, F.a, N.da);          // gli eventi delle materie: si annunciano qui, nel gestionale
     return;
   }
   // fine dei 30 giorni
@@ -8713,7 +8743,7 @@ async function avviaSfida(){
 function mostraRisultati(sim, recordPrima, pos){
   const T = sim.tot;
   const pv = $('#r-profit');
-  pv.textContent = eurS(T.profitto);
+  pv.innerHTML = eurS(T.profitto);
   pv.className = 'val ' + (T.profitto >= 0 ? 'pos' : 'neg');
   let rec = `Tentativo ${S.tentativi} · Record: ${eurS(S.best)}`;
   if(recordPrima !== null && T.profitto > recordPrima) rec = `🎉 Nuovo record! (prima: ${eurS(recordPrima)})`;
@@ -8722,7 +8752,7 @@ function mostraRisultati(sim, recordPrima, pos){
   $('#r-online').textContent = '';
   if(S.online || ONLINE_CONF()) aggiornaOnline(T.profitto);
   $('#r-accounts').innerHTML = `
-    <tr><td>💶 Ricavi <span class="tag">${T.venduti} coni</span></td><td class="pos">+${eur(T.ricavi)}</td></tr>
+    <tr><td>💰 Ricavi <span class="tag">${T.venduti} coni</span></td><td class="pos">+${eur(T.ricavi)}</td></tr>
     <tr><td>🍦 Ingredienti <span class="tag">variabile</span></td><td class="neg">−${eur(T.cIngredienti)}</td></tr>
     <tr><td>🗑️ Spreco <span class="tag">variabile</span></td><td class="neg">−${eur(T.cSpreco)}</td></tr>
     <tr><td>🚚 Consegne <span class="tag">${T.ordini}×</span></td><td class="neg">−${eur(T.cConsegna)}</td></tr>
@@ -8765,12 +8795,12 @@ function graficoSVG(G){
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Profitto per giorno">`;
   [max, 0, min].forEach(v=>{
     s += `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#272b36':'#ddd'}" stroke-width="${v===0?2:1}" ${v===0?'':'stroke-dasharray="4 4"'}/>`;
-    s += `<text x="${pl-6}" y="${y(v)+4}" font-size="12" text-anchor="end" fill="#6b5f80" font-weight="700">${Math.round(v)} €</text>`;
+    s += `<text x="${pl-6}" y="${y(v)+4}" font-size="12" text-anchor="end" fill="#6b5f80" font-weight="700">${Math.round(v)}</text>`;
   });
   G.forEach((d,i)=>{
     const x = pl + i*bw + bw*0.15, w = bw*0.7, y0 = y(0), y1 = y(d.profitto);
     const col = d.profitto >= 0 ? '#5fa574' : '#e04a58';
-    s += `<rect x="${x}" y="${Math.min(y0,y1)}" width="${w}" height="${Math.max(2,Math.abs(y1-y0))}" rx="4" fill="${col}" stroke="#2b2140" stroke-width="2"><title>Giorno ${d.n}: ${eurS(d.profitto)}</title></rect>`;
+    s += `<rect x="${x}" y="${Math.min(y0,y1)}" width="${w}" height="${Math.max(2,Math.abs(y1-y0))}" rx="4" fill="${col}" stroke="#2b2140" stroke-width="2"><title>Giorno ${d.n}: ${Math.round(d.profitto)} Einaudi</title></rect>`;
     if(d.persi > 0) s += `<text x="${x+w/2}" y="${Math.min(y0,y1)-4}" font-size="13" text-anchor="middle">😞</text>`;
     s += `<text x="${x+w/2}" y="${H-26}" font-size="16" text-anchor="middle">${METEO[d.meteo].ic}</text>`;
     s += `<text x="${x+w/2}" y="${H-8}" font-size="12" text-anchor="middle" fill="#6b5f80" font-weight="700">${d.n}</text>`;

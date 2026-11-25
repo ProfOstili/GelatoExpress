@@ -5458,7 +5458,8 @@ window.Diorama = (() => {
       ctx.fillStyle = '#2a2433'; ctx.beginPath(); ctx.roundRect(4, 4, W - 8, H - 8, 30); ctx.fill();
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#9fd3ee'; ctx.font = fontGrassetto(56); ctx.fillText('RIVALE', W / 2, 58);
-      ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50 €', W / 2, 138);
+      ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50', W / 2 - 50, 138);
+      monetaEinaudi(ctx, W / 2 + 120, 138, 1.15);                       // il prezzo è in Einaudi, la moneta del gioco
     });
     metti(corpo, rettangoloGeo(0.78, 0.31, 0.04), new THREE.MeshStandardMaterial({ map: cartello, roughness: 0.6, emissive: '#ffffff', emissiveMap: cartello, emissiveIntensity: 0.25 }), [-0.08, 1.1, 0.08], null, false);
     cartellone(g, ['GELATI', 'PIÙ BUONI!'], '#5f8fae', '#ffffff', -0.45, -0.8, 1.9, 0.8, 2.0);        // il cartellone dietro il chiosco della concorrenza
@@ -5527,6 +5528,14 @@ window.Diorama = (() => {
     });
     metti(g, rettangoloGeo(w, h, 0.03), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }), [0, alto + h / 2 - 0.05, 0], null, false);
     return g;
+  }
+  // la moneta del gioco, l'Einaudi: il logo della scuola in oro (disegnato su una tela, centrato in x, y)
+  function monetaEinaudi(ctx, x, y, k = 1) {
+    ctx.save(); ctx.translate(x - 50 * k, y - 36 * k); ctx.scale(k, k);
+    [['M47 64C30 44 16 35 3 32C17 47 31 59 47 64Z', '#f5c84c'], ['M53 64C70 44 84 35 97 32C83 47 69 59 53 64Z', '#f5c84c'],
+     ['M46 62C35 42 31 22 33 3C44 21 48 41 46 62Z', '#d9a21b'], ['M54 62C65 42 69 22 67 3C56 21 52 41 54 62Z', '#d9a21b'], ['M39 57L50 70L61 57L50 63Z', '#8a6410']]
+      .forEach(([d, c]) => { ctx.fillStyle = c; ctx.fill(new Path2D(d)); });
+    ctx.restore();
   }
   // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
   function fumetto(lingua) {
