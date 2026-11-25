@@ -283,6 +283,20 @@ select,input{font-family:inherit}
 .passo-3 .passo-tit{margin:0;flex:1 1 auto}
 .passo-3 .btn.big{font-size:24px}
 #card-fact{max-width:1000px;margin:14px auto 0}
+/* il primo passo del gestionale: a sinistra cosa fare, a destra DOMANI e i giorni dopo */
+#scr-program.gioco #coach{display:grid;grid-template-columns:1fr 210px;gap:16px;align-items:start}
+.fase-sx{display:flex;gap:12px;align-items:flex-start}
+.fase-sx .body{flex:1}.fase-sx p{font-size:17px}
+.es-tit{font-weight:800;margin:4px 0 2px}
+.fase-dx{border-left:3px solid var(--tint-line);padding-left:14px;display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.domani-tit{font-size:20px;font-weight:900;letter-spacing:1px;text-align:center;color:var(--pink-d)}
+.fday.grande{font-size:16px;padding:6px 0}
+.fday.grande .ic{font-size:52px}
+.fday.grande b{display:block;font-size:16px}
+.fday.grande span:last-child:not(.ic){font-size:16px}
+.poi-tit{font-size:13px;font-weight:800;color:var(--ink-soft);text-align:center;margin-top:4px}
+.poi{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media (max-width:700px){#scr-program.gioco #coach{grid-template-columns:1fr}.fase-dx{border-left:0;padding-left:0;border-top:3px solid var(--tint-line);padding-top:10px}}
 .fase-giorni{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .fase-giorni .fday{width:62px}
 .domani{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800;margin-top:4px}
@@ -7091,7 +7105,7 @@ const CONFIG = {
   //   previsioni = si vede il meteo dei giorni della fase
   fasi: [
     { giorni:3, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
-      testo:'Il robot guarda il <b>meteo</b> e decide quanti coni fare. Attento: ora la stagione è iniziata e arriva <b>molta più gente</b> che nella prova! Col sole anche più di 40 clienti.',
+      testo:'Il <b>robot</b> la sera guarda il tempo del giorno dopo e prepara i coni in base alle tue <b>regole</b>.<br>In un giorno normale sai che verranno tra le 15 e le 25 persone.',
       esempio:{ c:'meteo', cv:'sole', a:'produci', av:50 } },
     { giorni:3, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
       testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
@@ -7765,16 +7779,19 @@ function turno(){ const F = faseInfo(S.sfida.fase), da = S.sfida.giorno || F.da;
 function renderFase(){
   salvaSessione();
   const F = faseInfo(S.sfida.fase), V = cosaVedi(), TU = turno();
-  const es = F.esempio ? `<div>Per esempio:</div><div class="target">${bloccoTarget(F.esempio)}</div>` : '';
-  $('#coach').innerHTML = `<div class="mascot">🍦</div><div class="body">
-     <p class="say">Fase ${S.sfida.fase+1} di ${FASI.length} · giorni ${F.da}–${F.a} · ${F.titolo}</p>
-     <p style="margin:0 0 6px">${F.testo}</p>${es}</div>`;
+  const es = F.esempio ? `<div class="es-tit">Esempio di regole:</div><div class="target">${bloccoTarget(F.esempio)}</div>` : '';
   const giorni = S.giorniSfida.slice(TU.da-1, TU.a);
   const evIc = g => { const ic = iconeEventi(g, TU.da); return ic ? `<i class="ev">${ic}</i>` : ''; };
-  $('#forecast-box').innerHTML = (F.previsioni
-    ? `<div class="hint">📡 Previsioni dei prossimi giorni</div><div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">${METEO[g.meteo].ic}</span>${V.temp ? g.temp+'°' : ''}</div>`).join('')}</div>`
-    : `<div class="station-note">📡💥 Niente previsioni: il programma deve funzionare con qualsiasi tempo.</div>
-       <div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday unk">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`).join('')}</div>`) + avvisiHTML(TU.da);
+  // a destra: DOMANI in grande, sotto i giorni successivi del turno
+  const giornoBox = (g, grande) => F.previsioni
+    ? `<div class="fday ${grande ? 'grande' : ''}">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">${METEO[g.meteo].ic}</span>${grande ? `<b>${METEO[g.meteo].nome}</b>` : ''}${V.temp ? `<span>${g.temp}°</span>` : ''}</div>`
+    : `<div class="fday unk ${grande ? 'grande' : ''}">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`;
+  $('#coach').innerHTML = `<div class="fase-sx"><div class="mascot">🍦</div><div class="body">
+       <p style="margin:0 0 8px">${F.testo}</p>${es}</div></div>
+     <div class="fase-dx"><div class="domani-tit">DOMANI</div>${giornoBox(giorni[0], true)}
+       ${giorni.length > 1 ? `<div class="poi-tit">${F.previsioni ? 'I giorni dopo' : '📡💥 Niente previsioni'}</div><div class="poi">${giorni.slice(1).map(g => giornoBox(g, false)).join('')}</div>` : ''}</div>`;
+  $('#forecast-box').innerHTML = avvisiHTML(TU.da);
+  $('#scr-program').classList.add('gioco');
   const chips = [`<span>📅 Giorni ${TU.da}–${TU.a} di ${CONFIG.giorni}</span>`];
   if(S.sfida.giorni.length) chips.push(`<span>💰 ${eur(S.sfida.stato.cassa)}</span>`);
   if(V.magazzino) chips.push(`<span>📦 ${round1(S.sfida.stato.stock)} kg${eventoNoto('asl', TU.da) && S.sfida.stato.stock > 0 ? ` · i più vecchi arrivati ${etaMagazzino(S.sfida.stato, TU.da) || 'oggi'}${etaMagazzino(S.sfida.stato, TU.da) ? ' giorni fa' : ''}` : ''}</span>`);
@@ -7861,7 +7878,7 @@ async function iniziaTutorial(){
 function renderTutorial(){
   salvaSessione();
   const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k], ricevuto = !!(S.tut.meteo || [])[k];
-  $('#card-fact').classList.add('hidden');
+  $('#card-fact').classList.add('hidden'); $('#scr-program').classList.remove('gioco');
   $('#forecast-box').innerHTML = '';
   const coach = $('#coach');
   coach.classList.remove('hidden');
