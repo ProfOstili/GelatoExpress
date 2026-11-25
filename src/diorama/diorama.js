@@ -212,6 +212,56 @@ window.Diorama = (() => {
     metti(corpo, rettangoloGeo(0.78, 0.31, 0.04), new THREE.MeshStandardMaterial({ map: cartello, roughness: 0.6, emissive: '#ffffff', emissiveMap: cartello, emissiveIntensity: 0.25 }), [-0.08, 1.1, 0.08], null, false);
     return { g, corpo };
   }
+  // il robot della gelateria: dietro la vetrina prepara i coni, giorno e notte (è lui che segue le regole del gioco)
+  function robot(padre) {
+    const { x0, x1, z0, p } = VETRINA, fy = GEL.y + GEL.d;
+    // la macchina del gelato a sinistra, il vassoio dei coni a destra
+    const mac = new THREE.Group(); mac.position.set(x0 + 0.3, z0 + 0.02, fy - p + 0.3); padre.add(mac);
+    metti(mac, scatolaGeo(0.42, 0.56, 0.36, 0.05), '#9cc3d6', [0, 0.28, 0]);
+    metti(mac, scatolaGeo(0.3, 0.14, 0.04, 0.02), PAL.scuro, [0, 0.42, 0.18]);
+    for (const [dx, c] of [[-0.09, PAL.accento], [0.09, PAL.pistacchio]]) { metti(mac, new THREE.CylinderGeometry(0.035, 0.02, 0.12, 8), PAL.crema, [dx, 0.2, 0.2]); metti(mac, new THREE.SphereGeometry(0.03, 8, 6), c, [dx, 0.47, 0.205]); }
+    const vass = new THREE.Group(); vass.position.set(x1 - 0.28, z0 + 0.02, fy - p + 0.45); padre.add(vass);
+    metti(vass, scatolaGeo(0.4, 0.06, 0.24, 0.02), PAL.crema, [0, 0.03, 0]);
+    const coni = [-0.12, 0, 0.12].map((dx) => cono(vass)).map((k, i) => { k.position.set([-0.12, 0, 0.12][i], 0.18, 0); k.scale.setScalar(0.9); k.userData.vivo = true; return k; });
+    // il robot: ruote, corpo, testa con gli occhi luminosi e l'antenna, due braccia a pinza
+    const g = new THREE.Group(); g.userData.vivo = true; g.scale.setScalar(1.15); padre.add(g);
+    const grigio = '#d5dce4', occhi = new THREE.MeshStandardMaterial({ color: '#5ff2ff', emissive: '#5ff2ff', emissiveIntensity: 1.5 });
+    const luce = new THREE.MeshStandardMaterial({ color: PAL.accento, emissive: PAL.accento, emissiveIntensity: 1.5 });
+    metti(g, new THREE.CylinderGeometry(0.13, 0.15, 0.08, 16), PAL.scuro, [0, 0.04, 0]);
+    const corpo = new THREE.Group(); g.add(corpo);
+    metti(corpo, scatolaGeo(0.34, 0.3, 0.24, 0.07), grigio, [0, 0.25, 0]);
+    metti(corpo, scatolaGeo(0.18, 0.12, 0.02, 0.02), PAL.accento, [0, 0.27, 0.12]);
+    const testa = new THREE.Group(); testa.position.y = 0.48; corpo.add(testa);
+    metti(testa, scatolaGeo(0.3, 0.2, 0.22, 0.07), grigio, [0, 0.06, 0]);
+    metti(testa, scatolaGeo(0.24, 0.1, 0.02, 0.03), PAL.scuro, [0, 0.07, 0.11]);
+    const oc = [-0.06, 0.06].map((dx) => metti(testa, new THREE.SphereGeometry(0.025, 10, 8), occhi, [dx, 0.07, 0.122], null, false));
+    metti(testa, new THREE.CylinderGeometry(0.01, 0.01, 0.12, 6), PAL.scuro, [0, 0.22, 0]);
+    metti(testa, new THREE.SphereGeometry(0.035, 10, 8), luce, [0, 0.29, 0], null, false);
+    const braccia = [-1, 1].map((s) => {
+      const b = new THREE.Group(); b.position.set(s * 0.2, 0.36, 0); corpo.add(b);
+      metti(b, new THREE.CylinderGeometry(0.03, 0.03, 0.22, 8), PAL.ardesia, [0, -0.1, 0]);
+      metti(b, new THREE.SphereGeometry(0.045, 10, 8), PAL.scuro, [0, -0.22, 0]);
+      return b;
+    });
+    const inMano = cono(braccia[1]); inMano.position.set(0, -0.3, 0.04); inMano.scale.setScalar(0.9);
+    return { g, corpo, testa, braccia, occhi: oc, luce, inMano, coni, da: x0 + 0.62, a: x1 - 0.62, y: fy - p + 0.42, z: z0 + 0.02 };
+  }
+  function aggiornaRobot(t) {
+    const r = O.robot, T = 3.4, u = (tGioco / T) % 1, giro = Math.floor(tGioco / T);
+    // 0-0.3 riempie il cono alla macchina · 0.3-0.5 va al vassoio · 0.5-0.75 posa il cono · 0.75-1 torna
+    const k = u < 0.3 ? 0 : u < 0.5 ? easeInOut((u - 0.3) / 0.2) : u < 0.75 ? 1 : 1 - easeInOut((u - 0.75) / 0.25);
+    r.g.position.set(lerp(r.da, r.a, k), r.z + Math.abs(Math.sin(tGioco * 14)) * 0.012 * (u > 0.3 && u < 0.5 || u > 0.75 ? 1 : 0), r.y);
+    r.g.rotation.y = u < 0.3 ? -0.5 : u < 0.5 ? 0.25 : u < 0.75 ? 0.5 : -0.25;
+    const alza = u < 0.3 ? Math.sin(u / 0.3 * Math.PI) : u > 0.5 && u < 0.75 ? Math.sin((u - 0.5) / 0.25 * Math.PI) : 0;
+    r.braccia[0].rotation.x = -1.2 * alza; r.braccia[1].rotation.x = -1.2 * alza + 0.1 * Math.sin(tGioco * 3);
+    r.testa.rotation.z = Math.sin(tGioco * 2.1) * 0.1;
+    r.inMano.visible = u > 0.15 && u < 0.62;
+    const n = giro % 4;                                                // il vassoio si riempie e si svuota (i coni vanno ai clienti)
+    r.coni.forEach((c, i) => { c.visible = i < n || (i === n && u > 0.62); });
+    const lamp = (tReale() * 1.3) % 1 < 0.08;                          // ogni tanto sbatte le palpebre
+    r.occhi.forEach((o) => { o.scale.y = lamp ? 0.2 : 1; });
+    r.luce.emissiveIntensity = 0.8 + 1.2 * (Math.sin(tGioco * 5) > 0 ? 1 : 0.2);
+  }
   // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
   function fumetto(lingua) {
     return texCanvas(256, 210, (ctx, W) => {
@@ -291,6 +341,7 @@ window.Diorama = (() => {
     O.matBonjour = new THREE.SpriteMaterial({ map: fumetto('fr'), depthTest: false, depthWrite: false, fog: false });
     O.clienti.forEach((p) => { const f = new THREE.Sprite(O.matHello); f.position.set(0, 1.36, 0); f.scale.set(0.78, 0.64, 1); f.renderOrder = 19; f.visible = false; p.add(f); p.userData.fumetto = f; });
     O.bus = autobus(L);
+    O.robot = robot(L);
     O.chiosco = chiosco(L);
 
     // la pioggia: trattini sottili che cadono; pozzanghere lucide che si allargano
@@ -632,6 +683,7 @@ window.Diorama = (() => {
     });
     aggiornaClienti(t, dt);
     aggiornaBus();
+    aggiornaRobot(t);
     aggiornaRagazzi(t, h);
     aggiornaCampane(t);
 

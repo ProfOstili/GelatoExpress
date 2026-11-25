@@ -14,7 +14,8 @@ const GEL = { x: 13.0, y: 5.4, w: 4.4, d: 2.6, h: 2.8, porta: 16.35 };
 const FORN = { x: -3.3, y: -1.3, w: 2.7, d: 2.9, h: 1.55 };
 const CASSE = { x: 18.35, y: 6.95 };
 const BANCO = { x: 13.05, y: 8.1 };                               // lascia libero il neon accanto alla porta
-const RIVALE = { x: 5.45, y: 7.5 };                               // il chiosco della concorrenza, nel giardino della scuola
+const RIVALE = { x: 5.45, y: 7.5 };
+const VETRINA = { x0: 13.3, x1: 15.1, z0: 1.0, z1: 2.15, p: 0.9 };    // la vetrina trasparente: dietro c'è il laboratorio del robot (profondo p)                               // il chiosco della concorrenza, nel giardino della scuola
 const LAMPIONI = [[2.5, 8.25, 0], [10.95, 8.25, 0], [17.75, 8.25, 0], [6.75, 4.95, Z2], [10.75, 4.95, Z2], [-0.55, 1.85, 0]];
 const POZZE = [[4.5, 10.0, 0, 0.55], [9.0, 10.7, 0, 0.7], [13.6, 10.1, 0, 0.5], [1.2, 5.6, 0, 0.45], [20.1, 4.2, 0, 0.5], [-1.6, 4.4, 0, 0.45], [8.8, 4.4, Z2, 0.45], [15.4, 4.0, Z2, 0.4], [12.2, 0.4, Z3, 0.35]];
 
@@ -436,18 +437,36 @@ function scuola(L, finestra, O) {
 function gelateria(L, O) {
   const { x, y, w, d, h } = GEL, fy = y + d;
   contatto(L, x + w / 2 + 0.2, y + d / 2 + 0.3, 0, w + 1.8, d + 1.8, 0.45);
-  blocco(L, x, y, 0, w, d, h, PAL.crema, 0.06);
+  // il corpo del negozio, con un vano dietro la vetrina (il laboratorio dove lavora il robot)
+  const { x0: VX0, x1: VX1, z0: VZ0, z1: VZ1, p: VP } = VETRINA;
+  blocco(L, x, y, 0, w, d - VP, h, PAL.crema, 0.06);
+  blocco(L, x, fy - VP, 0, VX0 - x, VP, h, PAL.crema, 0.03);
+  blocco(L, VX1, fy - VP, 0, x + w - VX1, VP, h, PAL.crema, 0.03);
+  blocco(L, VX0, fy - VP, 0, VX1 - VX0, VP, VZ0, PAL.crema, 0.03);
+  blocco(L, VX0, fy - VP, VZ1, VX1 - VX0, VP, h - VZ1, PAL.crema, 0.03);
   blocco(L, x - 0.02, fy - 0.03, 0, w + 0.04, 0.06, 0.3, '#e9d7b8', 0.02); blocco(L, x + w - 0.03, y - 0.02, 0, 0.06, d + 0.04, 0.3, '#d9c6a6', 0.02);
   blocco(L, x - 0.15, y - 0.15, h, w + 0.3, d + 0.3, 0.25, PAL.accento, 0.08);                         // il tetto rosa
-  // la vetrina: coni e vaschette dipinti, la sera si accende
+  // il laboratorio dietro la vetrina: piastrelle, una mensola con le vaschette; la sera si illumina
   O.texVetrina = texCanvas(512, 326, (ctx, W, H) => {
-    ctx.fillStyle = '#16141b'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(W * 0.1, 0); ctx.lineTo(W * 0.32, 0); ctx.lineTo(W * 0.12, H); ctx.lineTo(-W * 0.1, H); ctx.fill();   // un riflesso sul vetro
-    ctx.fillStyle = '#ffffff'; ctx.font = fontGrassetto(118); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('GELATO', W / 2, H / 2 + 6);
+    for (let i = 0; i < 16; i++) for (let j = 0; j < 10; j++) { ctx.fillStyle = (i + j) % 2 ? '#e6f2ea' : '#cfe6d8'; ctx.fillRect(i * 32, j * 33, 32, 33); }
+    ctx.fillStyle = '#8b5b3e'; ctx.fillRect(0, 96, W, 14);
+    ['#ff6fa5', '#b8d98a', '#7a4a35', '#f6ebd8', '#f0b040', '#9fd3ee'].forEach((c, i) => { ctx.fillStyle = '#ffffff'; ctx.fillRect(28 + i * 80, 58, 56, 38); ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(56 + i * 80, 60, 26, 12, 0, 0, 7); ctx.fill(); });
+    ctx.fillStyle = 'rgba(255,240,200,0.35)'; ctx.beginPath(); ctx.arc(W / 2, 0, 140, 0, Math.PI); ctx.fill();          // la luce della lampada
   });
-  O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texVetrina, emissiveMap: O.texVetrina, emissive: '#ffffff', emissiveIntensity: 0.4, roughness: 0.25 });
-  blocco(L, 13.2, fy - 0.02, 0.92, 2.0, 0.08, 1.32, PAL.crema, 0.04);
-  sulMuro(L, 'y', 14.2, fy + 0.06, 1.575, 1.8, 1.15, O.matVetrina, 0.05);
+  O.matVetrina = new THREE.MeshStandardMaterial({ map: O.texVetrina, emissiveMap: O.texVetrina, emissive: '#ffffff', emissiveIntensity: 0.4, roughness: 0.6 });
+  sulMuro(L, 'y', (VX0 + VX1) / 2, fy - VP + 0.006, (VZ0 + VZ1) / 2, VX1 - VX0, VZ1 - VZ0, O.matVetrina, 0.01);
+  blocco(L, VX0, fy - VP, VZ0 - 0.05, VX1 - VX0, VP - 0.12, 0.07, PAL.ardesia, 0.02);                  // il piano di lavoro
+  metti(L, new THREE.CylinderGeometry(0.16, 0.2, 0.08, 16, 1, true), new THREE.MeshStandardMaterial({ color: '#fff1c8', emissive: '#fff1c8', emissiveIntensity: 1 }), [(VX0 + VX1) / 2, VZ1 - 0.05, fy - VP / 2], null, false);   // la lampada
+  O.luceLab = new THREE.PointLight('#fff1d6', 2.2, 2.4, 2); O.luceLab.position.set((VX0 + VX1) / 2, VZ1 - 0.25, fy - VP / 2); L.add(O.luceLab);   // la luce del laboratorio, sempre accesa
+  // la cornice della vetrina e il vetro trasparente, con due riflessi
+  for (const [bx, bz, bw, bh] of [[VX0 - 0.1, VZ0 - 0.08, VX1 - VX0 + 0.2, 0.08], [VX0 - 0.1, VZ1, VX1 - VX0 + 0.2, 0.09], [VX0 - 0.1, VZ0, 0.1, VZ1 - VZ0], [VX1, VZ0, 0.1, VZ1 - VZ0]])
+    blocco(L, bx, fy - 0.04, bz, bw, 0.1, bh, PAL.crema, 0.02);
+  const texRiflesso = texCanvas(256, 164, (ctx, W, H) => {
+    ctx.fillStyle = 'rgba(220,240,250,0.10)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.32)'; for (const [a, b] of [[0.12, 0.2], [0.27, 0.31]]) { ctx.beginPath(); ctx.moveTo(W * a, 0); ctx.lineTo(W * b, 0); ctx.lineTo(W * (b - 0.2), H); ctx.lineTo(W * (a - 0.2), H); ctx.fill(); }
+  });
+  O.matVetro = new THREE.MeshStandardMaterial({ map: texRiflesso, transparent: true, depthWrite: false, roughness: 0.1 });
+  sulMuro(L, 'y', (VX0 + VX1) / 2, fy - 0.02, (VZ0 + VZ1) / 2, VX1 - VX0, VZ1 - VZ0, O.matVetro, 0.01);
   // il contatore dei coni: un'insegna luminosa sul tetto, ben visibile
   O.texConi = texCanvas(1024, 480);
   O.matConi = new THREE.MeshStandardMaterial({ map: O.texConi, emissiveMap: O.texConi, emissive: '#ffffff', emissiveIntensity: 0.6, roughness: 0.5 });
