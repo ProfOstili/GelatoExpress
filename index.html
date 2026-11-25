@@ -289,9 +289,16 @@ select,input{font-family:inherit}
 .d3-hud .no{background:var(--red);color:#fff}.d3-hud .si{background:#2e9e5b;color:#fff}
 @media (max-width:700px),(max-height:430px){.d3-hud .tel{display:inline-block}}
 .scene-btn{position:absolute;bottom:44px;width:42px;height:42px;border-radius:50%;border:3px solid var(--line);background:#fff;font-size:20px;line-height:1;z-index:5;box-shadow:var(--shadow);padding:0}
-#btn-grafica{right:12px}
 #btn-pieno{left:12px}
-.grafica-pan{position:absolute;right:12px;bottom:94px;width:min(330px,calc(100% - 24px));background:#fff;border:3px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);font-size:15px;z-index:6}
+#btn-grafica{padding:6px 10px}
+.caricamento{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.car-box{text-align:center;max-width:360px;width:100%}
+.car-ic{font-size:64px;animation:bob 1.2s ease-in-out infinite}
+.car-box h2{margin:6px 0 4px;font-size:28px}
+.car-box p{margin:0 0 14px;color:var(--ink-soft);font-weight:700}
+.car-bar{height:16px;border:3px solid var(--line);border-radius:99px;background:#fff;overflow:hidden}
+.car-bar div{height:100%;width:0;background:var(--pink);transition:width .3s}
+.grafica-pan{position:fixed;right:12px;top:58px;width:min(330px,calc(100% - 24px));background:#fff;border:3px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);font-size:15px;z-index:6}
 .grafica-pan h3{margin:0 0 6px;font-size:17px}
 .grafica-pan .riga{margin:8px 0 4px;font-weight:800;display:flex;justify-content:space-between}
 .grafica-pan .bar{display:flex;gap:6px;flex-wrap:wrap}
@@ -319,7 +326,27 @@ select,input{font-family:inherit}
   <span class="chip att hidden" id="tb-group"></span>
   <span class="chip att hidden" id="tb-att"></span>
   <button id="tb-board">🏆</button>
+  <button id="btn-grafica" aria-label="Impostazioni grafiche" aria-expanded="false" aria-controls="grafica-pan">⚙️</button>
 </header>
+  <div class="grafica-pan hidden" id="grafica-pan" role="dialog" aria-label="Impostazioni grafiche">
+    <h3>Grafica</h3>
+    <div class="bar" id="g-modo"><button data-m="3d">🧊 3D</button><button data-m="classica">🖼️ Classica</button></div>
+    <p class="nota" id="g-no3d" hidden>Questo computer non supporta la grafica 3D: si usa la classica.</p>
+    <div id="g-3d">
+      <div class="riga"><span>Qualità</span></div>
+      <div class="bar" id="g-qualita"><button data-g="auto">Automatica</button><button data-g="alta">Alta</button><button data-g="media">Media</button><button data-g="bassa">Bassa</button></div>
+      <div class="riga"><span>Pixel per pixel dello schermo</span><span id="g-pr-txt">1×</span></div>
+      <input type="range" id="g-pr" min="0.5" max="2" step="0.25" value="1" aria-label="Pixel per pixel dello schermo">
+      <div class="riga"><span>Filtro anisotropico</span><span id="g-an-txt">16×</span></div>
+      <div class="bar" id="g-aniso"><button data-a="1">1×</button><button data-a="2">2×</button><button data-a="4">4×</button><button data-a="8">8×</button><button data-a="16">16×</button></div>
+      <label><input type="checkbox" id="g-effetti"> Effetti (sfocatura, riflessi, colore)</label>
+      <p class="nota">Più pixel e più filtro = scritte più nitide ma PC più impegnato. "Automatica" abbassa da sola la qualità se il PC rallenta.</p>
+    </div>
+  </div>
+<!-- prova delle prestazioni del PC (dopo GIOCA): copre la scena mentre la grafica 3D si prepara -->
+<div class="caricamento hidden" id="caricamento" role="status" aria-live="polite">
+  <div class="car-box"><div class="car-ic">🍦</div><h2>Caricamento…</h2><p id="car-txt">Preparo la città</p><div class="car-bar"><div id="car-fill"></div></div></div>
+</div>
 
 <!-- ============ BENVENUTO ============ -->
 <section id="scr-welcome" class="screen">
@@ -422,22 +449,6 @@ select,input{font-family:inherit}
           <span class="tel" id="d3-coni">🍦 0 coni</span><span class="tel no" id="d3-negozio">CHIUSO</span>
         </div>
         <button class="scene-btn d3" id="btn-pieno" aria-label="Schermo intero">⛶</button>
-        <button class="scene-btn" id="btn-grafica" aria-label="Impostazioni grafiche" aria-expanded="false" aria-controls="grafica-pan">⚙️</button>
-        <div class="grafica-pan hidden" id="grafica-pan" role="dialog" aria-label="Impostazioni grafiche">
-          <h3>Grafica</h3>
-          <div class="bar" id="g-modo"><button data-m="3d">🧊 3D</button><button data-m="classica">🖼️ Classica</button></div>
-          <p class="nota" id="g-no3d" hidden>Questo computer non supporta la grafica 3D: si usa la classica.</p>
-          <div id="g-3d">
-            <div class="riga"><span>Qualità</span></div>
-            <div class="bar" id="g-qualita"><button data-g="auto">Automatica</button><button data-g="alta">Alta</button><button data-g="media">Media</button><button data-g="bassa">Bassa</button></div>
-            <div class="riga"><span>Pixel per pixel dello schermo</span><span id="g-pr-txt">1×</span></div>
-            <input type="range" id="g-pr" min="0.5" max="2" step="0.25" value="1" aria-label="Pixel per pixel dello schermo">
-            <div class="riga"><span>Filtro anisotropico</span><span id="g-an-txt">16×</span></div>
-            <div class="bar" id="g-aniso"><button data-a="1">1×</button><button data-a="2">2×</button><button data-a="4">4×</button><button data-a="8">8×</button><button data-a="16">16×</button></div>
-            <label><input type="checkbox" id="g-effetti"> Effetti (sfocatura, riflessi, colore)</label>
-            <p class="nota">Più pixel e più filtro = scritte più nitide ma PC più impegnato. "Automatica" abbassa da sola la qualità se il PC rallenta.</p>
-          </div>
-        </div>
         <div class="gira d3"><b>📱</b>Gira il telefono in orizzontale<br><small>per vedere meglio la città</small></div>
       </div>
       <div class="speed-row">
@@ -7027,6 +7038,7 @@ async function entra(saltaTutorial){
   S.tutorialFatto = d ? d.tutorialFatto : false;
   S.tentativi = d ? d.tentativi : 0;
   S.best = d ? d.best : null;
+  await provaGrafica();
   if(saltaTutorial || S.tutorialFatto){ S.tutorialFatto = true; salvaGiocatore(); vaiAlGioco(); }
   else iniziaTutorial();
 }
@@ -7397,10 +7409,12 @@ async function animaGiorno(d, opz){
    ===================================================================== */
 // durate delle scene in 3D (ms a velocità 1×), [tutorial, sfida]: si aggiungono alla giornata
 const GRAFICA3D = {
-  aperturaMs: [2600, 1000],      // il gelataio apre, porta dentro i pacchi, porta fuori il bancone
-  chiusuraMs: [1200, 500],       // la sera porta dentro il bancone e chiude
-  notteFurgoneMs: [2600, 1200],  // la notte, quando c'è un ordine, il furgone viaggia e scarica i pacchi
-  clienteMs: [2200, 1500],       // quanto dura il giro di un cliente
+  giornoMs: [9000, 4500],        // le ore di apertura (9-20): qui arrivano i clienti
+  aperturaMs: [5000, 2600],      // il gelataio apre, porta dentro i pacchi, porta fuori il bancone
+  chiusuraMs: [2400, 1300],      // la sera porta dentro il bancone e chiude
+  notteMs: [1500, 800],          // la notte senza ordini
+  notteFurgoneMs: [4000, 2400],  // la notte, quando c'è un ordine, il furgone viaggia e scarica i pacchi
+  clienteMs: [3000, 2400],       // quanto dura il giro di un cliente
   kgPacco: CONFIG.magazzinoMax / 12   // un pacco sul pallet: il magazzino pieno sono 12 pacchi
 };
 const G3 = { attivo:false, pronto:false, montaggio:null, lento:0 };
@@ -7431,7 +7445,6 @@ const aspetta3D = (promessa, ms) => Promise.race([promessa, sleep(ms * 2 + 300)]
 function floater3D(text, cosa, color){ const [x, y] = Diorama.posizioneSchermo(cosa); floater(text, clamp(x, 8, 85), clamp(y, 12, 80), color); }
 async function animaGiorno3D(d, opz){
   const k = opz.tutorial ? 0 : 1;
-  const durata = opz.tutorial ? CONFIG.durataGiornoTutorialMs : CONFIG.durataGiornoMs;
   $('#s-day').textContent = $('#f-day').textContent = `📅 Giorno ${d.n}${opz.tutorial?'':'/'+opz.tuttiGiorni.length} · ${GIORNI_SETT[d.dow]}`;
   Diorama.setMeteo(d.meteo); Diorama.nuovoGiorno();
   $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${d.temp} °C</span>`;
@@ -7458,7 +7471,7 @@ async function animaGiorno3D(d, opz){
   const nVis = clamp(Math.round(d.clienti/7), d.clienti>0?2:0, 14);
   const soglie = Array.from({length:nVis}, (_,i)=>(i+0.5)/nVis);
   let spawned = 0, finiti = false;
-  const durApertura = durata*0.76;
+  const durApertura = GRAFICA3D.giornoMs[k];
   await tween(durApertura, p=>{
     const ora = 9 + 11*p; setClock(ora);
     const arrivati = d.clienti*p, serviti = Math.min(arrivati, d.prodotti);
@@ -7480,7 +7493,7 @@ async function animaGiorno3D(d, opz){
   await Promise.all([ aspetta3D(Diorama.chiudi(durC), durC), tween(durC, p=>setClock(20 + 0.5*p)) ]);
   // notte: se c'è un ordine il furgone parte dal fornitore e scarica i pacchi sul pallet prima dell'alba
   const nP = d.ordine > 0 ? Math.max(1, pacchiDi(Math.min(CONFIG.magazzinoMax, d.stockFine + d.ordine)) - pacchiDi(d.stockFine)) : 0;
-  const durN = d.ordine > 0 ? GRAFICA3D.notteFurgoneMs[k] : CONFIG.durataNotteMs * (opz.tutorial?2:1);
+  const durN = d.ordine > 0 ? GRAFICA3D.notteFurgoneMs[k] : GRAFICA3D.notteMs[k];
   await tween(durN, p=>{
     setClock(20.5 + 11.5*p);
     if(d.ordine > 0){ Diorama.camion(true, d.ordine, 24*p, nP); setTruck(12 + 12*p); }
@@ -7488,7 +7501,44 @@ async function animaGiorno3D(d, opz){
   if(d.ordine > 0) Diorama.camion(false);
 }
 
-// ---- il menu della grafica sulla scena ----
+/* ---- PROVA DEL PC (una volta, quando si preme GIOCA) ----
+   Sotto la scritta "Caricamento…" la città 3D viene costruita e disegnata davvero (così poi parte senza scatti):
+   si misurano gli fps in qualità alta, poi media, poi bassa, e si tiene la prima che va abbastanza fluida.
+   Se nemmeno la bassa basta, si passa alla grafica classica. La scelta si può sempre cambiare dall'ingranaggio ⚙️. */
+const PROVA = { fatta:false, soglie:{ alta:45, media:38, bassa:22 } };
+function misuraFps(ms){
+  return new Promise(res=>{ let n = 0, t0 = 0;
+    const f = now => { if(!t0) t0 = now; n++; if(now - t0 < ms) requestAnimationFrame(f); else res(n * 1000 / (now - t0)); };
+    requestAnimationFrame(f); });
+}
+async function provaGrafica(){
+  if(PROVA.fatta || !G3.attivo) return;
+  PROVA.fatta = true;
+  const ov = $('#caricamento'), barra = q => { $('#car-fill').style.width = Math.round(q*100) + '%'; };
+  ov.classList.remove('hidden'); barra(0.05); $('#car-txt').textContent = 'Costruisco la città…';
+  show('sim');                                     // la scena resta coperta dal caricamento, ma si disegna davvero
+  await prepara3D();
+  if(!G3.pronto){ ov.classList.add('hidden'); return; }
+  Diorama.setMeteo('sole'); Diorama.setOra(12); Diorama.negozioAutomatico(false);
+  barra(0.25); $('#car-txt').textContent = 'Provo la grafica del computer…';
+  await misuraFps(700);                            // il primo disegno prepara gli shader: non conta
+  let scelta = 'classica', passo = 0;
+  for(const q of ['alta','media','bassa']){
+    Diorama.impostaGrafica({ auto:true }); Diorama.forzaQualita(q);
+    await misuraFps(300);
+    const fps = await misuraFps(1200);
+    barra(0.4 + 0.2 * ++passo);
+    if(fps >= PROVA.soglie[q]){ scelta = q; break; }
+  }
+  PROVA.scelta = scelta;
+  if(scelta === 'classica') impostaGrafica('classica');
+  Diorama.chiudiSubito();
+  barra(1); $('#car-txt').textContent = scelta === 'classica' ? 'Questo PC userà la grafica classica' : 'Pronto! Grafica ' + scelta;
+  await new Promise(r => setTimeout(r, 450));
+  ov.classList.add('hidden');
+}
+
+// ---- il menu della grafica (ingranaggio ⚙️ in alto a destra) ----
 function aggiornaMenuGrafica(){
   const si3D = supporta3D();
   $('#g-no3d').hidden = si3D;
@@ -7503,14 +7553,15 @@ function aggiornaMenuGrafica(){
   $('#g-an-txt').textContent = g.aniso + '×';
   $('#g-effetti').checked = g.effetti;
 }
-$('#btn-grafica').onclick = ()=>{ const p = $('#grafica-pan'); p.classList.toggle('hidden'); $('#btn-grafica').setAttribute('aria-expanded', String(!p.classList.contains('hidden'))); aggiornaMenuGrafica(); };
+$('#btn-grafica').onclick = async ()=>{
+  const p = $('#grafica-pan'); p.classList.toggle('hidden'); $('#btn-grafica').setAttribute('aria-expanded', String(!p.classList.contains('hidden'))); aggiornaMenuGrafica(); };
 document.querySelectorAll('#g-modo button').forEach(b=>b.onclick = async ()=>{
   impostaGrafica(b.dataset.m, true);
   if(G3.attivo){ await prepara3D(); aggiornaMenuGrafica(); }
 });
 const graficaManuale = opz => { Diorama.impostaGrafica(opz); aggiornaMenuGrafica(); };
 document.querySelectorAll('#g-qualita button').forEach(b=>b.onclick = ()=>{
-  if(b.dataset.g === 'auto'){ Diorama.impostaGrafica({ auto:true, qualita:'alta' }); aggiornaMenuGrafica(); return; }
+  if(b.dataset.g === 'auto'){ Diorama.impostaGrafica({ auto:true }); Diorama.forzaQualita(PROVA.scelta && PROVA.scelta !== 'classica' ? PROVA.scelta : 'alta'); aggiornaMenuGrafica(); return; }   // riparte dal livello trovato dalla prova
   graficaManuale({ pr:{alta:2,media:1.25,bassa:0.75}[b.dataset.g], aniso:{alta:16,media:8,bassa:2}[b.dataset.g], effetti: b.dataset.g !== 'bassa' });
 });
 $('#g-pr').oninput = e => graficaManuale({ pr:+e.target.value });
