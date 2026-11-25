@@ -17,7 +17,7 @@ window.Diorama = (() => {
   const stato = {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
     camion: { attivo: false, kg: 0, ore: 0 }, pila: 0, portaOgni: 4, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
-    speed: 1, qualita: 'alta', auto: true, manuale: null, inquadratura: 'auto',
+    speed: 1, qualita: 'alta', auto: true, manuale: null, inquadratura: 'auto', negozioAuto: true, pausa: false,
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
   const O = {};                                                     // tutto ciò che si anima
@@ -437,7 +437,7 @@ window.Diorama = (() => {
      di notte, senza furgone, si allarga sulla città intera. Sui PC resta tutta la piastrella.
      --------------------------------------------------------------- */
   const MIRA = new THREE.Vector3();
-  const schermoPiccolo = () => stato.inquadratura === 'segui' || (stato.inquadratura === 'auto' && (W < 700 || Math.min(W, H) < 430));
+  const schermoPiccolo = () => stato.inquadratura === 'segui' || (stato.inquadratura === 'auto' && (W < 700 || window.innerWidth < 760 || window.innerHeight < 500));   // telefono (non una scena bassa su un PC)
   function aggiornaInquadratura(dt, notte) {
     let zoom = 1, off = 1; MIRA.copy(CAM.miraBase);
     if (schermoPiccolo()) {
@@ -644,10 +644,10 @@ window.Diorama = (() => {
     if (fs.ultimoAttivo && !cs.attivo) {
       fs.ritorno = tGioco;
       // se il furgone era già arrivato, tutti i suoi pacchi sono sul pallet anche se l'animazione è stata saltata
-      if (fs.oreUltime >= 22 && fs.base != null) while (fs.atterrati < 5) atterra(fs);
+      if (fs.oreUltime >= 22 && fs.base != null) while (fs.atterrati < fs.n) atterra(fs);
       fs.base = null;
     }
-    if (cs.attivo) { fs.oreUltime = cs.ore; if (cs.ore < 22) fs.base = null; else if (fs.base == null) { fs.base = stato.pila; fs.atterrati = 0; } }
+    if (cs.attivo) { fs.oreUltime = cs.ore; if (cs.ore < 22) fs.base = null; else if (fs.base == null) { fs.base = stato.pila; fs.atterrati = 0; fs.n = cs.n ?? 5; } }
     if (cs.attivo) fs.ritorno = -1;
     fs.ultimoAttivo = cs.attivo;
     let portellone = 0, punto, percorsoS = 0, via = null;
@@ -690,8 +690,8 @@ window.Diorama = (() => {
     // i pacchi volano dal furgone sul pallet di fianco alla gelateria (domattina il gelataio li porta dentro)
     O.casseVolanti.forEach((c, i) => {
       const u = cs.attivo ? seg(cs.ore, 22.4 + i * 0.3, 23.2 + i * 0.15) : 1;
-      if (fs.base == null) { c.visible = false; return; }
-      if (u >= 1 && fs.atterrati <= i) atterra(fs);
+      if (fs.base == null || i >= Math.min(5, fs.n)) { c.visible = false; return; }        // al massimo 5 pacchi in volo; gli altri si aggiungono all'arrivo
+      if (u >= 1 && fs.atterrati <= i) { atterra(fs); if (i === Math.min(5, fs.n) - 1) while (fs.atterrati < fs.n) atterra(fs); }
       c.visible = u > 0 && u < 1; if (!c.visible) return;
       const dx = Math.cos(punto.ang), dy = Math.sin(punto.ang), da = [punto.x - dx * 1.6, punto.y - dy * 1.6], [ax, ay, al] = O.posPacchi[Math.min(11, fs.base + i)];
       c.position.set(lerp(da[0], ax, u), lerp(0.8, 0.26 + al * 0.32, u) + Math.sin(Math.PI * u) * 1.4, lerp(da[1], ay, u)); c.rotation.set(u * 3, u * 2, 0);
@@ -755,12 +755,15 @@ window.Diorama = (() => {
       passo(0.5, (u) => { N.porta = 1 - easeInOut(u); }),
     ];
   }
-  function avviaNegozio(verso) {
+  function avviaNegozio(verso, durataMs) {
     if (negozio.stato === verso && !negozio.seq) return Promise.resolve();
     if (negozio.seq && negozio.verso === verso) return negozio.promessa;
-    if (negozio.seq) return negozio.promessa.then(() => avviaNegozio(verso));          // finisce prima quella in corso
+    if (negozio.seq) return negozio.promessa.then(() => avviaNegozio(verso, durataMs));   // finisce prima quella in corso
     negozio.verso = verso; negozio.da = negozio.stato;
-    negozio.seq = { passi: verso === 'aperto' ? seqApertura() : seqChiusura(), t0: tGioco };
+    const passi = verso === 'aperto' ? seqApertura() : seqChiusura();
+    // se il gioco chiede una durata, tutta la sequenza si accorcia (o si allunga) per starci dentro
+    if (durataMs) { const tot = passi.reduce((a, q) => a + q.dur, 0), k = durataMs / 1000 / tot; passi.forEach((q) => { q.dur *= k; }); }
+    negozio.seq = { passi, t0: tGioco };
     negozio.promessa = new Promise((r) => { negozio.risolvi = r; });
     return negozio.promessa;
   }
@@ -771,7 +774,7 @@ window.Diorama = (() => {
   }
   function aggiornaNegozio(t, h, luci) {
     // da solo: apre di mattina e chiude la sera (se nessuno lo comanda)
-    if (!negozio.seq) {
+    if (!negozio.seq && stato.negozioAuto) {
       if (h >= 8 && h < 20 && negozio.stato === 'chiuso') avviaNegozio('aperto');
       else if ((h >= 20 || h < 8) && negozio.stato === 'aperto') avviaNegozio('chiuso');
     }
@@ -891,6 +894,7 @@ window.Diorama = (() => {
      --------------------------------------------------------------- */
   function ciclo() {
     requestAnimationFrame(ciclo);
+    if (stato.pausa || contenitore.getClientRects().length === 0) { ultimoT = 0; fps.campioni = []; return; }   // nascosto: non lavora
     const t = tReale(), dt = ultimoT ? Math.min(0.1, t - ultimoT) : 0.016; ultimoT = t;
     tGioco += dt * stato.speed;
     misuraFps(dt);
@@ -921,7 +925,7 @@ window.Diorama = (() => {
     },
     setMeteo(m) { stato.meteo = m; },
     setOra(h) { stato.ora = h; },
-    camion(attivo, kg, ore) { stato.camion.attivo = !!attivo; stato.camion.kg = kg || 0; stato.camion.ore = ore || 0; },
+    camion(attivo, kg, ore, nPacchi) { stato.camion.attivo = !!attivo; stato.camion.kg = kg || 0; stato.camion.ore = ore || 0; stato.camion.n = nPacchi ?? 5; },
     cliente(servito, durataMs, alBanco) {
       if (!O.clienti) return;
       if (stato.finito) servito = false;                         // coni finiti: resta senza (e si arrabbia)
@@ -937,8 +941,18 @@ window.Diorama = (() => {
     nuovoGiorno() { stato.venduto = false; },          // i coni tornano al massimo solo quando il gelataio porta dentro i pacchi
     setSpeed(s) { stato.speed = s; },
     // la gelateria: apre o chiude con tutta la sequenza (restituiscono una promessa che si risolve alla fine)
-    apri(nPacchi) { if (nPacchi != null) stato.portaOgni = nPacchi; return O.L ? avviaNegozio('aperto') : Promise.resolve(); },
-    chiudi() { return O.L ? avviaNegozio('chiuso') : Promise.resolve(); },
+    apri(nPacchi, durataMs) { if (nPacchi != null) stato.portaOgni = nPacchi; return O.L ? avviaNegozio('aperto', durataMs) : Promise.resolve(); },
+    chiudi(durataMs) { return O.L ? avviaNegozio('chiuso', durataMs) : Promise.resolve(); },
+    // il gioco comanda apertura e chiusura (false) oppure il negozio apre e chiude da solo con l'ora (true)
+    negozioAutomatico(v) { stato.negozioAuto = !!v; },
+    // chiude subito, senza animazione (all'inizio di una nuova simulazione)
+    chiudiSubito() { negozio.seq = null; negozio.stato = 'chiuso'; },
+    // ferma il disegno (per esempio quando si usa la grafica classica)
+    pausa(v) {
+      stato.pausa = !!v;
+      // in pausa il tempo si ferma: una sequenza in corso finisce subito, così chi la aspetta non resta bloccato
+      if (v && negozio.seq) { negozio.stato = negozio.verso; negozio.seq = null; negozio.risolvi(); }
+    },
     // pacchi già pronti davanti alla porta (consegnati la sera prima)
     // quanti pacchi ci sono sul pallet (il magazzino rimasto) e quanti ne porta dentro ogni mattina
     setPacchi(n) { stato.pila = clamp(Math.round(n), 0, 12); },
