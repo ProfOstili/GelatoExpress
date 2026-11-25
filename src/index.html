@@ -10,27 +10,30 @@
   Modifica questo file, non index.html.
 -->
 <style>
+@font-face{font-family:"Fredoka";src:url("@DATA:assets/fonts/Fredoka.woff2@") format("woff2");font-weight:300 700;font-display:block}
 /* =====================================================================
    STILE — tutti i colori sono variabili qui sotto, così si può
    cambiare l'aspetto grafico senza toccare la logica del gioco.
    ===================================================================== */
 :root{
-  --bg:#fff4dc; --bg2:#ffe6b8; --ink:#2b2140; --ink-soft:#6b5f80;
-  --card:#ffffff; --line:#2b2140;
-  --pink:#ff6fa5; --pink-d:#d94a82;
-  --mint:#2fc6a2; --mint-d:#1f9a7d;
-  --yellow:#ffd23f; --yellow-d:#e0ae10;
-  --sky:#5ab0ff; --sky-d:#2f86d6;
-  --orange:#ff9f43; --red:#ff4d5e; --green:#1fae6f;
-  --cond:#ffd23f; --act:#7cc4ff;
-  --radius:18px; --shadow:0 5px 0 rgba(43,33,64,.18);
-  --font:"Trebuchet MS","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  /* tavolozza del diorama 3D: pochi colori opachi da modellino; il rosa (accento) resta il colore del gelato */
+  --bg:#f3ecdf; --bg2:#e8dcc6; --ink:#272b36; --ink-soft:#5f6878;
+  --card:#fffaf2; --line:#3a4150;
+  --pink:#ff6fa5; --pink-d:#d9548a;
+  --mint:#5fa574; --mint-d:#3f866c;
+  --yellow:#f0b040; --yellow-d:#c98f1e;
+  --sky:#44718a; --sky-d:#33586c;
+  --orange:#e88a3c; --red:#e04a58; --green:#3f866c;
+  --cond:#f0b040; --act:#9cc3d6;
+  --tint:#f6f0e4; --tint-line:#e0d4bf; --tint2:#e8f0f3;
+  --radius:18px; --shadow:0 4px 0 rgba(39,43,54,.16);
+  --font:"Fredoka","Trebuchet MS","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{font-family:var(--font);color:var(--ink);background:var(--bg);
-  background-image:radial-gradient(circle at 10% 20%,#ffe9f2 0 60px,transparent 61px),
-                   radial-gradient(circle at 90% 80%,#e3f6ff 0 90px,transparent 91px);
+  background-image:radial-gradient(circle at 10% 20%,#f6dde4 0 60px,transparent 61px),
+                   radial-gradient(circle at 90% 80%,#dbe7ea 0 90px,transparent 91px);
   min-height:100vh;font-size:16px;line-height:1.35}
 button{font-family:inherit;cursor:pointer}
 select,input{font-family:inherit}
@@ -88,25 +91,25 @@ select,input{font-family:inherit}
 .stepper .lbl{flex:1;font-weight:800;font-size:17px}
 .stepper button{width:42px;height:42px;border-radius:12px;border:3px solid var(--line);background:var(--yellow);font-size:24px;font-weight:900;line-height:1;box-shadow:0 3px 0 var(--line)}
 .stepper button:active{transform:translateY(3px);box-shadow:none}
-.stepper .val{min-width:92px;text-align:center;font-size:22px;font-weight:900;background:#fff7e6;border:3px dashed var(--line);border-radius:12px;padding:4px 6px}
+.stepper .val{min-width:92px;text-align:center;font-size:22px;font-weight:900;background:var(--tint);border:3px dashed var(--line);border-radius:12px;padding:4px 6px}
 .info-chips{display:flex;flex-wrap:wrap;gap:6px}
-.info-chips span{background:#f3ecff;border-radius:10px;padding:3px 8px;font-size:14px;font-weight:700}
+.info-chips span{background:var(--tint);border-radius:10px;padding:3px 8px;font-size:14px;font-weight:700}
 .forecast{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.fday{border:2px solid var(--line);border-radius:10px;text-align:center;padding:3px 0;background:#eef8ff;font-size:12px;font-weight:800;position:relative}
+.fday{border:2px solid var(--line);border-radius:10px;text-align:center;padding:3px 0;background:var(--tint2);font-size:12px;font-weight:800;position:relative}
 .fday .ic{font-size:20px;display:block;line-height:1.2}
-.fday.unk{background:#e9e4f0;color:var(--ink-soft)}
+.fday.unk{background:#e6e0d6;color:var(--ink-soft)}
 .fday.now{outline:3px solid var(--pink);outline-offset:1px}
 .fday.pop{animation:popin .4s}
 @keyframes popin{0%{transform:scale(.5)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
 .station-note{font-size:13px;margin-top:6px;font-weight:700;color:var(--ink-soft)}
-.fact{background:#e8fff7;border-color:var(--mint-d)}
+.fact{background:#e6f2e4;border-color:var(--mint-d)}
 .fact h2{color:var(--mint-d)}
 .fact p{margin:0;font-size:15px}
 .prog-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .prog-head h2{margin:0;flex:1}
 .hint{font-size:13px;color:var(--ink-soft);font-weight:700}
 .rules{display:flex;flex-direction:column;gap:8px;margin:10px 0}
-.rule{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#faf7ff;border:2px solid #d9d0ea;border-radius:14px;padding:6px}
+.rule{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--tint);border:2px solid var(--tint-line);border-radius:14px;padding:6px}
 .rule .num{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none}
 .blk{display:flex;align-items:center;gap:5px;border:3px solid var(--line);border-radius:12px;padding:5px 8px;flex-wrap:wrap}
 .blk b{font-size:16px;letter-spacing:.5px}
@@ -115,8 +118,8 @@ select,input{font-family:inherit}
 .blk select{font-size:16px;font-weight:700;padding:5px 4px;border:2px solid var(--line);border-radius:9px;background:#fff;max-width:100%}
 .rule .tools{display:flex;gap:4px;margin-left:auto}
 .rule .tools button{width:36px;height:36px;border-radius:10px;border:2px solid var(--line);background:#fff;font-size:16px}
-.rule.fired{background:#fff0a8;border-color:var(--orange);animation:popin .35s}
-.empty-rules{padding:16px;text-align:center;border:3px dashed #cbbfe0;border-radius:14px;color:var(--ink-soft);font-weight:700}
+.rule.fired{background:#fbe3a6;border-color:var(--orange);animation:popin .35s}
+.empty-rules{padding:16px;text-align:center;border:3px dashed var(--tint-line);border-radius:14px;color:var(--ink-soft);font-weight:700}
 .run-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .start-chips{display:flex;gap:8px;flex-wrap:wrap}
 .start-chips span{background:#fff;border:2px solid var(--line);border-radius:99px;padding:4px 10px;font-weight:800}
@@ -146,14 +149,14 @@ select,input{font-family:inherit}
   background-image:repeating-linear-gradient(105deg,transparent 0 14px,rgba(255,255,255,.55) 14px 16px);background-size:100% 40px;animation:rain .35s linear infinite}
 .scene.pioggia .rain{opacity:.7}
 @keyframes rain{to{background-position:0 40px}}
-.scene .night{position:absolute;inset:0;background:#1b1240;opacity:0;pointer-events:none;transition:opacity .15s;z-index:9}
+.scene .night{position:absolute;inset:0;background:#1d2236;opacity:0;pointer-events:none;transition:opacity .15s;z-index:9}
 .sky-weather{position:absolute;left:14px;top:10px;font-size:52px;line-height:1;display:flex;align-items:center;gap:8px}
 .sky-weather span{font-size:28px;font-weight:900;background:rgba(255,255,255,.8);border-radius:12px;padding:2px 10px}
 .shop{position:absolute;right:12px;top:22px;width:190px;height:230px}
 .shop .awning{height:38px;border:3px solid var(--line);border-radius:10px 10px 4px 4px;
   background:repeating-linear-gradient(90deg,var(--pink) 0 22px,#fff 22px 44px)}
 .shop .sign{position:absolute;top:44px;left:10px;right:10px;background:#fff;border:3px solid var(--line);border-radius:10px;text-align:center;font-weight:900;font-size:15px;padding:2px}
-.shop .wall{position:absolute;top:38px;left:6px;right:6px;bottom:0;background:#fff3d6;border:3px solid var(--line);border-top:0;z-index:-1}
+.shop .wall{position:absolute;top:38px;left:6px;right:6px;bottom:0;background:#f6ebd8;border:3px solid var(--line);border-top:0;z-index:-1}
 .shop .counter{position:absolute;bottom:18px;left:6px;right:6px;height:86px;background:var(--sky);border:3px solid var(--line);border-radius:8px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900}
 .shop .counter .n{font-size:34px;line-height:1}
@@ -179,25 +182,25 @@ select,input{font-family:inherit}
 .floater{position:absolute;font-weight:900;font-size:26px;pointer-events:none;z-index:8;text-shadow:0 2px 0 #fff,0 -2px 0 #fff,2px 0 0 #fff,-2px 0 0 #fff;animation:floatup 1.2s ease-out forwards}
 @keyframes floatup{0%{transform:translateY(10px);opacity:0}15%{opacity:1}100%{transform:translateY(-50px);opacity:0}}
 .decision{display:flex;flex-direction:column;gap:5px}
-.decision div{display:flex;justify-content:space-between;font-weight:800;font-size:17px;background:#f6f2ff;border-radius:10px;padding:4px 10px}
-.decision .warn{background:#ffe1e4;color:var(--red)}
+.decision div{display:flex;justify-content:space-between;font-weight:800;font-size:17px;background:var(--tint);border-radius:10px;padding:4px 10px}
+.decision .warn{background:#f8dfe0;color:var(--red)}
 .mini-rules{display:flex;flex-direction:column;gap:5px;margin:0;padding:0;list-style:none}
-.mini-rules li{font-size:14px;font-weight:700;border:2px solid #d9d0ea;border-radius:10px;padding:4px 8px;background:#faf7ff}
-.mini-rules li.fired{background:#fff0a8;border-color:var(--orange);animation:popin .35s}
+.mini-rules li{font-size:14px;font-weight:700;border:2px solid var(--tint-line);border-radius:10px;padding:4px 8px;background:var(--tint)}
+.mini-rules li.fired{background:#fbe3a6;border-color:var(--orange);animation:popin .35s}
 .mini-rules li.fired::after{content:" ✅"}
 .speed-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:50;background:#fff;border:4px solid var(--line);border-radius:24px;
-  box-shadow:0 8px 0 rgba(43,33,64,.25);padding:18px 26px;text-align:center;font-weight:900;font-size:24px;max-width:92vw}
+  box-shadow:0 8px 0 rgba(39,43,54,.22);padding:18px 26px;text-align:center;font-weight:900;font-size:24px;max-width:92vw}
 .toast .big{font-size:64px;display:block;animation:shake .5s 2}
 
 /* ---------- modale ---------- */
 .modal-bg{position:fixed;inset:0;background:rgba(43,33,64,.55);z-index:40;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:#fff;border:4px solid var(--line);border-radius:24px;box-shadow:0 8px 0 rgba(43,33,64,.25);max-width:560px;width:100%;padding:20px 22px;text-align:center;max-height:92vh;overflow:auto}
+.modal{background:#fff;border:4px solid var(--line);border-radius:24px;box-shadow:0 8px 0 rgba(39,43,54,.22);max-width:560px;width:100%;padding:20px 22px;text-align:center;max-height:92vh;overflow:auto}
 .modal .ic{font-size:64px;line-height:1}
 .modal h3{font-size:26px;margin:6px 0}
 .modal p{font-size:18px;margin:8px 0}
 .modal .stats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
-.modal .stats span{background:#f6f2ff;border-radius:12px;padding:6px 12px;font-weight:900;font-size:18px}
+.modal .stats span{background:var(--tint);border-radius:12px;padding:6px 12px;font-weight:900;font-size:18px}
 .modal .fact{text-align:left;margin-top:10px}
 
 /* ---------- risultati ---------- */
@@ -213,23 +216,23 @@ select,input{font-family:inherit}
 .accounts .tag{font-size:11px;background:#eee;border-radius:6px;padding:1px 5px;margin-left:4px;color:var(--ink-soft)}
 .chart svg{width:100%;height:auto;display:block}
 .debug-list{display:flex;flex-direction:column;gap:8px}
-.debug-item{display:flex;gap:10px;align-items:flex-start;background:#fff6f0;border:2px solid #ffc9a3;border-radius:14px;padding:8px 10px}
-.debug-item.good{background:#eafff4;border-color:#9fe3c2}
+.debug-item{display:flex;gap:10px;align-items:flex-start;background:#fbefe4;border:2px solid #efc79f;border-radius:14px;padding:8px 10px}
+.debug-item.good{background:#e6f2e4;border-color:#a9cfa8}
 .debug-item .ic{font-size:30px;line-height:1}
 .debug-item b{font-size:17px}
 .debug-item .fix{font-size:14px;margin-top:3px;color:var(--ink-soft);font-weight:700}
 .res-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
 .diary{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
 .diary th,.diary td{padding:4px;text-align:center;border-bottom:1px solid #eee}
-.diary th{background:#f6f2ff}
+.diary th{background:var(--tint)}
 
 /* ---------- classifica ---------- */
 .board{max-width:620px;margin:0 auto}
 .board ol{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
-.board li{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;background:#faf7ff;border:2px solid #d9d0ea;border-radius:14px;padding:8px 12px}
+.board li{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;background:var(--tint);border:2px solid var(--tint-line);border-radius:14px;padding:8px 12px}
 .board li .pos{width:44px;text-align:center;font-size:24px;color:var(--ink)}
 .board li .nm{flex:1}
-.board li.me{background:#fff0a8;border-color:var(--orange)}
+.board li.me{background:#fbe3a6;border-color:var(--orange)}
 .board .tabs{display:flex;gap:8px;justify-content:center;margin:4px 0 10px;flex-wrap:wrap}
 .board .tabs button{border:3px solid var(--line);border-radius:99px;padding:6px 16px;font-weight:900;font-size:17px;background:#fff;color:var(--ink)}
 .board .tabs button.on{background:var(--yellow)}
@@ -272,7 +275,6 @@ select,input{font-family:inherit}
 }
 
 /* ---------- grafica 3D (diorama) ---------- */
-@font-face{font-family:"Fredoka";src:url("@DATA:assets/fonts/Fredoka.woff2@") format("woff2");font-weight:300 700;font-display:block}
 .scene .diorama-tela{position:absolute;inset:0;width:100%;height:100%;display:block}
 .scene:not(.modo3d) .diorama-tela,.scene:not(.modo3d) .d3{display:none!important}
 .scene.modo3d{background:#b4d2de;height:clamp(330px,calc(100vh - 235px),560px)}   /* in 3D la scena usa tutta l'altezza disponibile */
@@ -1274,7 +1276,7 @@ async function animaGiorno(d, opz){
     setTruck(24);
     await sleep(durata*0.08);
     truck.attivo = false; setTruck(0);
-    floater(`+${d.arrivo} kg 📦`, 40, 72, '#1fae6f');
+    floater(`+${d.arrivo} kg 📦`, 40, 72, '#3f866c');
   }
   setStock(d.stockInizio);
   // il programma decide
@@ -1304,8 +1306,8 @@ async function animaGiorno(d, opz){
   });
   // sera: costi e risultato
   setClock(20);
-  if(d.avanzati > 0) floater(`🗑️ −${d.avanzati} coni`, 62, 30, '#ff4d5e');
-  floater(eurS(d.profitto), 20, 30, d.profitto >= 0 ? '#1fae6f' : '#ff4d5e');
+  if(d.avanzati > 0) floater(`🗑️ −${d.avanzati} coni`, 62, 30, '#e04a58');
+  floater(eurS(d.profitto), 20, 30, d.profitto >= 0 ? '#3f866c' : '#e04a58');
   setCash(d.cassaFine);
   await sleep(durata*0.08);
   // notte
@@ -1366,7 +1368,7 @@ async function animaGiorno3D(d, opz){
   truck.attivo = false; setTruck(0);
   setStock(d.stockInizio);
   Diorama.setPacchi(pacchiDi(d.stockInizio));
-  if(d.arrivo > 0) floater3D(`+${d.arrivo} kg 📦`, 'casse', '#1fae6f');
+  if(d.arrivo > 0) floater3D(`+${d.arrivo} kg 📦`, 'casse', '#3f866c');
   Diorama.setFinito(false); Diorama.setConi(0, Math.max(1, d.prodotti));
   renderMiniRegole(d.fired); renderDecisione(d);
   // apertura: il gelataio porta dentro i pacchi che servono per i coni di oggi, poi porta fuori il bancone
@@ -1397,8 +1399,8 @@ async function animaGiorno3D(d, opz){
   });
   // sera: costi e risultato, poi il gelataio chiude
   setClock(20);
-  if(d.avanzati > 0) floater3D(`🗑️ −${d.avanzati} coni`, 'gelateria', '#ff4d5e');
-  floater(eurS(d.profitto), 20, 30, d.profitto >= 0 ? '#1fae6f' : '#ff4d5e');
+  if(d.avanzati > 0) floater3D(`🗑️ −${d.avanzati} coni`, 'gelateria', '#e04a58');
+  floater(eurS(d.profitto), 20, 30, d.profitto >= 0 ? '#3f866c' : '#e04a58');
   setCash(d.cassaFine);
   const durC = GRAFICA3D.chiusuraMs[k];
   await Promise.all([ aspetta3D(Diorama.chiudi(durC), durC), tween(durC, p=>setClock(20 + 0.5*p)) ]);
@@ -1459,7 +1461,7 @@ setInterval(()=>{
   const ap = Diorama.aperto; $('#d3-negozio').textContent = ap ? 'APERTO' : 'CHIUSO'; $('#d3-negozio').className = 'tel ' + (ap ? 'si' : 'no');
   const g = Diorama.grafica;
   G3.lento = g.auto && g.qualita === 'bassa' && Diorama.fps < 18 ? G3.lento + 1 : 0;
-  if(G3.lento > 20){ G3.lento = 0; impostaGrafica('classica'); floater('🐢 PC lento: grafica classica', 30, 45, '#2b2140'); }
+  if(G3.lento > 20){ G3.lento = 0; impostaGrafica('classica'); floater('🐢 PC lento: grafica classica', 30, 45, '#272b36'); }
 }, 250);
 // all'avvio: la grafica scelta l'ultima volta su questo computer (di base il 3D)
 (()=>{ let m = null; try { m = localStorage.getItem('gelateria-grafica'); } catch(e){ /* niente */ } impostaGrafica(m || '3d'); })();
@@ -1547,12 +1549,12 @@ function graficoSVG(G){
   const bw = (W-pl-pr)/G.length;
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Profitto per giorno">`;
   [max, 0, min].forEach(v=>{
-    s += `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#2b2140':'#ddd'}" stroke-width="${v===0?2:1}" ${v===0?'':'stroke-dasharray="4 4"'}/>`;
+    s += `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#272b36':'#ddd'}" stroke-width="${v===0?2:1}" ${v===0?'':'stroke-dasharray="4 4"'}/>`;
     s += `<text x="${pl-6}" y="${y(v)+4}" font-size="12" text-anchor="end" fill="#6b5f80" font-weight="700">${Math.round(v)} €</text>`;
   });
   G.forEach((d,i)=>{
     const x = pl + i*bw + bw*0.15, w = bw*0.7, y0 = y(0), y1 = y(d.profitto);
-    const col = d.profitto >= 0 ? '#2fc6a2' : '#ff4d5e';
+    const col = d.profitto >= 0 ? '#5fa574' : '#e04a58';
     s += `<rect x="${x}" y="${Math.min(y0,y1)}" width="${w}" height="${Math.max(2,Math.abs(y1-y0))}" rx="4" fill="${col}" stroke="#2b2140" stroke-width="2"><title>Giorno ${d.n}: ${eurS(d.profitto)}</title></rect>`;
     if(d.persi > 0) s += `<text x="${x+w/2}" y="${Math.min(y0,y1)-4}" font-size="13" text-anchor="middle">😞</text>`;
     s += `<text x="${x+w/2}" y="${H-26}" font-size="16" text-anchor="middle">${METEO[d.meteo].ic}</text>`;
