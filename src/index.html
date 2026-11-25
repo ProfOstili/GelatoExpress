@@ -310,7 +310,10 @@ select,input{font-family:inherit}
 .abc .btn-meteo{font-size:20px;align-self:flex-start}
 .abc .previsione{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
 .abc .previsione .ic{font-size:52px;line-height:1}
-.abc .riguarda{background:none;border:0;color:var(--ink-soft);text-decoration:underline;font-weight:700;padding:0;align-self:flex-start;font-size:14px}
+.abc .riguarda{background:none;border:0;color:var(--ink-soft);text-decoration:underline;font-weight:700;padding:0;align-self:flex-start;font-size:14px;margin-top:auto}
+.abc .decidi{font-size:26px;font-weight:900;line-height:1.3;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.abc .decidi small{flex-basis:100%;font-size:15px;color:var(--ink-soft);font-weight:800}
+.freccia{width:1em;height:1.35em;vertical-align:-.25em}
 .abc .target{display:flex;gap:6px;flex-wrap:wrap;font-weight:800;font-size:15px}
 .abc .target .blk{padding:3px 8px}
 .abc .robot{font-size:34px;line-height:1}
@@ -1478,24 +1481,28 @@ $('#btn-run').onclick = async ()=>{
 // Il primo passo del gestionale è diviso in tre parti: A guarda il meteo · B decidi cosa fare · C insegna al robot
 const TUT = [
   { target:{ c:'meteo', cv:'sole', a:'produci', av:15 },
-    decidi:`Se domani c'è il ☀️ <b>sole</b>: arriveranno <b>tantissimi</b> clienti! Bisogna dire al robot cosa fare.`,
+    decidi: freccia => `☀️ SOLE = ${freccia('su')} CLIENTI`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='sole');
       if(!ok) return 'Manca la regola SE ☁️ meteo è ☀️ sole. Premi ➕ Aggiungi regola (o ✨ Aiutami).';
       if(d.obiettivo < 10) return 'La regola c\'è, ma i coni sono pochi: prova 15 coni!';
       return null; } },
   { target:{ c:'meteo', cv:'pioggia', a:'produci', av:5 },
-    decidi:`Se domani 🌧️ <b>piove</b>: verranno <b>pochi</b> clienti. Se il robot fa troppi coni, quelli avanzati si buttano!`,
+    decidi: freccia => `🌧️ PIOGGIA = ${freccia('giu')}${freccia('giu')} CLIENTI`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='pioggia');
       if(!ok) return 'Manca la regola SE ☁️ meteo è 🌧️ pioggia.';
       if(d.avanzati > 3) return 'La regola c\'è, ma produci troppo: con la pioggia arrivano pochi clienti. Prova 5 coni.';
       return null; } },
   { target:{ c:'meteo', cv:'nuvoloso', a:'produci', av:10 },
-    decidi:`Se domani è ⛅ <b>nuvoloso</b>: arriverà una via di mezzo di clienti. Manca solo la regola per questo tempo!`,
+    decidi: freccia => `⛅ NUVOLO = ${freccia('giu')} CLIENTI`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='nuvoloso');
       if(!ok) return 'Manca la regola SE ☁️ meteo è ⛅ nuvoloso.';
       if(d.persi > 3 || d.avanzati > 5) return 'Quasi! Con le nuvole arriva una via di mezzo: prova 10 coni.';
       return null; } }
 ];
+// frecce colorate: su = più clienti (verde), giù = meno clienti (rossa)
+const freccia = verso => verso === 'su'
+  ? '<svg class="freccia" viewBox="0 0 24 32" aria-label="più"><path d="M12 2 L22 14 H15.5 V30 H8.5 V14 H2 Z" fill="#2e9e5b" stroke="#1d6b3c" stroke-width="2" stroke-linejoin="round"/></svg>'
+  : '<svg class="freccia" viewBox="0 0 24 32" aria-label="meno"><path d="M12 30 L22 18 H15.5 V2 H8.5 V18 H2 Z" fill="#e04a58" stroke="#a52f3a" stroke-width="2" stroke-linejoin="round"/></svg>';
 function bloccoTarget(r){
   const C = COND[r.c], A = AZIONI[r.a];
   return `<span class="blk cond"><b>SE</b> ${C.label} ${C.ops?r.op:''} ${C.fmt(r.cv)}</span><span class="blk act"><b>ALLORA</b> ${A.label} ${A.fmt(r.av)}</span>`;
@@ -1537,7 +1544,7 @@ function renderTutorial(){
     </div>
     <div class="parte ${ricevuto ? 'attiva' : 'bloccata'}">
       <h3><span class="lettera">B</span> Decidi cosa fare</h3>
-      <p>${T.decidi}</p>
+      <div class="decidi"><small>Domani:</small>${T.decidi(freccia)}</div>
       <div class="lucchetto">🔒 Prima ricevi i dati meteo</div>
     </div>
     <div class="parte ${ricevuto ? 'attiva' : 'bloccata'}">
