@@ -7979,11 +7979,11 @@ function setStock(kg){
 function setCash(x){ $('#s-cash').textContent = $('#f-cash').textContent = '💰 ' + eur(x); }
 function setClock(h){ const hh = Math.floor(h)%24; $('#s-clock').textContent = $('#f-clock').textContent = '🕗 ' + String(hh).padStart(2,'0') + ':00'; if(G3.attivo && G3.pronto) Diorama.setOra(h); }
 // camion: ore trascorse dall'ordine (0 → 24)
-const truck = { attivo:false, kg:0 };
+const truck = { attivo:false, kg:0, mostra:true };   // mostra = l'avviso del camion si vede solo quando il magazzino lo gestisce il giocatore
 function setTruck(oreTrascorse){
   const el = $('#truck');
-  $('#d3-camion').classList.toggle('hidden', !truck.attivo);
-  if(!truck.attivo){ el.classList.add('hidden'); return; }
+  $('#d3-camion').classList.toggle('hidden', !truck.attivo || !truck.mostra);
+  if(!truck.attivo || !truck.mostra){ el.classList.add('hidden'); return; }
   el.classList.remove('hidden');
   const left = 2 + 62*clamp(oreTrascorse/24, 0, 1);
   el.style.left = `calc(${left}% - 0px)`;
@@ -8601,7 +8601,7 @@ setInterval(()=>{
 (()=>{ let m = null; try { m = localStorage.getItem('gelateria-grafica'); } catch(e){ /* niente */ } impostaGrafica(m || '3d'); })();
 
 async function animaSimulazione(sim, opz){
-  truck.attivo = false; setTruck(0);
+  truck.attivo = false; truck.mostra = !!(opz.vedi && opz.vedi.magazzino); setTruck(0);
   $('#street').innerHTML = '';
   show('sim');
   if(G3.attivo){ await prepara3D(); if(G3.pronto) iniziaSimulazione3D(); }
