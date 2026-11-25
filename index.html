@@ -7846,7 +7846,7 @@ function setTruck(oreTrascorse){
   const mancano = Math.max(0, Math.ceil(24 - oreTrascorse));
   $('#truck-label').textContent = $('#d3-camion').textContent = mancano > 0 ? `🚚 ${truck.kg} kg · arriva tra ${mancano} h` : `🚚 ${truck.kg} kg · arrivato!`;
 }
-function spawnCliente(servito, durata, turista){
+function spawnCliente(servito, durata, turista, alBanco){
   const el = document.createElement('div');
   el.className = 'cust';
   el.innerHTML = CLIENTI_EMOJI[Math.floor(Math.random()*CLIENTI_EMOJI.length)] + (turista ? `<b class="fumetto">${bandiera(turista)}</b>` : '');
@@ -7858,8 +7858,24 @@ function spawnCliente(servito, durata, turista){
     { transform:`translateX(${w-40}px)`, offset:.75 },
     { transform: servito ? `translateX(${w+40}px)` : 'translateX(-60px)' }
   ], { duration: durata, easing:'linear' });
-  setTimeout(()=>{ el.insertAdjacentHTML('beforeend', servito ? '<i>🍦</i>' : '<i>😞</i>'); }, durata*0.62);
+  setTimeout(()=>{ el.insertAdjacentHTML('beforeend', servito ? '<i>🍦</i>' : '<i>😞</i>'); if(alBanco) alBanco(); }, durata*0.62);
   anim.onfinish = () => el.remove();
+}
+// i coni calano solo quando un cliente arriva al bancone e prende il gelato: i coni venduti nel giorno
+// si dividono tra i clienti che si vedono; l'ultimo servito lascia sul contatore proprio i coni avanzati
+let giornoInCorso = 0;
+function vendite(d, nVis, mostra){
+  const servito = i => (i+0.5)/nVis*d.clienti <= d.prodotti, nServ = Array.from({length:nVis}, (_,i)=>i).filter(servito).length;
+  const token = ++giornoInCorso; let coni = d.prodotti, serviti = 0;
+  return {
+    servito,
+    alBanco(i){
+      if(token !== giornoInCorso) return;                 // un cliente in ritardo di un giorno già finito
+      if(servito(i)){ serviti++; const v = Math.round(d.venduti * Math.min(1, serviti / Math.max(1, nServ))); coni = Math.min(coni, d.prodotti - v); mostra(coni, d.cassaInizio + v*d.prezzo, false); }
+      else if(d.persi > 0) mostra(coni, null, true);
+    },
+    fine(){ if(token === giornoInCorso){ coni = d.avanzati; mostra(coni, d.cassaInizio + d.venduti*d.prezzo, d.persi > 0); giornoInCorso++; } }
+  };
 }
 function renderDecisione(d, V = {}){
   const rows = [ `<div><span>🍦 Produzione</span><span>${d.obiettivo} coni</span></div>` ];
@@ -7890,6 +7906,7 @@ async function animaGiorno(d, opz){
   renderPrevisioni($('#s-forecast'), opz.tuttiGiorni, Math.max(opz.giorniVisibili, d.n), d.n-1, opz.vedi.temp);
   if(d.n > opz.giorniVisibili){ const c = $('#s-forecast').querySelector(`[data-d="${d.n-1}"]`); if(c) c.classList.add('pop'); }
   setClock(8); setCash(d.cassaInizio);
+  $('#s-cones').textContent = '🍦 ' + d.prodotti;     // all'alba: i coni che il robot ha preparato stanotte
   // mattina: arriva il camion?
   setStock(d.stockPrimaArrivo);
   if(d.arrivo > 0 && truck.attivo){
@@ -7911,23 +7928,21 @@ async function animaGiorno(d, opz){
   const quotaTur = d.clienti ? (d.turistiN||0) / d.clienti : 0;
   let spawned = 0;
   const durApertura = durata*0.76;
+  const V = vendite(d, nVis, (coni, cassa, finito) => { $('#s-cones').textContent = '🍦 ' + coni; if(cassa != null) setCash(cassa); if(finito) $('#s-soldout').classList.remove('hidden'); });
   if(d.turisti) floater('🚌 Turisti!', 18, 40, '#33586c');
   if(d.rivale > 0) floater(`🆚 −${d.rivale} alla Rivale`, 30, 22, '#e04a58');
   await tween(durApertura, p=>{
     const ora = 9 + 11*p; setClock(ora);
-    const arrivati = d.clienti*p;
-    const serviti = Math.min(arrivati, d.prodotti);
-    $('#s-cones').textContent = '🍦 ' + Math.max(0, Math.round(d.prodotti - serviti));
-    if(arrivati > d.prodotti && d.persi > 0) $('#s-soldout').classList.remove('hidden');
-    setCash(d.cassaInizio + Math.round(serviti)*d.prezzo);
     if(truck.attivo) setTruck(ora - 8);
     while(spawned < nVis && p >= soglie[spawned]){
-      const servito = soglie[spawned]*d.clienti <= d.prodotti;
-      const tur = Math.floor((spawned+1)*quotaTur + 0.5) > Math.floor(spawned*quotaTur + 0.5) ? (spawned % 2 ? 'fr' : 'gb') : null;
-      spawnCliente(servito, Math.min(1400, durApertura*0.5)/speed, tur);
+      const i = spawned;
+      const tur = Math.floor((i+1)*quotaTur + 0.5) > Math.floor(i*quotaTur + 0.5) ? (i % 2 ? 'fr' : 'gb') : null;
+      spawnCliente(V.servito(i), Math.min(1400, durApertura*0.5)/speed, tur, () => V.alBanco(i));
       spawned++;
     }
   });
+  await sleep(Math.min(1400, durApertura*0.5)*0.65);   // l'ultimo cliente arriva al bancone
+  V.fine();
   // sera: costi e risultato
   setClock(20);
   if(d.avanzati > 0) floater(`🗑️ −${d.avanzati} coni`, 62, 30, '#e04a58');
@@ -7997,7 +8012,7 @@ async function animaGiorno3D(d, opz){
   setStock(d.stockInizio);
   Diorama.setPacchi(pacchiDi(d.stockInizio));
   if(d.arrivo > 0 && opz.vedi.magazzino) floater3D(`+${d.arrivo} kg 📦`, 'casse', '#3f866c');
-  Diorama.setFinito(false); Diorama.setConi(0, Math.max(1, d.prodotti));
+  Diorama.setFinito(false); Diorama.setConi(d.prodotti, Math.max(1, d.prodotti));   // all'alba: i coni che il robot ha preparato stanotte
   renderMiniRegole(d.fired); renderDecisione(d, opz.vedi);
   // apertura: il gelataio porta dentro i pacchi che servono per i coni di oggi, poi porta fuori il bancone
   let n = pacchiDi(d.stockInizio) - pacchiDi(d.stockFine);
@@ -8005,7 +8020,7 @@ async function animaGiorno3D(d, opz){
   n = Math.min(n, pacchiDi(d.stockInizio));
   const durA = GRAFICA3D.aperturaMs[k];
   await Promise.all([ aspetta3D(Diorama.apri(n, durA), durA), tween(durA, p=>setClock(8 + p)) ]);
-  Diorama.setPacchi(pacchiDi(d.stockFine)); Diorama.setConi(d.prodotti, Math.max(1, d.prodotti));
+  Diorama.setPacchi(pacchiDi(d.stockFine));
   setStock(d.stockFine);
   if(d.ordine > 0){ truck.attivo = true; truck.kg = d.ordine; setTruck(0); }
   // aperto: clienti dalle 9 alle 20 (alcuni sono turisti; chi va dalla concorrenza si ferma al chiosco)
@@ -8013,21 +8028,21 @@ async function animaGiorno3D(d, opz){
   const soglie = Array.from({length:nVis}, (_,i)=>(i+0.5)/nVis);
   const quotaTur = d.clienti ? (d.turistiN||0) / d.clienti : 0, nRiv = clamp(Math.round((d.rivale||0)/7), d.rivale>0?1:0, 6);
   const turista = i => Math.floor((i+1)*quotaTur + 0.5) > Math.floor(i*quotaTur + 0.5) ? (i % 2 ? 'fr' : 'gb') : null;
-  let spawned = 0, finiti = false, rivali = 0;
+  let spawned = 0, rivali = 0;
   const durApertura = GRAFICA3D.giornoMs[k];
+  const V = vendite(d, nVis, (coni, cassa, finito) => { Diorama.setConi(coni); if(cassa != null) setCash(cassa); if(finito) Diorama.setFinito(true); });
   await tween(durApertura, p=>{
     while(rivali < nRiv && p >= (rivali+0.3)/nRiv){ Diorama.cliente(true, GRAFICA3D.clienteMs[k]/speed, null, { rivale:true }); rivali++; }
     const ora = 9 + 11*p; setClock(ora);
-    const arrivati = d.clienti*p, serviti = Math.min(arrivati, d.prodotti);
-    Diorama.setConi(Math.max(0, Math.round(d.prodotti - serviti)));
-    if(!finiti && arrivati > d.prodotti && d.persi > 0){ finiti = true; Diorama.setFinito(true); }
-    setCash(d.cassaInizio + Math.round(serviti)*d.prezzo);
     if(truck.attivo) setTruck(ora - 8);
     while(spawned < nVis && p >= soglie[spawned]){
-      Diorama.cliente(soglie[spawned]*d.clienti <= d.prodotti, GRAFICA3D.clienteMs[k]/speed, null, { turista: turista(spawned) });
+      const i = spawned;
+      Diorama.cliente(V.servito(i), GRAFICA3D.clienteMs[k]/speed, () => V.alBanco(i), { turista: turista(i) });
       spawned++;
     }
   });
+  await sleep(GRAFICA3D.clienteMs[k]*0.5);              // l'ultimo cliente arriva al bancone
+  V.fine();
   // sera: costi e risultato, poi il gelataio chiude
   setClock(20);
   if(d.avanzati > 0) floater3D(`🗑️ −${d.avanzati} coni`, 'gelateria', '#e04a58');
