@@ -7087,35 +7087,37 @@ const CONFIG = {
   //   cond / azioni = blocchi nuovi per le regole · auto = il fornitore riporta da solo il magazzino a 40 kg ogni notte
   //   previsioni = si vede il meteo dei giorni della fase
   fasi: [
-    { giorni:4, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
+    { giorni:3, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
       testo:'Il robot guarda il <b>meteo</b> e decide quanti coni fare. Attento: ora la stagione è iniziata e arriva <b>molta più gente</b> che nella prova! Col sole anche più di 40 clienti.',
       esempio:{ c:'meteo', cv:'sole', a:'produci', av:50 } },
-    { giorni:4, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
+    { giorni:3, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
       testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
       esempio:{ c:'giorno', cv:'weekend', a:'piu', av:15 } },
     { giorni:3, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
       testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
       esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:70 } },
-    { giorni:4, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'🏷️ Il prezzo',
+    { giorni:6, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'🏷️ Il prezzo',
       testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50<i class="ei"></i>). Più caro = più guadagno a cono, ma meno clienti!',
       esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
-    { giorni:4, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
+    { giorni:3, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
       testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
       esempio:{ c:'magazzino', op:'<', cv:15, a:'riordina', av:20 } },
     { giorni:3, cond:['ieri'], azioni:[], auto:false, previsioni:true, titolo:'🍨 Ieri',
       testo:'Novità: il robot si ricorda di <b>ieri</b>. Se ieri il gelato è finito, oggi produci di più; se l\'hai buttato, produci meno.',
       esempio:{ c:'ieri', cv:'finito', a:'piu', av:10 } },
-    { giorni:8, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
-      testo:'Ultima fase, 8 giorni: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
+    { giorni:9, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
+      testo:'Ultima fase, 9 giorni: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
   ],
 
-  // GLI EVENTI DELLE ALTRE MATERIE DEL CORSO SIA: vengono annunciati durante una giornata (mai nel giorno in cui
-  // arriva una novità del gioco) e da lì in poi si vedono nel gestionale con il conto alla rovescia.
+  turno: 3,                 // ogni "AVVIA" fa giocare 3 giorni, poi si torna al gestionale
+
+  // GLI EVENTI DELLE ALTRE MATERIE DEL CORSO SIA: vengono annunciati nel gestionale all'inizio del turno che comincia
+  // il giorno "annuncio", e accadono sempre DOPO (così il giocatore fa in tempo a scrivere le regole).
   eventi: {
-    gara:        { annuncio:8,  giorno:13, molt:1.6 },                          // 🏅 Educazione fisica: più clienti
-    concorrenza: { annuncio:14, da:17, prezzo:2.5, sensibilita:0.6 },           // 🆚 Economia politica: oltre 2,50 € si perdono clienti
-    turisti:     { annuncio:15, giorni:[15,18,21,26,29], extra:18 },            // 🚌 Inglese e Francese: il pullman dei turisti
-    asl:         { annuncio:18, giorno:24, scadenza:5, multa:50 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
+    gara:        { annuncio:7,  giorno:13, molt:1.6 },                          // 🏅 Educazione fisica: più clienti
+    concorrenza: { annuncio:10, da:14, prezzo:2.5, sensibilita:0.6 },           // 🆚 Economia politica: oltre 2,50 si perdono clienti
+    turisti:     { annuncio:13, giorni:[14,17,20,23,26,29], extra:18 },         // 🚌 Inglese e Francese: il pullman dei turisti
+    asl:         { annuncio:19, giorno:24, scadenza:5, multa:50 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
   },
 
   // tutorial: 3 giorni con meteo noto e un numero fisso di clienti (niente affitto: si impara solo a usare le regole)
@@ -7622,7 +7624,7 @@ function blocchiDisponibili(){
   const f = Math.max(S.sfida ? S.sfida.fase : 0, S.maxFase || 0), cond = [], azioni = [];
   for(let i=0;i<=f;i++){ cond.push(...FASI[i].cond); azioni.push(...FASI[i].azioni); }
   // i blocchi degli eventi: dopo l'annuncio
-  const da = faseInfo(f).da;
+  const da = S.sfida && S.sfida.giorno ? Math.max(S.sfida.giorno, faseInfo(S.sfida.fase).da) : faseInfo(f).da;   // il giorno del turno in corso
   if(eventoNoto('gara', da)) cond.push('gara');
   if(eventoNoto('turisti', da)) cond.push('turisti');
   return { cond, azioni };
@@ -7630,8 +7632,8 @@ function blocchiDisponibili(){
 /* ---------- gli eventi delle materie ---------- */
 const EV = CONFIG.eventi;
 // un evento si conosce dal giorno del suo annuncio (o se è già stato annunciato in un tentativo precedente)
-// (l'annuncio arriva nel gestionale, all'inizio della fase dopo il giorno dell'annuncio)
-const eventoNoto = (id, giorno) => EV[id].annuncio < giorno || (S.annunci || []).includes(id);
+// (l'annuncio arriva nel gestionale, all'inizio del turno che comincia il giorno dell'annuncio)
+const eventoNoto = (id, giorno) => EV[id].annuncio <= giorno || (S.annunci || []).includes(id);
 const bandiera = p => p === 'fr'
   ? '<svg class="flag" viewBox="0 0 30 20" aria-label="Francia"><rect width="10" height="20" fill="#2b4ea2"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#e4343e"/></svg>'
   : '<svg class="flag" viewBox="0 0 60 30" aria-label="Regno Unito"><clipPath id="uk-c"><path d="M0,0v30h60V0z"/></clipPath><clipPath id="uk-t"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath><g clip-path="url(#uk-c)"><path d="M0,0v30h60V0z" fill="#26418f"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 60,30M60,0 0,30" clip-path="url(#uk-t)" stroke="#d8303d" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#d8303d" stroke-width="6"/></g></svg>';
@@ -7751,28 +7753,30 @@ function nuovoFatto(){
 // una nuova sfida di 30 giorni: si riparte dalla fase 1 (le regole restano)
 function vaiAlGioco(){
   S.mode = 'game';
-  S.sfida = { fase:0, stato:statoIniziale(), giorni:[] };
+  S.sfida = { fase:0, giorno:1, stato:statoIniziale(), giorni:[] };
   renderFase();
 }
+// il turno da giocare: 3 giorni (mai oltre la fine della fase)
+function turno(){ const F = faseInfo(S.sfida.fase), da = S.sfida.giorno || F.da; return { da, a: Math.min(F.a, da + CONFIG.turno - 1) }; }
 // la schermata del gestionale per la fase in corso
 function renderFase(){
   salvaSessione();
-  const F = faseInfo(S.sfida.fase), V = cosaVedi();
+  const F = faseInfo(S.sfida.fase), V = cosaVedi(), TU = turno();
   const es = F.esempio ? `<div>Per esempio:</div><div class="target">${bloccoTarget(F.esempio)}</div>` : '';
   $('#coach').innerHTML = `<div class="mascot">🍦</div><div class="body">
      <p class="say">Fase ${S.sfida.fase+1} di ${FASI.length} · giorni ${F.da}–${F.a} · ${F.titolo}</p>
      <p style="margin:0 0 6px">${F.testo}</p>${es}</div>`;
-  const giorni = S.giorniSfida.slice(F.da-1, F.a);
-  const evIc = g => { const ic = iconeEventi(g, F.da); return ic ? `<i class="ev">${ic}</i>` : ''; };
+  const giorni = S.giorniSfida.slice(TU.da-1, TU.a);
+  const evIc = g => { const ic = iconeEventi(g, TU.da); return ic ? `<i class="ev">${ic}</i>` : ''; };
   $('#forecast-box').innerHTML = (F.previsioni
     ? `<div class="hint">📡 Previsioni dei prossimi giorni</div><div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">${METEO[g.meteo].ic}</span>${V.temp ? g.temp+'°' : ''}</div>`).join('')}</div>`
     : `<div class="station-note">📡💥 Niente previsioni: il programma deve funzionare con qualsiasi tempo.</div>
-       <div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday unk">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`).join('')}</div>`) + avvisiHTML(F.da);
-  const chips = [`<span>📅 Giorni ${F.da}–${F.a} di ${CONFIG.giorni}</span>`];
+       <div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday unk">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`).join('')}</div>`) + avvisiHTML(TU.da);
+  const chips = [`<span>📅 Giorni ${TU.da}–${TU.a} di ${CONFIG.giorni}</span>`];
   if(S.sfida.giorni.length) chips.push(`<span>💰 ${eur(S.sfida.stato.cassa)}</span>`);
-  if(V.magazzino) chips.push(`<span>📦 ${round1(S.sfida.stato.stock)} kg${eventoNoto('asl', F.da) && S.sfida.stato.stock > 0 ? ` · i più vecchi arrivati ${etaMagazzino(S.sfida.stato, F.da) || 'oggi'}${etaMagazzino(S.sfida.stato, F.da) ? ' giorni fa' : ''}` : ''}</span>`);
+  if(V.magazzino) chips.push(`<span>📦 ${round1(S.sfida.stato.stock)} kg${eventoNoto('asl', TU.da) && S.sfida.stato.stock > 0 ? ` · i più vecchi arrivati ${etaMagazzino(S.sfida.stato, TU.da) || 'oggi'}${etaMagazzino(S.sfida.stato, TU.da) ? ' giorni fa' : ''}` : ''}</span>`);
   $('#start-chips').innerHTML = chips.join('');
-  $('#btn-run').textContent = `▶ AVVIA GIORNI ${F.da}–${F.a}`;
+  $('#btn-run').textContent = `▶ AVVIA GIORNI ${TU.da}–${TU.a}`;
   $('#btn-add').classList.remove('pulse');
   $('#btn-help').classList.add('hidden'); pulisciErroreCoach();
   $('#card-fact').classList.remove('hidden');
@@ -7837,7 +7841,7 @@ async function iniziaTutorial(){
   show('program');
   renderTutorial();
   await modal(`<div class="ic">🍦🤖</div><h3>Ciao ${esc(S.nick)}!</h3>
-    <p>La tua gelateria è <b>automatica</b>: un <b>robot</b> prepara ogni mattina i coni gelato.</p>
+    <p>La tua gelateria è <b>automatica</b>: un <b>robot</b> prepara ogni <b>notte</b> i coni gelato per il giorno dopo.</p>
     <p>Tu gli scrivi le <b>regole</b>. Facciamo una prova di <b>3 giorni</b> insieme!</p>`, [{t:'Iniziamo! ▶'}]);
   await modal(`<div class="ic">🤖</div><h3>Le regole</h3>
     <p>Una regola dice: <b>SE</b> succede qualcosa, <b>ALLORA</b> il robot fa qualcosa.</p>
@@ -8650,7 +8654,7 @@ async function animaSimulazione(sim, opz){
    GLI EVENTI DELLE ALTRE MATERIE DEL CORSO SIA, durante la simulazione
    ===================================================================== */
 // gli annunci delle materie: compaiono nel gestionale (oggi = il primo giorno della fase che sta per iniziare)
-const maiuscola = t => t.charAt(0).toUpperCase() + t.slice(1);
+const maiuscola = t => t.replace(/^((?:<[^>]+>)*)(\S)/, (m, tag, c) => tag + c.toUpperCase());   // anche se inizia con <b>
 const ANNUNCI = {
   gara: oggi => `<div class="ic">📣🏅</div><h3>Giochi studenteschi: gara a Todi!</h3>
     <p>${maiuscola(traGiorni(EV.gara.giorno, oggi))} (il giorno ${EV.gara.giorno}) a Todi c'è la <b>gara dei Giochi studenteschi</b>: arriveranno atleti, allenatori e tifosi… cioè <b>tantissimi clienti</b>!</p>
@@ -8660,9 +8664,9 @@ const ANNUNCI = {
     <p>${maiuscola(traGiorni(EV.concorrenza.da, oggi))} (il giorno ${EV.concorrenza.da}) in piazza apre un'altra gelateria: la <b>Gelateria Rivale</b>.</p>
     <p>Venderà il cono a <b>${eur(EV.concorrenza.prezzo,2)}</b>. Se il tuo prezzo è più alto, <b>molti clienti andranno da lei</b>!</p>
     <div class="materia"><h4>📈 Economia politica al SIA</h4><p>Si studia come funziona il <b>mercato</b>: quando più negozi vendono la stessa cosa, i clienti scelgono chi offre di più a meno. Si chiama <b>concorrenza</b>, ed è quello che tiene bassi i prezzi.</p></div>`,
-  turisti: oggi => `<div class="ic">📣🚌</div><h3>Sono arrivati i turisti!</h3>
-    <p>Il giorno ${EV.turisti.giorni[0]} un pullman si è fermato in cima alla strada: turisti <b>inglesi</b> ${bandiera('gb')} e <b>francesi</b> ${bandiera('fr')} venuti a vedere Todi… e a mangiare il gelato!</p>
-    <p>Torneranno nei giorni <b>${EV.turisti.giorni.filter(n => n >= oggi).join(', ')}</b>: nel calendario li riconosci dal 🚌. Ora puoi usare la regola <b>SE 🚌 oggi arrivano i turisti</b>.</p>
+  turisti: oggi => `<div class="ic">📣🚌</div><h3>Arrivano i turisti!</h3>
+    <p>${maiuscola(traGiorni(EV.turisti.giorni[0], oggi))} (il giorno ${EV.turisti.giorni[0]}) un pullman si fermerà in cima alla strada: turisti <b>inglesi</b> ${bandiera('gb')} e <b>francesi</b> ${bandiera('fr')} che vengono a vedere Todi… e a mangiare il gelato!</p>
+    <p>I pullman arrivano nei giorni <b>${EV.turisti.giorni.filter(n => n >= oggi).join(', ')}</b>: nel calendario li riconosci dal 🚌. Puoi usare la regola <b>SE 🚌 oggi arrivano i turisti</b>.</p>
     <div class="materia"><h4>🗣️ Inglese e Francese al SIA</h4><p>Al SIA si studiano <b>due lingue straniere</b>: servono per parlare con clienti e aziende di tutto il mondo. <i>Hello! = Ciao! · Bonjour! = Buongiorno!</i></p></div>`,
   asl: oggi => `<div class="ic">📣🕵️</div><h3>Arriva il controllo dell'ASL!</h3>
     <p>${maiuscola(traGiorni(EV.asl.giorno, oggi))} (il giorno ${EV.asl.giorno}) arriva l'ispettore dell'<b>ASL</b> (Azienda Sanitaria Locale) a controllare il magazzino.</p>
@@ -8670,10 +8674,10 @@ const ANNUNCI = {
     <p>Consiglio: non riempire troppo il magazzino, <b>ordina poco e spesso</b>. Il robot usa sempre prima gli ingredienti più vecchi.</p>
     <div class="materia"><h4>⚖️ Diritto al SIA</h4><p>Si studiano le <b>leggi</b>: le regole che valgono per tutti, anche per le aziende (igiene, contratti, lavoro). Il tuo robot segue le tue regole… ma la gelateria deve seguire anche quelle della legge!</p></div>`
 };
-// nel gestionale, all'inizio di una fase: gli annunci degli eventi arrivati durante la fase appena giocata (una volta sola)
-async function annunciNelGestionale(daGiorno, aGiorno, oggi){
+// nel gestionale, all'inizio di un turno: gli annunci degli eventi in arrivo (una volta sola)
+async function annunciNelGestionale(oggi){
   for(const id of ['gara','concorrenza','turisti','asl']){
-    if(EV[id].annuncio < daGiorno || EV[id].annuncio > aGiorno || (S.annunci || []).includes(id)) continue;
+    if(EV[id].annuncio > oggi || (S.annunci || []).includes(id)) continue;
     await modal(ANNUNCI[id](oggi), [{t:'Ho capito! ▶', cls:'mint'}]);
     (S.annunci ??= []).push(id); salvaGiocatore(); renderFase();
   }
@@ -8712,22 +8716,24 @@ function aggiornaPillEvento(n){
 // gioca i giorni della fase in corso; alla fine della fase arriva la novità, alla fine dell'ultima i risultati
 async function avviaSfida(){
   $('#btn-run').disabled = true;
-  const sf = S.sfida, F = faseInfo(sf.fase), V = cosaVedi();
-  const sim = simula(S.prog, S.giorniSfida.slice(F.da-1, F.a), sf.stato, { auto:F.auto });
-  const visibili = F.previsioni ? F.a : F.da - 1;
+  const sf = S.sfida, F = faseInfo(sf.fase), V = cosaVedi(), TU = turno();
+  const sim = simula(S.prog, S.giorniSfida.slice(TU.da-1, TU.a), sf.stato, { auto:F.auto });
+  const visibili = F.previsioni ? TU.a : TU.da - 1;
   await animaSimulazione(sim, { tutorial:false, giorniVisibili:visibili, tuttiGiorni:S.giorniSfida, vedi:V });
   $('#btn-run').disabled = false;
-  sf.stato = sim.stato; sf.giorni.push(...sim.giorni);
-  if(sf.fase < FASI.length - 1){
-    sf.fase++; S.maxFase = Math.max(S.maxFase, sf.fase); salvaGiocatore();
+  sf.stato = sim.stato; sf.giorni.push(...sim.giorni); sf.giorno = TU.a + 1;
+  if(sf.giorno <= CONFIG.giorni){
+    const nuovaFase = sf.giorno > F.a;                   // finita la fase: arriva la novità; se no si continua con altri 3 giorni
+    if(nuovaFase){ sf.fase++; S.maxFase = Math.max(S.maxFase, sf.fase); }
+    salvaGiocatore();
     const N = faseInfo(sf.fase);
     const es = N.esempio ? `<div class="target" style="justify-content:center">${bloccoTarget(N.esempio)}</div>` : '';
     show('program'); renderFase();
-    await modal(`<div class="ic">✅</div><h3>Giorni ${F.da}–${F.a}: fatto!</h3>
+    await modal(`<div class="ic">✅</div><h3>Giorni ${TU.da}–${TU.a}: fatto!</h3>
       <div class="stats"><span class="${sim.tot.profitto>=0?'pos':'neg'}">${eurS(sim.tot.profitto)}</span><span>🍦 ${sim.tot.venduti} venduti</span><span>😞 ${sim.tot.persi} persi</span><span>🗑️ ${sim.tot.avanzati} buttati</span></div>
       ${esitoASL(sim.giorni)}
-      <h3 style="margin-top:14px">🆕 ${N.titolo}</h3><p>${N.testo}</p>${es}`, [{t:'Avanti ▶', cls:'mint'}]);
-    await annunciNelGestionale(F.da, F.a, N.da);          // gli eventi delle materie: si annunciano qui, nel gestionale
+      ${nuovaFase ? `<h3 style="margin-top:14px">🆕 ${N.titolo}</h3><p>${N.testo}</p>${es}` : `<p style="margin-top:12px">Controlla le regole e avvia i prossimi giorni!</p>`}`, [{t:'Avanti ▶', cls:'mint'}]);
+    await annunciNelGestionale(sf.giorno);                // gli eventi delle materie: si annunciano qui, nel gestionale
     return;
   }
   // fine dei 30 giorni

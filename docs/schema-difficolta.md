@@ -53,58 +53,34 @@ Prima della sfida un messaggio avvisa che da ora **arriverà molta più gente**.
 
 ---
 
-## 3. La sfida: 30 giorni in 7 fasi (ogni fase 3-4 giorni, l'ultima 8)
+## 3. La sfida: 30 giorni, 10 turni da 3 giorni, 7 fasi
 
-Alla fine di ogni fase il gioco si ferma: riepilogo della fase e **novità** della fase successiva.
+Ogni "AVVIA" fa giocare **3 giorni**, poi si torna al gestionale (riepilogo, eventuale novità, annunci). Le novità arrivano sempre all'inizio di un turno.
 
-| Fase | Giorni | Durata | Novità (meccanica) | Blocchi nuovi | Magazzino |
+| Fase | Giorni | Turni | Novità (meccanica) | Blocchi nuovi | Magazzino |
 |---|---|---|---|---|---|
-| 1 | 1–4 | 4 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 20 kg) |
-| 2 | 5–8 | 4 | 📅 **Weekend** | SE oggi è weekend · ALLORA produci in più / in meno | automatico |
-| 3 | 9–11 | 3 | 🌡️ **Temperatura** | SE temperatura > / < … | automatico |
-| 4 | 12–15 | 4 | 💶 **Prezzo** | ALLORA metti il prezzo a… | automatico |
-| 5 | 16–19 | 4 | 📦 **Magazzino** a carico dello studente | SE magazzino < / > … · ALLORA riordina … kg | **manuale** |
-| 6 | 20–22 | 3 | 🍨 **Ieri** | SE ieri ho finito / ho buttato… | manuale |
-| 7 | 23–30 | **8** | 📡💥 **Stazione meteo rotta** (niente previsioni) | — | manuale |
+| 1 | 1–3 | 1 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 20 kg) |
+| 2 | 4–6 | 1 | 📅 **Weekend** | SE oggi è weekend · ALLORA produci in più / in meno | automatico |
+| 3 | 7–9 | 1 | 🌡️ **Temperatura** | SE temperatura > / < … | automatico |
+| 4 | 10–15 | 2 | 🏷️ **Prezzo** (selettore "Prezzo del gelato in Einaudi" nelle regole) | ALLORA metti il prezzo a… | automatico |
+| 5 | 16–18 | 1 | 📦 **Magazzino** a carico dello studente | SE magazzino < / > … · ALLORA riordina … kg | **manuale** |
+| 6 | 19–21 | 1 | 🍨 **Ieri** | SE ieri ho finito / ho buttato… | manuale |
+| 7 | 22–30 | 3 | 📡💥 **Stazione meteo rotta** (niente previsioni) | — | manuale |
+
+La moneta del gioco è l'**Einaudi** (simbolo: il logo della scuola in oro).
 
 ---
 
 ## 4. Gli eventi delle altre materie del corso SIA
 
-Ogni evento viene **annunciato durante una giornata** (mai nel primo giorno di una fase, quando arriva una meccanica nuova).
-Da quel momento nel gestionale compare un **avviso con il conto alla rovescia**, e sopra la scena una pillola tipo "🏅 Gara tra 3 giorni".
-Nel calendario i giorni speciali hanno un'icona (🏅 🚌 🕵️ 🆚).
+Ogni evento è **annunciato nel gestionale**, all'inizio di un turno, e accade **sempre in un giorno successivo**, così il giocatore fa in tempo a scrivere le regole. Da quel momento c'è l'avviso con il conto alla rovescia; durante la simulazione compaiono solo avvisi brevi.
 
-| Giorno annuncio | Materia | Evento | Quando | Effetto nel gioco |
+| Annuncio (gestionale del giorno) | Materia | Evento | Quando | Effetto nel gioco |
 |---|---|---|---|---|
-| **8** | 🏃 Educazione fisica | **Giochi studenteschi: gara a Todi** | giorno **13** | clienti ×1,6 quel giorno · nuovo blocco **SE 🏅 oggi c'è la gara** |
-| **14** | 📈 Economia politica | **Arriva la concorrenza**: apre la Gelateria Rivale (cono a 2,50 €) | dal giorno **17** | se il tuo prezzo supera 2,50 €, perdi molti clienti in più (−60% per ogni € in più) · in 3D compare il chiosco "RIVALE 2,50 €" nel giardino e alcuni clienti vanno lì |
-| **15** | 🇬🇧🇫🇷 Inglese e Francese | **Arrivano i turisti**: il pullman si ferma in cima alla strada | giorni **15, 18, 21, 26, 29** | +18 clienti circa (meno con la pioggia) · i turisti hanno sopra la testa un fumetto con la bandiera (inglese o francese) e "Hello!" / "Bonjour!" · nuovo blocco **SE 🚌 oggi arrivano i turisti** |
-| **18** | ⚖️ Diritto | **Controllo dell'ASL** | giorno **24** | gli ingredienti arrivati da **5 giorni o più** sono scaduti: vengono buttati e c'è una **multa di 50 €** |
-
-I testi degli annunci spiegano la materia:
-- **🏃 Educazione fisica:** al SIA c'è la **curvatura sportiva**: 2 ore in più a settimana di educazione fisica con un esperto di uno sport, ogni anno diverso.
-- **📈 Economia politica:** si studia il mercato. Quando più negozi vendono la stessa cosa, i clienti scelgono chi offre di più a meno: è la concorrenza.
-- **🗣️ Inglese e Francese:** al SIA si studiano due lingue straniere, per parlare con clienti e aziende di tutto il mondo.
-- **⚖️ Diritto:** si studiano le leggi, che valgono anche per le aziende. Il robot segue le tue regole, la gelateria anche quelle della legge.
-
-**Il controllo ASL in pratica**
-- Il magazzino è fatto di consegne ("lotti") e il robot usa sempre prima gli ingredienti più vecchi.
-- Se si ordina troppo, gli ingredienti restano fermi e scadono.
-- Esempi provati con la sfida standard:
-  - `SE magazzino < 15 ALLORA riordina 20`: **nessuna multa**;
-  - `SE magazzino < 20 ALLORA riordina 30`: **ingredienti scaduti + multa**.
-- Dall'annuncio in poi, nel gestionale si vede da quanti giorni sono fermi gli ingredienti più vecchi.
-
-**Nei tentativi successivi:**
-- gli annunci lunghi non si ripetono, ma compare un messaggio breve;
-- i blocchi degli eventi già scoperti restano disponibili.
-
-**Nei risultati:**
-- c'è la riga "⚖️ Multa ASL";
-- il debug dà consigli specifici: clienti persi alla gara, turisti senza gelato, clienti andati alla concorrenza, multa ASL.
-
----
+| **7** | 🏃 Educazione fisica | Giochi studenteschi: gara a Todi | giorno **13** | clienti ×1,6 · blocco **SE 🏅 oggi c'è la gara** · in 3D la corsa con l'arco a scacchi e il cartellone "Giochi Studenteschi" |
+| **10** | 📈 Economia politica | Apre la Gelateria Rivale (cono a 2,50) | dal giorno **14** | oltre 2,50 si perdono molti clienti · chiosco con il cartellone "Gelati più buoni!" |
+| **13** | 🇬🇧🇫🇷 Inglese e Francese | Arrivano i turisti col pullman | giorni **14, 17, 20, 23, 26, 29** | +18 clienti circa · fumetti con le bandiere · blocco **SE 🚌 oggi arrivano i turisti** |
+| **19** | ⚖️ Diritto | Controllo dell'ASL | giorno **24** | ingredienti arrivati da 5 giorni o più = scaduti: buttati e **multa di 50** |
 
 ## 5. Tempi (velocità 1×, grafica 3D)
 
