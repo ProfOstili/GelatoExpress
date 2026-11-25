@@ -210,6 +210,7 @@ window.Diorama = (() => {
       ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50 €', W / 2, 138);
     });
     metti(corpo, rettangoloGeo(0.78, 0.31, 0.04), new THREE.MeshStandardMaterial({ map: cartello, roughness: 0.6, emissive: '#ffffff', emissiveMap: cartello, emissiveIntensity: 0.25 }), [-0.08, 1.1, 0.08], null, false);
+    cartellone(g, ['GELATI', 'PIÙ BUONI!'], '#5f8fae', '#ffffff', -0.45, -0.8, 1.9, 0.8, 2.0);        // il cartellone dietro il chiosco della concorrenza
     return { g, corpo };
   }
   // il robot della gelateria: dietro la vetrina prepara i coni, giorno e notte (è lui che segue le regole del gioco)
@@ -261,6 +262,20 @@ window.Diorama = (() => {
     const lamp = (tReale() * 1.3) % 1 < 0.08;                          // ogni tanto sbatte le palpebre
     r.occhi.forEach((o) => { o.scale.y = lamp ? 0.2 : 1; });
     r.luce.emissiveIntensity = 0.8 + 1.2 * (Math.sin(tGioco * 5) > 0 ? 1 : 0.2);
+  }
+  // un cartellone pubblicitario su due pali (x, z locali nel gruppo padre; guarda chi osserva)
+  function cartellone(padre, righe, fondo, colore, x, z, w = 1.5, h = 0.62, alto = 1.25) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); padre.add(g);
+    for (const s of [-1, 1]) metti(g, new THREE.CylinderGeometry(0.035, 0.035, alto, 8), PAL.ardesia, [s * w * 0.38, alto / 2, -0.03]);
+    metti(g, scatolaGeo(w + 0.08, h + 0.08, 0.06, 0.03), PAL.scuro, [0, alto + h / 2 - 0.05, -0.04]);
+    const tex = texCanvas(768, Math.round(768 * h / w), (ctx, W, H) => {
+      ctx.fillStyle = fondo; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = colore; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const fs = Math.min(H / (righe.length + 0.4), 120); ctx.font = fontGrassetto(fs);
+      righe.forEach((r, i) => ctx.fillText(r, W / 2, H / 2 + (i - (righe.length - 1) / 2) * fs * 1.02, W * 0.92));
+    });
+    metti(g, rettangoloGeo(w, h, 0.03), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }), [0, alto + h / 2 - 0.05, 0], null, false);
+    return g;
   }
   // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
   function fumetto(lingua) {
@@ -355,6 +370,7 @@ window.Diorama = (() => {
       ctx.fillStyle = '#ffffff'; ctx.font = fontGrassetto(40); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('GIOCHI STUDENTESCHI', W / 2, H / 2 + 2);
     });
     metti(O.traguardo, new THREE.PlaneGeometry(2.1, 0.4), new THREE.MeshStandardMaterial({ map: texT, side: THREE.DoubleSide, roughness: 0.7 }), [0, 1.8, 0], null, false);
+    cartellone(O.traguardo, ['GIOCHI', 'STUDENTESCHI'], '#ff6fa5', '#ffffff', -2.05, -0.45, 1.6, 0.8, 1.0);     // a lato della strada, vicino all'arrivo
     // 🕵️ l'ispettore dell'ASL: camice bianco e cartellina
     O.ispettore = piolo(L, '#f4f4f2', '#2b2b33', 1.25); O.ispettore.visible = false;
     metti(O.ispettore.userData.corpo, scatolaGeo(0.16, 0.2, 0.02, 0.01), PAL.cartone, [0.12, 0.3, 0.17], [-0.4, 0, 0], false);
