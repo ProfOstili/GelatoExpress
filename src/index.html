@@ -355,6 +355,46 @@ select,input{font-family:inherit}
 #scr-sim:not(.intro) .didascalia,#scr-sim:not(.intro) #btn-salta-intro{display:none}
 .scene.senza-magazzino .stockbar{display:none}
 
+/* ---------- la presentazione per l'open day (index.html?promo) ---------- */
+body.promo .topbar,body.promo .grafica-pan{display:none!important}
+body.promo #scr-sim{padding:0;max-width:none}
+body.promo #scene{position:fixed;inset:0;height:100vh!important;height:100dvh!important;border:0;border-radius:0;z-index:10}
+body.promo #scene .d3-hud,body.promo #scene .scene-btn,body.promo #btn-salta-intro,body.promo .didascalia,body.promo .gira{display:none!important}
+body.senza-cursore,body.senza-cursore *{cursor:none!important}
+body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:filter 1.2s}
+.promo{position:fixed;inset:0;z-index:30;pointer-events:none;font-family:var(--font)}
+.promo-avvio{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;pointer-events:auto}
+.promo-avvio .ic{font-size:72px}.promo-avvio p{max-width:520px;font-size:18px;font-weight:600}
+.promo-titolo{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:4vh;text-align:center;padding:5vw;background:radial-gradient(ellipse at center,rgba(39,43,54,.72),rgba(39,43,54,.92));color:#fff;transition:opacity .8s}
+.promo-titolo.su{display:flex}.promo-titolo.via{opacity:0}
+.promo-titolo .riga{opacity:0;transform:translateY(30px) scale(.96);transition:all .7s cubic-bezier(.2,1.4,.4,1);font-weight:700;text-shadow:0 4px 0 rgba(0,0,0,.25)}
+.promo-titolo .riga.su{opacity:1;transform:none}
+.promo-titolo .r1{font-size:clamp(22px,3.6vw,52px)}.promo-titolo .r1 b{color:#ffd166}
+.promo-titolo .sia{color:#ff6fa5;font-weight:900}
+.promo-titolo .r2{font-size:clamp(20px,3vw,42px)}
+.promo-titolo .grande{display:inline-block;margin-top:1vh;font-size:clamp(34px,6.4vw,96px);font-weight:900;color:#ff6fa5;letter-spacing:1px;animation:pulsa 0.91s ease-in-out infinite}
+@keyframes pulsa{50%{transform:scale(1.05)}}
+.promo-titolo .r3{font-size:clamp(22px,3.4vw,48px);background:#ffd166;color:var(--ink);padding:.3em .9em;border-radius:99px;text-shadow:none}
+.promo-dida{position:absolute;left:50%;bottom:6vh;transform:translate(-50%,40px);opacity:0;background:rgba(255,250,242,.97);border:4px solid var(--line);border-radius:22px;padding:.5em 1.1em;font-size:clamp(20px,2.8vw,40px);font-weight:700;text-align:center;max-width:90vw;box-shadow:0 6px 0 rgba(39,43,54,.25);transition:all .5s cubic-bezier(.2,1.4,.4,1)}
+.promo-dida.su{opacity:1;transform:translate(-50%,0)}
+.promo-tag{position:absolute;right:3vw;bottom:5vh;transform:translateX(60px);opacity:0;background:var(--pink);color:#fff;border:4px solid var(--line);border-radius:18px;padding:.45em 1em;font-size:clamp(20px,2.6vw,38px);font-weight:900;box-shadow:0 6px 0 rgba(39,43,54,.3);transition:all .45s cubic-bezier(.2,1.4,.4,1)}
+.promo-tag.su{opacity:1;transform:none}
+.promo-multa{position:absolute;left:50%;top:22vh;transform:translateX(-50%) rotate(-12deg) scale(2.5);opacity:0;border:8px solid #e04a58;color:#e04a58;background:rgba(255,255,255,.9);border-radius:16px;padding:.3em .8em;font-size:clamp(22px,3vw,44px);font-weight:900;text-align:center;line-height:1.1;transition:all .35s cubic-bezier(.3,1.6,.5,1)}
+.promo-multa.su{opacity:1;transform:translateX(-50%) rotate(-12deg) scale(1)}
+.promo-fine{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transition:opacity .6s;background:rgba(39,43,54,.35)}
+.promo-fine.su{opacity:1}
+.promo-fine h1{margin:0 0 2vh;font-size:clamp(40px,min(9vw,14vh),140px);font-weight:900;color:#ffd166;text-shadow:0 6px 0 var(--ink),0 0 30px rgba(0,0,0,.4);animation:pulsa .91s ease-in-out infinite}
+.promo-classifica{list-style:none;margin:0 0 3vh;padding:0;width:min(560px,86vw)}
+.promo-classifica li{display:flex;align-items:center;gap:12px;background:#fffaf2;border:4px solid var(--line);border-radius:16px;margin:8px 0;padding:.2em .6em;font-size:clamp(14px,min(2.4vw,3.8vh),32px);font-weight:800;opacity:0;transform:translateX(-80px);transition:all .45s cubic-bezier(.2,1.4,.4,1)}
+.promo-classifica li.su{opacity:1;transform:none}
+.promo-classifica li span{width:1.6em}.promo-classifica li b{margin-left:auto;color:var(--green)}
+.promo-classifica li.tu{background:var(--pink);color:#fff}.promo-classifica li.tu b{color:#fff}
+.promo-fine p{margin:0;background:#fffaf2;border:4px solid var(--line);border-radius:20px;padding:.5em 1em;font-size:clamp(16px,min(2.7vw,4.4vh),40px);font-weight:700;max-width:90vw}
+.promo-nero{position:absolute;inset:0;background:#000;opacity:0;transition:opacity 2.6s}
+.promo-nero.su{opacity:1}
+#btn-musica{right:12px;left:auto}
+#scr-sim:not(.intro) #btn-musica{display:none}
+
 /* ---------- grafica 3D (diorama) ---------- */
 .scene .diorama-tela{position:absolute;inset:0;width:100%;height:100%;display:block}
 .scene:not(.modo3d) .diorama-tela,.scene:not(.modo3d) .d3{display:none!important}
@@ -525,6 +565,7 @@ select,input{font-family:inherit}
         <button class="scene-btn d3" id="btn-pieno" aria-label="Schermo intero">⛶</button>
         <div class="didascalia hidden" id="didascalia" aria-live="polite"></div>
         <button class="btn d3" id="btn-salta-intro">Salta ⏭</button>
+        <button class="scene-btn d3" id="btn-musica" aria-label="Musica sì / no">🔊</button>
         <div class="gira d3"><b>📱</b>Gira il telefono in orizzontale<br><small>per vedere meglio la città</small></div>
       </div>
       <div class="speed-row">
@@ -605,6 +646,29 @@ select,input{font-family:inherit}
     <div class="radio-esito hidden" id="radio-esito"></div>
   </div>
 </div>
+<!-- la presentazione per l'open day (index.html?promo) -->
+<div class="promo hidden" id="promo">
+  <div class="promo-avvio" id="promo-avvio"><div class="ic">🍦🤖</div><h2>Presentazione per l'open day</h2>
+    <p>Circa 55 secondi, con la musica. Fai partire la registrazione dello schermo (meglio a schermo intero: F11), poi premi il pulsante.</p>
+    <button class="btn big pink" id="promo-via">▶ Avvia la presentazione</button></div>
+  <div class="promo-titolo" id="promo-titolo">
+    <div class="riga r1"><b>ITCG Einaudi</b>: <span class="sia">SIA</span>mo gli studenti che programmano il futuro.</div>
+    <div class="riga r2">Pensi di essere in grado di gestire una<br><span class="grande">GELATERIA AUTOMATICA!?</span></div>
+    <div class="riga r3">Ti aspetto all'open day 🎉</div>
+  </div>
+  <div class="promo-dida" id="promo-dida"></div>
+  <div class="promo-tag" id="promo-tag"></div>
+  <div class="promo-multa" id="promo-multa">🕵️ CONTROLLO ASL<br><b>MULTA 50 €</b></div>
+  <div class="promo-fine" id="promo-fine">
+    <h1>Chi vincerà?!</h1>
+    <ol class="promo-classifica">
+      <li><span>🥇</span>GelatoKing<b>+1.120 €</b></li><li><span>🥈</span>RoboCono<b>+1.045 €</b></li><li><span>🥉</span>Pistacchio99<b>+980 €</b></li>
+      <li><span>4°</span>SuperGelato<b>+910 €</b></li><li class="tu"><span>?</span>Tu?<b>…</b></li>
+    </ol>
+    <p>Ti aspetto all'<b>open day dell'ITCG Einaudi di Todi</b> per sfidarmi!</p>
+  </div>
+  <div class="promo-nero" id="promo-nero"></div>
+</div>
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 <img id="logo-scuola" src="@DATA:assets/logo-istituto.jpg@" alt="" hidden>
@@ -628,17 +692,17 @@ const CONFIG = {
   seed: 2026,               // meteo della sfida (uguale per tutti). Si può cambiare con ?seed=123 nell'indirizzo
   giorni: 30,               // durata della sfida (divisa in fasi: vedi "fasi" qui sotto)
   cassaIniziale: 500,       // € in cassa all'inizio
-  magazzinoIniziale: 40,    // kg di ingredienti all'inizio
-  magazzinoMax: 100,        // kg massimi nel congelatore (l'eccesso viene buttato)
+  magazzinoIniziale: 20,    // kg di ingredienti all'inizio (1 kg = 10 coni)
+  magazzinoMax: 50,         // kg massimi nel congelatore (l'eccesso viene buttato)
   coniPerKg: 10,            // 1 kg di ingredienti = 10 coni
   costoKg: 8,               // € per kg di ingredienti  (=> 0,80 € a cono)
-  costoConsegna: 10,        // € fissi per ogni riordino (il camion)
-  affittoGiorno: 60,        // € al giorno: affitto + bollette (costo fisso)
+  costoConsegna: 5,         // € fissi per ogni riordino (il camion)
+  affittoGiorno: 30,        // € al giorno: affitto + bollette (costo fisso)
   maxRegole: 6,
 
   // valori di base iniziali e limiti
   prezzoBase: 2.5, prezzoMin: 1.5, prezzoMax: 5, prezzoPasso: 0.5,
-  produzioneBase: 60, produzioneMin: 0, produzioneMax: 200, produzionePasso: 10,
+  produzioneBase: 30, produzioneMin: 0, produzioneMax: 150, produzionePasso: 5,
 
   // probabilità e temperature del meteo
   meteoProb: { sole: 0.5, nuvoloso: 0.3, pioggia: 0.2 },
@@ -646,10 +710,10 @@ const CONFIG = {
 
   // curva della domanda
   domanda: {
-    base: 40,            // clienti a 20 °C, col sole, prezzo di riferimento
-    perGrado: 6,         // clienti in più per ogni grado sopra i 20 °C
+    base: 20,            // clienti a 20 °C, col sole, prezzo di riferimento (ogni cliente compra UN cono)
+    perGrado: 3,         // clienti in più per ogni grado sopra i 20 °C
     tempRif: 20,
-    minimo: 5,
+    minimo: 3,
     meteo: { sole: 1.0, nuvoloso: 0.8, pioggia: 0.45 },
     weekend: 1.3,        // sabato e domenica +30%
     casualeMin: 0.85, casualeMax: 1.15,
@@ -664,7 +728,7 @@ const CONFIG = {
   // Chi scrive questo codice gioca SENZA gruppo: compare solo nella classifica globale.
   codiceSenzaGruppo: 'LIBERO',
 
-  sogliaSpreco: 10,         // "ieri ho buttato gelato" = almeno 10 coni avanzati
+  sogliaSpreco: 5,          // "ieri ho buttato gelato" = almeno 5 coni avanzati
   durataGiornoMs: 2600,     // grafica classica: animazione di un giorno (più la notte)
   durataNotteMs: 500,
   durataGiornoTutorialMs: 7000,
@@ -674,23 +738,23 @@ const CONFIG = {
   //   previsioni = si vede il meteo dei giorni della fase
   fasi: [
     { giorni:4, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
-      testo:'Il robot guarda il <b>meteo</b> e decide quanti coni fare. Attento: ora la stagione è iniziata e arriva <b>molta più gente</b> che nella prova! Col sole anche più di 80 clienti.',
-      esempio:{ c:'meteo', cv:'sole', a:'produci', av:100 } },
+      testo:'Il robot guarda il <b>meteo</b> e decide quanti coni fare. Attento: ora la stagione è iniziata e arriva <b>molta più gente</b> che nella prova! Col sole anche più di 40 clienti.',
+      esempio:{ c:'meteo', cv:'sole', a:'produci', av:50 } },
     { giorni:4, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
       testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
-      esempio:{ c:'giorno', cv:'weekend', a:'piu', av:30 } },
+      esempio:{ c:'giorno', cv:'weekend', a:'piu', av:15 } },
     { giorni:3, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
       testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
-      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:140 } },
+      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:70 } },
     { giorni:4, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'💶 Il prezzo',
       testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50 €). Più caro = più guadagno a cono, ma meno clienti!',
       esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
     { giorni:4, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
       testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
-      esempio:{ c:'magazzino', op:'<', cv:30, a:'riordina', av:40 } },
+      esempio:{ c:'magazzino', op:'<', cv:15, a:'riordina', av:20 } },
     { giorni:3, cond:['ieri'], azioni:[], auto:false, previsioni:true, titolo:'🍨 Ieri',
       testo:'Novità: il robot si ricorda di <b>ieri</b>. Se ieri il gelato è finito, oggi produci di più; se l\'hai buttato, produci meno.',
-      esempio:{ c:'ieri', cv:'finito', a:'piu', av:20 } },
+      esempio:{ c:'ieri', cv:'finito', a:'piu', av:10 } },
     { giorni:8, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
       testo:'Ultima fase, 8 giorni: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
   ],
@@ -700,17 +764,17 @@ const CONFIG = {
   eventi: {
     gara:        { annuncio:8,  giorno:13, molt:1.6 },                          // 🏅 Educazione fisica: più clienti
     concorrenza: { annuncio:14, da:17, prezzo:2.5, sensibilita:0.6 },           // 🆚 Economia politica: oltre 2,50 € si perdono clienti
-    turisti:     { annuncio:15, giorni:[15,18,21,26,29], extra:35 },            // 🚌 Inglese e Francese: il pullman dei turisti
-    asl:         { annuncio:18, giorno:24, scadenza:5, multa:100 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
+    turisti:     { annuncio:15, giorni:[15,18,21,26,29], extra:18 },            // 🚌 Inglese e Francese: il pullman dei turisti
+    asl:         { annuncio:18, giorno:24, scadenza:5, multa:50 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
   },
 
   // tutorial: 3 giorni con meteo noto e un numero fisso di clienti (niente affitto: si impara solo a usare le regole)
   tutorial: {
-    magazzino: 40, cassa: 500,
+    magazzino: 20, cassa: 500,
     giorni: [
-      { meteo: 'sole',     temp: 31, clienti: 20, dow: 0 },
-      { meteo: 'pioggia',  temp: 19, clienti: 8,  dow: 1 },
-      { meteo: 'nuvoloso', temp: 25, clienti: 15, dow: 2 }
+      { meteo: 'sole',     temp: 31, clienti: 10, dow: 0 },
+      { meteo: 'pioggia',  temp: 19, clienti: 4,  dow: 1 },
+      { meteo: 'nuvoloso', temp: 25, clienti: 8,  dow: 2 }
     ]
   }
 };
@@ -747,25 +811,25 @@ const GIORNI_SETT = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const COND = {
   temp:      { label:'🌡️ temperatura', ops:['>','<'], values:range(15,40,1), fmt:v=>v+' °C', def:{op:'>',cv:30} },
   meteo:     { label:'☁️ meteo è', values:['sole','nuvoloso','pioggia'], fmt:v=>METEO[v].ic+' '+METEO[v].nome, def:{cv:'pioggia'} },
-  magazzino: { label:'📦 magazzino', ops:['<','>'], values:range(0,100,5), fmt:v=>v+' kg', def:{op:'<',cv:30} },
+  magazzino: { label:'📦 magazzino', ops:['<','>'], values:range(0,50,5), fmt:v=>v+' kg', def:{op:'<',cv:15} },
   giorno:    { label:'📅 oggi è', values:['weekend','feriale'], fmt:v=>v==='weekend'?'weekend':'giorno feriale', def:{cv:'weekend'} },
   ieri:      { label:'🍨 ieri', values:['finito','buttato'], fmt:v=>v==='finito'?'ho finito il gelato':'ho buttato gelato', def:{cv:'finito'} },
   gara:      { label:'🏅 oggi', values:['gara'], fmt:()=>"c'è la gara", def:{cv:'gara'} },
   turisti:   { label:'🚌 oggi', values:['turisti'], fmt:()=>'arrivano i turisti', def:{cv:'turisti'} }
 };
 const AZIONI = {
-  produci:  { label:'🍦 produci', values:range(0,200,10), fmt:v=>v+' coni', def:100 },
-  piu:      { label:'➕ produci in più', values:range(10,100,10), fmt:v=>v+' coni', def:20 },
-  meno:     { label:'➖ produci in meno', values:range(10,100,10), fmt:v=>v+' coni', def:20 },
+  produci:  { label:'🍦 produci', values:range(0,150,5), fmt:v=>v+' coni', def:50 },
+  piu:      { label:'➕ produci in più', values:range(5,100,5), fmt:v=>v+' coni', def:10 },
+  meno:     { label:'➖ produci in meno', values:range(5,100,5), fmt:v=>v+' coni', def:10 },
   prezzo:   { label:'💶 metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>eur(v,2), def:3 },
-  riordina: { label:'🚚 riordina', values:range(10,100,10), fmt:v=>v+' kg', def:60 }
+  riordina: { label:'🚚 riordina', values:range(5,50,5), fmt:v=>v+' kg', def:20 }
 };
 function nuovaRegola(){
   // la prima condizione disponibile, e per il meteo il primo tempo che non ha ancora una regola
   const D = blocchiDisponibili(), c = D.cond.includes('meteo') ? 'meteo' : D.cond[0];
   if(c === 'meteo'){ const coperti = S.prog.regole.filter(r=>r.c==='meteo').map(r=>r.cv); const cv = ['sole','nuvoloso','pioggia'].find(m=>!coperti.includes(m)) || 'sole';
-    return { c:'meteo', op:'>', cv, a:'produci', av:(S.mode==='tutorial' ? {sole:30,nuvoloso:20,pioggia:10} : {sole:100,nuvoloso:60,pioggia:20})[cv] }; }
-  return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'produci', av:100 };
+    return { c:'meteo', op:'>', cv, a:'produci', av:(S.mode==='tutorial' ? {sole:15,nuvoloso:10,pioggia:5} : {sole:50,nuvoloso:30,pioggia:10})[cv] }; }
+  return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'produci', av:50 };
 }
 function testoRegola(r){
   const C = COND[r.c], A = AZIONI[r.a];
@@ -944,7 +1008,7 @@ function analizza(sim){
     out.push({ peso: persi*(d.prezzo-costoCono) + 1000, ic:'📦', tema:'scorte',
       t:`Giorno ${d.n}: ingredienti finiti! Hai potuto fare solo ${d.prodotti} coni.`,
       x:`Con il magazzino vuoto hai perso ${persi} clienti in ${vuoti.length} ${vuoti.length===1?'giorno':'giorni'}.`,
-      fix:'🔧 Prova: SE 📦 magazzino < 30 kg ALLORA 🚚 riordina 40 kg (il camion arriva il giorno dopo!)' });
+      fix:'🔧 Prova: SE 📦 magazzino < 15 kg ALLORA 🚚 riordina 20 kg (il camion arriva il giorno dopo!)' });
   }
   // gelato finito (non per colpa del magazzino)
   const esauriti = G.filter(d => d.persi > 0 && !d.limitato);
@@ -959,7 +1023,7 @@ function analizza(sim){
       x:`In tutto ${persi} clienti sono andati via senza gelato.`, fix });
   }
   // spreco
-  if(T.avanzati >= 25){
+  if(T.avanzati >= 12){
     const d = G.reduce((a,b)=> b.avanzati > a.avanzati ? b : a);
     let fix = '🔧 Prova a produrre meno quando fa fresco.';
     if(d.meteo==='pioggia') fix = '🔧 Con la pioggia arrivano pochi clienti: prova SE ☁️ meteo è 🌧️ pioggia ALLORA 🍦 produci meno coni.';
@@ -988,10 +1052,10 @@ function analizza(sim){
     out.push({ peso: T.cMulta + T.scaduti*CONFIG.costoKg + 200, ic:'⚖️', tema:'legge',
       t:`Controllo ASL: ${round1(T.scaduti)} kg di ingredienti scaduti e una multa di ${eur(T.cMulta)}!`,
       x:`Gli ingredienti erano fermi in magazzino da ${CONFIG.eventi.asl.scadenza} giorni o più: il magazzino era troppo pieno.`,
-      fix:'🔧 Riordina meno kg alla volta, così gli ingredienti restano freschi: per esempio SE 📦 magazzino < 30 kg ALLORA 🚚 riordina 30 kg.' });
+      fix:'🔧 Riordina meno kg alla volta, così gli ingredienti restano freschi: per esempio SE 📦 magazzino < 15 kg ALLORA 🚚 riordina 15 kg.' });
   }
   // 🆚 la concorrenza
-  if(T.rivale >= 20){
+  if(T.rivale >= 10){
     const d = G.filter(x=>x.rivale>0).reduce((a,b)=> b.rivale > a.rivale ? b : a);
     out.push({ peso: T.rivale*(d.prezzo-costoCono), ic:'🆚', tema:'concorrenza',
       t:`${T.rivale} clienti sono andati alla Gelateria Rivale!`,
@@ -1000,13 +1064,13 @@ function analizza(sim){
   }
   // 🏅 la gara e 🚌 i turisti
   const gara = G.find(d=>d.gara);
-  if(gara && gara.persi >= 10) out.push({ peso: gara.persi*(gara.prezzo-costoCono) + 50, ic:'🏅', tema:'sport',
+  if(gara && gara.persi >= 5) out.push({ peso: gara.persi*(gara.prezzo-costoCono) + 50, ic:'🏅', tema:'sport',
     t:`Giorno della gara: ${gara.persi} clienti sono rimasti senza gelato!`, x:`Con la gara a Todi sono arrivati ${gara.clienti} clienti.`,
-    fix:'🔧 Prova: SE 🏅 oggi c\'è la gara ALLORA ➕ produci in più 100 coni.' });
+    fix:'🔧 Prova: SE 🏅 oggi c\'è la gara ALLORA ➕ produci in più 50 coni.' });
   const tur = G.filter(d=>d.turisti), persiTur = tur.reduce((s,d)=>s+Math.min(d.persi, d.turistiN),0);
-  if(persiTur >= 15) out.push({ peso: persiTur*(2.5-costoCono) + 30, ic:'🚌', tema:'lingue',
+  if(persiTur >= 8) out.push({ peso: persiTur*(2.5-costoCono) + 30, ic:'🚌', tema:'lingue',
     t:`Nei giorni dei pullman ${persiTur} turisti sono rimasti senza gelato!`, x:'I turisti inglesi e francesi sono clienti in più.',
-    fix:'🔧 Prova: SE 🚌 oggi arrivano i turisti ALLORA ➕ produci in più 30 coni.' });
+    fix:'🔧 Prova: SE 🚌 oggi arrivano i turisti ALLORA ➕ produci in più 15 coni.' });
   // troppe consegne
   if(T.ordini >= 7){
     out.push({ peso: T.cConsegna, ic:'🚚', tema:'scorte', t:`Hai chiamato il camion ${T.ordini} volte: ${eur(T.cConsegna)} di consegne!`,
@@ -1379,23 +1443,23 @@ $('#btn-run').onclick = async ()=>{
 // il tutorial: 3 giorni, una regola sul meteo al giorno. Il magazzino lo riempie il fornitore da solo.
 // Il primo passo del gestionale è diviso in tre parti: A guarda il meteo · B decidi cosa fare · C insegna al robot
 const TUT = [
-  { target:{ c:'meteo', cv:'sole', a:'produci', av:30 },
+  { target:{ c:'meteo', cv:'sole', a:'produci', av:15 },
     decidi:`Se domani c'è il ☀️ <b>sole</b>: arriveranno <b>tantissimi</b> clienti! Bisogna dire al robot cosa fare.`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='sole');
       if(!ok) return 'Manca la regola SE ☁️ meteo è ☀️ sole. Premi ➕ Aggiungi regola (o ✨ Aiutami).';
-      if(d.obiettivo < 20) return 'La regola c\'è, ma i coni sono pochi: prova 30 coni!';
+      if(d.obiettivo < 10) return 'La regola c\'è, ma i coni sono pochi: prova 15 coni!';
       return null; } },
-  { target:{ c:'meteo', cv:'pioggia', a:'produci', av:10 },
+  { target:{ c:'meteo', cv:'pioggia', a:'produci', av:5 },
     decidi:`Se domani 🌧️ <b>piove</b>: verranno <b>pochi</b> clienti. Se il robot fa troppi coni, quelli avanzati si buttano!`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='pioggia');
       if(!ok) return 'Manca la regola SE ☁️ meteo è 🌧️ pioggia.';
-      if(d.avanzati > 6) return 'La regola c\'è, ma produci troppo: con la pioggia arrivano pochi clienti. Prova 10 coni.';
+      if(d.avanzati > 3) return 'La regola c\'è, ma produci troppo: con la pioggia arrivano pochi clienti. Prova 5 coni.';
       return null; } },
-  { target:{ c:'meteo', cv:'nuvoloso', a:'produci', av:20 },
+  { target:{ c:'meteo', cv:'nuvoloso', a:'produci', av:10 },
     decidi:`Se domani è ⛅ <b>nuvoloso</b>: arriverà una via di mezzo di clienti. Manca solo la regola per questo tempo!`,
     check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='nuvoloso');
       if(!ok) return 'Manca la regola SE ☁️ meteo è ⛅ nuvoloso.';
-      if(d.persi > 5 || d.avanzati > 10) return 'Quasi! Con le nuvole arriva una via di mezzo: prova 20 coni.';
+      if(d.persi > 3 || d.avanzati > 5) return 'Quasi! Con le nuvole arriva una via di mezzo: prova 10 coni.';
       return null; } }
 ];
 function bloccoTarget(r){
@@ -1415,7 +1479,8 @@ async function iniziaTutorial(){
     <p>Tu gli scrivi le <b>regole</b>. Facciamo una prova di <b>3 giorni</b> insieme!</p>`, [{t:'Iniziamo! ▶'}]);
   await modal(`<div class="ic">🤖</div><h3>Le regole</h3>
     <p>Una regola dice: <b>SE</b> succede qualcosa, <b>ALLORA</b> il robot fa qualcosa.</p>
-    <p>Per esempio: SE c'è il sole ALLORA produci 30 coni.</p>
+    <p>Per esempio: SE c'è il sole ALLORA produci 15 coni.</p>
+    <p>Ogni cliente compra <b>un cono</b>.</p>
     <p>Senza regole il robot <b>non fa niente</b>!</p>`, [{t:'Ho capito! ▶'}]);
   renderRegole();
   $('#btn-meteo').classList.add('pulse');
@@ -1670,7 +1735,7 @@ async function animaGiorno(d, opz){
   $('#s-cones').textContent = '🍦 ' + d.prodotti;
   if(d.ordine > 0){ truck.attivo = true; truck.kg = d.ordine; setTruck(0); }
   // apertura: clienti dalle 9 alle 20
-  const nVis = clamp(Math.round(d.clienti/7), d.clienti>0?2:0, 14);
+  const nVis = d.clienti;                            // ogni cliente che si vede compra UN cono
   const soglie = Array.from({length:nVis}, (_,k)=>(k+0.5)/nVis);
   const quotaTur = d.clienti ? (d.turistiN||0) / d.clienti : 0;
   let spawned = 0;
@@ -1709,7 +1774,7 @@ async function animaGiorno(d, opz){
    ===================================================================== */
 // durate delle scene in 3D (ms a velocità 1×), [tutorial, sfida]: si aggiungono alla giornata
 const GRAFICA3D = {
-  giornoMs: [16000, 5500],       // le ore di apertura (9-20): qui arrivano i clienti
+  giornoMs: [16000, 6500],       // le ore di apertura (9-20): qui arrivano i clienti
   aperturaMs: [6500, 2600],      // il gelataio apre, porta dentro i pacchi, porta fuori il bancone
   chiusuraMs: [3200, 1400],      // la sera porta dentro il bancone e chiude
   notteMs: [2000, 900],          // la notte senza consegne
@@ -1748,6 +1813,8 @@ async function animaGiorno3D(d, opz){
   $('#s-day').textContent = $('#f-day').textContent = `📅 Giorno ${d.n}${opz.tutorial?'':'/'+opz.tuttiGiorni.length} · ${GIORNI_SETT[d.dow]}`;
   Diorama.setMeteo(d.meteo); Diorama.nuovoGiorno();
   Diorama.rivale(!!d.concorrenza);                   // 🆚 il chiosco della concorrenza
+  Diorama.corsa(!!d.gara);                           // 🏅 la corsa dei Giochi studenteschi
+  Diorama.ispettore(!!d.asl);                        // 🕵️ l'ispettore dell'ASL
   if(d.turisti) Diorama.autobus(true);               // 🚌 il pullman arriva la mattina e si ferma in cima alla strada
   $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${opz.vedi.temp ? d.temp+' °C' : METEO[d.meteo].nome}</span>`;
   $('#scene').classList.toggle('senza-magazzino', !opz.vedi.magazzino);
@@ -1771,7 +1838,7 @@ async function animaGiorno3D(d, opz){
   setStock(d.stockFine);
   if(d.ordine > 0){ truck.attivo = true; truck.kg = d.ordine; setTruck(0); }
   // aperto: clienti dalle 9 alle 20 (alcuni sono turisti; chi va dalla concorrenza si ferma al chiosco)
-  const nVis = clamp(Math.round(d.clienti/7), d.clienti>0?2:0, 14);
+  const nVis = d.clienti;                            // ogni cliente che si vede compra UN cono
   const soglie = Array.from({length:nVis}, (_,i)=>(i+0.5)/nVis);
   const quotaTur = d.clienti ? (d.turistiN||0) / d.clienti : 0, nRiv = clamp(Math.round((d.rivale||0)/7), d.rivale>0?1:0, 6);
   const turista = i => Math.floor((i+1)*quotaTur + 0.5) > Math.floor(i*quotaTur + 0.5) ? (i % 2 ? 'fr' : 'gb') : null;
@@ -1797,6 +1864,7 @@ async function animaGiorno3D(d, opz){
   setCash(d.cassaFine);
   const durC = GRAFICA3D.chiusuraMs[k];
   if(d.turisti) Diorama.autobus(false);              // il pullman riparte
+  Diorama.corsa(false); Diorama.ispettore(false);
   await Promise.all([ aspetta3D(Diorama.chiudi(durC), durC), tween(durC, p=>setClock(20 + 0.5*p)) ]);
   // notte: se c'è un ordine il furgone parte dal fornitore e scarica i pacchi sul pallet prima dell'alba
   const nP = d.ordine > 0 ? Math.max(1, pacchiDi(Math.min(CONFIG.magazzinoMax, d.stockFine + d.ordine)) - pacchiDi(d.stockFine)) : 0;
@@ -1863,6 +1931,7 @@ async function introPanoramica(){
   const cam = (x, y, zoom, extra) => Diorama.regia({ x, y, h:1.4, zoom, lento:true, ...extra });
   $('#scr-sim').classList.add('intro'); show('sim');
   $('#btn-salta-intro').onclick = () => { salta.si = true; };
+  Musica.avvia(b => b < 2 ? 'intro' : b % 8 >= 6 ? 'pausa' : b % 16 >= 8 ? 'forte' : 'pieno', Infinity, 0.4);   // la musica della panoramica
   Diorama.setSpeed(1); Diorama.svuota(); Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setMeteo('sole');
   Diorama.setFinito(false); Diorama.setConi(0, 12); Diorama.setPacchi(8); Diorama.setOra(8.2);
   try {
@@ -1913,9 +1982,169 @@ async function introPanoramica(){
     // tutto come prima, per il tutorial
     Diorama.regia(null); Diorama.setInquadratura('auto'); Diorama.camion(false); Diorama.svuota(); Diorama.chiudiSubito();
     Diorama.setMeteo('sole'); Diorama.setFinito(false); Diorama.setOra(8);
-    $('#didascalia').classList.add('hidden'); $('#scr-sim').classList.remove('intro');
+    $('#didascalia').classList.add('hidden'); $('#scr-sim').classList.remove('intro'); Musica.ferma(1200);
   }
 }
+
+/* =====================================================================
+   MUSICA: una base elettronica "di sfida" generata dal browser (Web Audio), nessun file audio.
+   La minore: La-Fa-Do-Sol, 132 battiti al minuto. Ogni battuta ha una "sezione":
+   intro · pieno · forte · pausa · colpo · fine · silenzio
+   ===================================================================== */
+const Musica = (() => {
+  let ctx = null, master = null, timer = null, prossima = 0, battuta = 0, t0 = 0, rumore = null, volume = 0.5, muto = false;
+  const B = 60 / 132, BAR = 4 * B;
+  const ACCORDI = [[57,60,64],[53,57,60],[48,52,55],[55,59,62]], BASSI = [45,41,48,43], RIFF = [0,12,7,12,3,12,7,10];
+  const f = m => 440 * Math.pow(2, (m - 69) / 12);
+  function init(){
+    if(ctx) return true;
+    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return false; }
+    master = ctx.createGain(); master.gain.value = 0.0001;
+    const comp = ctx.createDynamicsCompressor(); master.connect(comp); comp.connect(ctx.destination);
+    rumore = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = rumore.getChannelData(0); for(let i=0;i<d.length;i++) d[i] = Math.random()*2 - 1;
+    return true;
+  }
+  const inv = (t, g0, a, dec) => { const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(g0, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); g.connect(master); return g; };
+  function kick(t, v = 1){ const o = ctx.createOscillator(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); o.connect(inv(t, 0.9*v, 0.003, 0.28)); o.start(t); o.stop(t + 0.33); }
+  function noise(t, dur, g0, tipo, freq, q = 1){ const s = ctx.createBufferSource(); s.buffer = rumore; const fl = ctx.createBiquadFilter(); fl.type = tipo; fl.frequency.value = freq; fl.Q.value = q; s.connect(fl); fl.connect(inv(t, g0, 0.002, dur)); s.start(t, Math.random()*0.5); s.stop(t + dur + 0.05); }
+  function snare(t, v = 1){ noise(t, 0.16, 0.45*v, 'bandpass', 1800, 0.8); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(140, t + 0.08); o.connect(inv(t, 0.25*v, 0.002, 0.1)); o.start(t); o.stop(t + 0.15); }
+  const hat = (t, v = 1) => noise(t, 0.04, 0.12*v, 'highpass', 8000);
+  function tono(t, m, dur, tipo, g0, cut){ const o = ctx.createOscillator(); o.type = tipo; o.frequency.value = f(m); let n = o; if(cut){ const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = cut; fl.Q.value = 4; o.connect(fl); n = fl; } n.connect(inv(t, g0, 0.008, dur)); o.start(t); o.stop(t + dur + 0.05); }
+  function pad(t, acc, dur, g0){
+    acc.forEach(m => [-7, 7].forEach(det => {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f(m); o.detune.value = det;
+      const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 1000; const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(g0, t + 0.25); g.gain.setValueAtTime(g0, t + dur - 0.25); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      o.connect(fl); fl.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+    }));
+  }
+  function riser(t, dur){
+    const s = ctx.createBufferSource(); s.buffer = rumore; s.loop = true; const fl = ctx.createBiquadFilter(); fl.type = 'bandpass'; fl.Q.value = 2;
+    fl.frequency.setValueAtTime(400, t); fl.frequency.exponentialRampToValueAtTime(7000, t + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + dur); g.gain.setValueAtTime(0.0001, t + dur + 0.01);
+    s.connect(fl); fl.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.05);
+  }
+  function suonaBattuta(t, n, sez){
+    const k = n % 4, acc = ACCORDI[k], bs = BASSI[k];
+    if(sez === 'silenzio') return;
+    if(sez === 'intro' || sez === 'pausa' || sez === 'fine') pad(t, acc, BAR, 0.045);
+    if(sez === 'intro'){ for(let i=0;i<4;i++) kick(t + i*B, 0.55); for(let i=0;i<8;i++) hat(t + i*B/2, 0.5); if(n % 4 === 3) riser(t, BAR); }
+    if(sez === 'pausa'){ for(let i=0;i<8;i++) hat(t + i*B/2, 0.35); tono(t, bs, BAR*0.9, 'triangle', 0.25); if(n % 2 === 1) riser(t, BAR); }
+    if(sez === 'pieno' || sez === 'forte'){
+      for(let i=0;i<4;i++){ kick(t + i*B); if(i % 2) snare(t + i*B); }
+      for(let i=0;i<8;i++){ hat(t + i*B/2, i % 2 ? 1 : 0.6); tono(t + i*B/2, bs + (i % 2 ? 12 : 0), B/2*0.8, 'sawtooth', 0.22, sez === 'forte' ? 1300 : 800); }
+      for(let i=0;i<8;i++) tono(t + i*B/2, acc[0] + 12 + (sez === 'forte' ? 12 : 0) + RIFF[i], B/2*0.7, 'square', sez === 'forte' ? 0.05 : 0.06, 2600);
+      if(sez === 'forte'){ pad(t, acc.map(m => m + 12), BAR, 0.02); if(n % 4 === 3) for(let i=0;i<4;i++) snare(t + 3*B + i*B/4, 0.6); }
+    }
+    if(sez === 'colpo'){ kick(t, 1.2); noise(t, 1.4, 0.5, 'lowpass', 3000); pad(t, acc, BAR, 0.07); tono(t, bs - 12, BAR, 'sawtooth', 0.3, 400); }
+  }
+  return {
+    BAR,
+    // sezione(n) = la sezione della battuta n; battute = quante (poi si ferma)
+    avvia(sezione, battute = Infinity, vol = 0.5){
+      if(!init()) return 0;
+      ctx.resume(); if(timer) clearInterval(timer);
+      volume = vol; battuta = 0; prossima = t0 = ctx.currentTime + 0.12;
+      master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(muto ? 0.0001 : volume, ctx.currentTime);
+      const pianifica = () => { while(prossima < ctx.currentTime + 0.6 && battuta < battute){ suonaBattuta(prossima, battuta, sezione(battuta)); prossima += BAR; battuta++; } };
+      pianifica(); timer = setInterval(pianifica, 100);
+      return t0;
+    },
+    ferma(ms = 800){
+      if(timer){ clearInterval(timer); timer = null; }
+      if(!ctx) return; const n = ctx.currentTime;
+      master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), n); master.gain.linearRampToValueAtTime(0.0001, n + Math.max(0.02, ms/1000));
+    },
+    ora(){ return ctx ? ctx.currentTime - t0 : 0; },
+    get attiva(){ return !!timer; },
+    get muto(){ return muto; },
+    set muto(v){ muto = !!v; if(ctx){ master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(muto ? 0.0001 : volume, ctx.currentTime); } }
+  };
+})();
+$('#btn-musica').onclick = () => { Musica.muto = !Musica.muto; $('#btn-musica').textContent = Musica.muto ? '🔇' : '🔊'; };
+
+/* =====================================================================
+   PRESENTAZIONE PER L'OPEN DAY: index.html?promo
+   Circa 55 secondi a tempo di musica: titolo, la città, il gelataio, i clienti, la notte col robot,
+   il meteo, gli eventi delle materie, la classifica, dissolvenza. Si registra lo schermo e diventa un video.
+   ===================================================================== */
+async function avviaPromo(){
+  document.body.classList.add('promo');
+  const P = $('#promo'); P.classList.remove('hidden');
+  await new Promise(r => { $('#promo-via').onclick = r; });
+  $('#promo-avvio').classList.add('hidden'); document.body.classList.add('senza-cursore');
+  show('sim'); $('#scr-sim').classList.add('intro');
+  impostaGrafica('3d'); await prepara3D();
+  if(!G3.pronto){ $('#promo-avvio').classList.remove('hidden'); $('#promo-avvio').innerHTML = '<p>Questo computer non supporta la grafica 3D.</p>'; return; }
+  Diorama.impostaGrafica({ auto:true, qualita:'alta' }); Diorama.setSpeed(1);
+  Diorama.svuota(); Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setMeteo('sole'); Diorama.setFinito(false);
+  Diorama.setPacchi(8); Diorama.setConi(9, 9); Diorama.setOra(8.2); Diorama.rivale(false);
+  const BAR = Musica.BAR, SEZ = b => b < 4 ? 'intro' : b < 13 ? 'pieno' : b < 15 ? 'pausa' : b < 25 ? 'forte' : b === 25 ? 'colpo' : b < 28 ? 'forte' : 'fine';
+  Musica.avvia(SEZ, 31, 0.55);
+  const frame = () => new Promise(r => requestAnimationFrame(r));
+  const fino = async bar => { while(Musica.ora() < bar * BAR) await frame(); };
+  // fa scorrere l'ora da a fino alla battuta b
+  const ore = async (da, a, finoBar, ogni) => { const s0 = Musica.ora(), s1 = finoBar * BAR; while(Musica.ora() < s1){ const p = clamp((Musica.ora() - s0) / (s1 - s0), 0, 1); Diorama.setOra(da + (a - da) * p); if(ogni) ogni(p); await frame(); } Diorama.setOra(a); };
+  const cam = (x, y, zoom, extra) => Diorama.regia({ x, y, h:1.4, zoom, ...extra });   // spostamenti rapidi, a tempo di musica
+  const dida = html => { const d = $('#promo-dida'); if(!html){ d.classList.remove('su'); return; } d.innerHTML = html; d.classList.remove('su'); void d.offsetWidth; d.classList.add('su'); };
+  const tag = html => { const d = $('#promo-tag'); if(!html){ d.classList.remove('su'); return; } d.innerHTML = html; d.classList.remove('su'); void d.offsetWidth; d.classList.add('su'); };
+  // 1 · il titolo (4 battute)
+  cam(9, 4.5, 1.0, { az:-18 });
+  const T = $('#promo-titolo'); T.classList.add('su');
+  [...T.querySelectorAll('.riga')].forEach((r, i) => setTimeout(() => r.classList.add('su'), [200, 2900, 5200][i]));
+  Diorama.setOra(8.2);
+  await fino(3.7); T.classList.add('via');
+  // 2 · la città si sveglia: la scuola, poi la Consolazione (battute 4-7)
+  await fino(4); T.classList.add('hidden');
+  cam(8.8, 8.5, 0.45);
+  await ore(8.4, 9.6, 5.8);
+  cam(4.4, 2.6, 0.5, { h:3.2 });
+  await ore(9.6, 10.0, 7);
+  // 3 · il gelataio apre (battute 7-9)
+  cam(14.6, 8, 0.42);
+  const apre = Diorama.apri(4, BAR * 1.8 * 1000);
+  await ore(10, 10.4, 9); await Promise.race([apre, fino(9.4)]);   // mai in ritardo sulla musica
+  // 4 · i clienti: felici, poi gelato finito e arrabbiati (battute 9-13)
+  dida('📈 Studia il <b>mercato</b> e come <b>fare impresa</b>');
+  cam(12.5, 8.3, 0.55);
+  let coni = 9; Diorama.setConi(coni, 9);
+  for(let i = 0; i < 12; i++) setTimeout(() => Diorama.cliente(i < 9, 3600, () => { if(i < 9){ coni--; Diorama.setConi(coni); } else Diorama.setFinito(true); }), i * 520);
+  await ore(10.5, 19.5, 13);
+  // 5 · la notte: il gelataio chiude, il robot prepara i coni (battute 13-15)
+  dida(''); Diorama.chiudi(1400);
+  cam(14.2, 8.1, 0.3);
+  await ore(20.0, 23.5, 14.2);
+  dida('🌙 Di notte il <b>robot</b> prepara i coni… come lo hai programmato tu!');
+  await ore(23.5, 27, 15);
+  // 6 · un nuovo giorno: cambia il meteo (battute 15-17)
+  Diorama.svuota(); Diorama.setFinito(false); Diorama.setConi(9, 9); Diorama.setMeteo('pioggia');
+  cam(9, 4.5, 0.95); dida('🌦️ Dovrai scegliere <b>quanto produrre</b> in base al <b>meteo</b>!');
+  await ore(8.2, 9.5, 16.5);
+  Diorama.setMeteo('sole'); Diorama.apri(2, 900);
+  await ore(9.5, 10, 17);
+  // 7 · gli eventi delle materie, due battute ciascuno (battute 17-25)
+  dida(''); Diorama.corsa(true); cam(2.4, 5.4, 0.5); tag('🏃 Potenziamento sportivo');
+  await ore(10, 11, 19);
+  Diorama.corsa(false); Diorama.rivale(true); cam(5.6, 8.1, 0.4); tag('📈 Economia Politica');
+  for(let i = 0; i < 4; i++) setTimeout(() => Diorama.cliente(true, 3000, null, { rivale:true }), 300 + i * 650);
+  await ore(11, 12, 21);
+  Diorama.autobus(true); cam(5.2, 9.3, 0.45); tag(`🗣️ Inglese e Francese`);
+  for(let i = 0; i < 6; i++) setTimeout(() => Diorama.cliente(true, 5200, null, { turista: i % 2 ? 'fr' : 'gb' }), 1300 + i * 380);
+  await ore(12, 13, 23);
+  Diorama.ispettore(true); cam(16.6, 8.2, 0.38); tag('⚖️ Diritto');
+  setTimeout(() => $('#promo-multa').classList.add('su'), BAR * 1000 * 1.1);
+  await ore(13, 14, 25);
+  // 8 · la classifica: chi vincerà? (battute 25-29)
+  tag(''); $('#promo-multa').classList.remove('su'); Diorama.ispettore(false); Diorama.autobus(false);
+  cam(9, 4.5, 1.0, { az:-22 }); document.body.classList.add('promo-sfoca');
+  $('#promo-fine').classList.add('su');
+  [...$('#promo-fine').querySelectorAll('li')].forEach((li, i) => setTimeout(() => li.classList.add('su'), 500 + i * 260));
+  await ore(14, 17, 27.5, p => Diorama.regia({ x:9, y:4.5, h:1.4, zoom:1.0, az:-22 + 40 * p, lento:true }));
+  await fino(28.6);
+  // 9 · dissolvenza
+  $('#promo-nero').classList.add('su'); Musica.ferma(BAR * 1000 * 1.6);
+}
+if(params.has('promo')) setTimeout(avviaPromo, 0);
 
 // ---- il menu della grafica (ingranaggio ⚙️ in alto a destra) ----
 function aggiornaMenuGrafica(){
@@ -2235,6 +2464,7 @@ async function riprendiPartita(x){
   show('program'); renderTutorial(); renderRegole();
 }
 (async ()=>{
+  if(params.has('promo')) return;                    // la presentazione: niente partite da riprendere
   const x = leggiSessione(); if(!x) return;
   const dove = (datiGiocatore(x.nick) || {}).tutorialFatto ? 'la tua sfida, con le tue regole' : `il tutorial, dal giorno ${clamp((x.tutGiorno||0)+1, 1, 3)}`;
   const scelta = await modal(`<div class="ic">👋</div><h3>Bentornato, ${esc(x.nick)}!</h3>

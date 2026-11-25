@@ -5269,7 +5269,7 @@ window.Diorama = (() => {
     meteo: 'sole', meteoK: { pioggia: 0, nuvole: 0 }, ora: 10, bagnato: 0, sboccio: 0.3,
     camion: { attivo: false, kg: 0, ore: 0 }, pila: 0, portaOgni: 4, coni: 0, coniMax: 12, finito: false, venduto: false, stock: 40, stockMax: 100,
     speed: 1, qualita: 'alta', auto: true, manuale: null, inquadratura: 'auto', negozioAuto: true, pausa: false,
-    bus: { modo: null, t0: 0 }, rivale: { vis: false, t0: -99 },
+    bus: { modo: null, t0: 0 }, rivale: { vis: false, t0: -99 }, corsa: { vis: false, t0: -99 }, ispettore: { vis: false, t0: -99 },
   };
   let R, scena, camera, rt, post, quad, tela, contenitore, avviato = false;
   const O = {};                                                     // tutto ciò che si anima
@@ -5577,7 +5577,7 @@ window.Diorama = (() => {
     // i clienti, i ragazzi della scuola, il gelataio-mascotte
     const colori = [PAL.ardesia, PAL.senape, PAL.foglie[1], '#e8dcc8', PAL.cartone, '#8a7fb0', '#5f8fae'];
     const capelli = [PAL.tronco, '#3a2c25', '#d9b26a', null, '#5a3b2c', '#2b2b33', null];
-    O.clienti = Array.from({ length: 14 }, (_, i) => { const p = piolo(L, colori[i % colori.length], capelli[(i + 2) % capelli.length]); p.visible = false; p.userData.cono = cono(p.userData.corpo); p.userData.cono.position.set(0.16, 0.5, 0.08); return p; });
+    O.clienti = Array.from({ length: 40 }, (_, i) => { const p = piolo(L, colori[i % colori.length], capelli[(i + 2) % capelli.length]); p.visible = false; p.userData.cono = cono(p.userData.corpo); p.userData.cono.position.set(0.16, 0.5, 0.08); return p; });
     O.ragazzi = Array.from({ length: 8 }, (_, i) => {
       const p = piolo(L, [PAL.ardesia, '#5f8fae', PAL.senape, '#8a7fb0'][i % 4], capelli[i % capelli.length] || PAL.tronco, 0.95), col = [PAL.accento, PAL.foglie[0], PAL.senape, '#5f8fae'][(i + 1) % 4];
       // lo zaino sulle spalle, con le bretelle che passano davanti
@@ -5591,6 +5591,25 @@ window.Diorama = (() => {
     O.matHello = new THREE.SpriteMaterial({ map: fumetto('gb'), depthTest: false, depthWrite: false, fog: false });
     O.matBonjour = new THREE.SpriteMaterial({ map: fumetto('fr'), depthTest: false, depthWrite: false, fog: false });
     O.clienti.forEach((p) => { const f = new THREE.Sprite(O.matHello); f.position.set(0, 1.36, 0); f.scale.set(0.78, 0.64, 1); f.renderOrder = 19; f.visible = false; p.add(f); p.userData.fumetto = f; });
+    // 🏅 la corsa dei Giochi studenteschi: atleti con il pettorale che girano sulla strada ad anello, e l'arco del traguardo
+    O.atleti = ['#e04a58', '#44718a', '#f0b040', '#5fa574', '#8a7fd0', '#ff6fa5'].map((c, i) => {
+      const a = piolo(L, c, capelli[i % capelli.length] || PAL.tronco, 1.15); a.visible = false;
+      metti(a.userData.corpo, scatolaGeo(0.17, 0.13, 0.02, 0.01), '#ffffff', [0, 0.3, 0.165], [-0.15, 0, 0], false);
+      return a;
+    });
+    // l'arco del traguardo, sulla strada di sinistra (di fronte a chi guarda)
+    O.traguardo = new THREE.Group(); O.traguardo.userData.vivo = true; O.traguardo.visible = false; O.traguardo.position.set(xS, 0, 4.6); L.add(O.traguardo);
+    for (const x of [-1.0, 1.0]) metti(O.traguardo, new THREE.CylinderGeometry(0.05, 0.05, 2.0, 8), PAL.ardesia, [x, 1.0, 0]);
+    const texT = texCanvas(512, 96, (ctx, W, H) => {
+      for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) { ctx.fillStyle = (i + j) % 2 ? '#272b36' : '#ffffff'; ctx.fillRect(i * 12, j * 24, 12, 24); ctx.fillRect(W - 96 + i * 12, j * 24, 12, 24); }
+      ctx.fillStyle = '#ff6fa5'; ctx.fillRect(96, 0, W - 192, H);
+      ctx.fillStyle = '#ffffff'; ctx.font = fontGrassetto(40); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('GIOCHI STUDENTESCHI', W / 2, H / 2 + 2);
+    });
+    metti(O.traguardo, new THREE.PlaneGeometry(2.1, 0.4), new THREE.MeshStandardMaterial({ map: texT, side: THREE.DoubleSide, roughness: 0.7 }), [0, 1.8, 0], null, false);
+    // 🕵️ l'ispettore dell'ASL: camice bianco e cartellina
+    O.ispettore = piolo(L, '#f4f4f2', '#2b2b33', 1.25); O.ispettore.visible = false;
+    metti(O.ispettore.userData.corpo, scatolaGeo(0.16, 0.2, 0.02, 0.01), PAL.cartone, [0.12, 0.3, 0.17], [-0.4, 0, 0], false);
+    metti(O.ispettore.userData.corpo, scatolaGeo(0.12, 0.14, 0.01, 0.005), '#ffffff', [0.12, 0.3, 0.183], [-0.4, 0, 0], false);
     O.bus = autobus(L);
     O.robot = robot(L);
     O.chiosco = chiosco(L);
@@ -5669,7 +5688,7 @@ window.Diorama = (() => {
     O.matCuori = new THREE.SpriteMaterial({ map: faccina('cuori'), depthTest: false, depthWrite: false, fog: false });
     O.matRabbia = new THREE.SpriteMaterial({ map: faccina('rabbia'), depthTest: false, depthWrite: false, fog: false });
     O.campane = [0, 1].map(() => { const c = campanella3D(); L.add(c); return c; });
-    O.faccine = Array.from({ length: 14 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
+    O.faccine = Array.from({ length: 36 }, () => { const sp = new THREE.Sprite(O.matCuori); sp.visible = false; sp.renderOrder = 20; sp.userData.vivo = true; L.add(sp); return sp; });
     // i banchi di nebbia del cielo coperto: scorrono piano sopra la città alta (leggeri)
     const texNebbia = texCanvas(256, 128, (ctx, W, H) => { ctx.save(); ctx.scale(1, H / W); const g = ctx.createRadialGradient(W / 2, W / 2, 0, W / 2, W / 2, W / 2); g.addColorStop(0, 'rgba(246,248,252,0.95)'); g.addColorStop(0.5, 'rgba(246,248,252,0.6)'); g.addColorStop(1, 'rgba(246,248,252,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, W); ctx.restore(); });
     O.matNebbia = new THREE.SpriteMaterial({ map: texNebbia, transparent: true, depthWrite: false, fog: false, opacity: 0 });
@@ -5937,6 +5956,7 @@ window.Diorama = (() => {
     });
     aggiornaClienti(t, dt);
     aggiornaBus();
+    aggiornaCorsa(t);
     aggiornaRobot(t);
     aggiornaRagazzi(t, h);
     aggiornaCampane(t);
@@ -6205,6 +6225,27 @@ window.Diorama = (() => {
     const p = BUS.a(s); B.g.position.set(p.x, 0.05, p.y); B.g.rotation.y = angolo(p.ang); B.g.scale.setScalar(Math.max(0.001, sc));
     B.ruote.forEach((w) => { w.rotation.z = -s / 0.21; });
   }
+  // la corsa: gli atleti girano sulla strada ad anello (passano sotto l'arco); l'ispettore va a controllare il magazzino
+  function aggiornaCorsa(t) {
+    const c = stato.corsa, kc = c.vis ? clamp((tGioco - c.t0) / 0.6) : 1 - clamp((tGioco - c.t0) / 0.6);
+    O.traguardo.visible = kc > 0.01; O.traguardo.scale.setScalar(Math.max(0.001, c.vis ? easeOutBack(kc) : kc));
+    O.atleti.forEach((a, i) => {
+      a.visible = kc > 0.01; if (!a.visible) return;
+      const L = STRADA_ANELLO.len, sp = (((tGioco - c.t0) * (1.9 + 0.08 * (i % 3)) + 21.2 - i * 0.75) % L + L) % L, pt = STRADA_ANELLO.a(sp);
+      const lat = (i % 2 ? 0.24 : -0.24), nx = -Math.sin(pt.ang), ny = Math.cos(pt.ang);
+      a.position.set(pt.x + nx * lat, 0.1 + Math.abs(Math.sin(t * 13 + i)) * 0.14, pt.y + ny * lat);
+      a.rotation.y = angolo(pt.ang) + Math.PI / 2; a.userData.corpo.rotation.x = 0.18;
+      a.scale.setScalar(1.15 * Math.max(0.001, kc));
+    });
+    const s = stato.ispettore, u = (tGioco - s.t0) / 4.5, ki = s.vis ? 1 : 1 - clamp((tGioco - s.t0) / 0.5);
+    const P = O.ispettore; P.visible = ki > 0.01; if (!P.visible) return;
+    const da = [2.6, 8.95], a = [17.7, 8.75], k = s.vis ? clamp(u) : 1;
+    const passo = k < 1 ? Math.abs(Math.sin(k * Math.PI * 14)) * 0.12 : 0;
+    P.position.set(lerp(da[0], a[0], k), 0.1 + passo, lerp(da[1], a[1], k));
+    P.rotation.y = k < 1 ? Math.PI / 2 : Math.PI + 0.7;                 // arrivato, guarda i pacchi del magazzino
+    P.userData.corpo.rotation.x = k < 1 ? 0 : 0.3 + Math.sin(t * 2) * 0.05;
+    P.scale.setScalar(1.25 * Math.max(0.001, Math.min(ki, s.vis ? clamp(u * 8) : 1)));
+  }
   // i clienti: arrivano saltellando lungo il marciapiede fino al bancone; se serviti ripartono col cono, se no tornano indietro a testa bassa
   // (i turisti scendono dal pullman con il fumetto della loro lingua; chi va dalla concorrenza si ferma al chiosco e torna indietro)
   function aggiornaClienti(t, dt) {
@@ -6325,7 +6366,7 @@ window.Diorama = (() => {
       if (!O.clienti) return;
       if (stato.finito && !opz.rivale) servito = false;          // coni finiti: resta senza (e si arrabbia)
       const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
-      if (!libero) return;
+      if (!libero) { if (alBanco) setTimeout(alBanco, durataMs * 0.5 / Math.max(1, stato.speed)); return; }   // troppa gente: non si vede, ma compra lo stesso
       const n = eventi.length, e = { piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 };
       if (opz.turista) { e.turista = opz.turista; e.da = [3.9 + (n % 3) * 0.3, 9.5]; libero.userData.fumetto.material = opz.turista === 'fr' ? O.matBonjour : O.matHello; }
       if (opz.rivale) { e.rivale = true; e.banco = [RIVALE.x + ((n % 3) - 1) * 0.28, 8.35]; e.via = [2.6, 8.95 + e.dz]; e.dur *= 0.8; }
@@ -6338,6 +6379,9 @@ window.Diorama = (() => {
       if (v && (!b.modo || b.modo === 'parte')) { b.modo = 'arriva'; b.t0 = tGioco; }
       else if (!v && (b.modo === 'arriva' || b.modo === 'fermo')) { b.modo = 'parte'; b.t0 = tGioco; }
     },
+    // 🏅 la corsa dei Giochi studenteschi e 🕵️ l'ispettore dell'ASL
+    corsa(v) { if (!!v !== stato.corsa.vis) { stato.corsa.vis = !!v; stato.corsa.t0 = tGioco; } },
+    ispettore(v) { if (!!v !== stato.ispettore.vis) { stato.ispettore.vis = !!v; stato.ispettore.t0 = tGioco; } },
     // il chiosco della concorrenza
     rivale(v) { if (!!v !== stato.rivale.vis) { stato.rivale.vis = !!v; stato.rivale.t0 = tGioco - (O.chiosco ? 0 : 99); } },
     setConi(n, max) { if (max) stato.coniMax = max; if (Math.round(n) !== Math.round(stato.coni) || max) { stato.coni = n; disegnaConi(); } },
@@ -6371,7 +6415,7 @@ window.Diorama = (() => {
     // la regia della camera: { x, y (coordinate della città), h (altezza), zoom (1 = tutta la piastrella), az (gradi), lento } oppure null
     regia(r) { stato.regia = r || null; },
     // toglie dalla scena clienti in giro e faccine (quando si passa da una scena all'altra)
-    svuota() { eventi.length = 0; stato.bus.modo = null; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
+    svuota() { eventi.length = 0; stato.bus.modo = null; stato.corsa.vis = false; stato.ispettore.vis = false; stato.corsa.t0 = stato.ispettore.t0 = -99; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
     setPortaOgni(n) { stato.portaOgni = Math.max(0, Math.round(n)); },
     onRifornito: null,
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },

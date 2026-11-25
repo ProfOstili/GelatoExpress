@@ -27,6 +27,8 @@ Una giornata raccontata dalla camera, che scorre da sinistra a destra:
 
 ## 2. Tutorial (3 giorni, meteo noto, clienti fissi)
 
+**Ogni cliente compra un cono.** Nella città si vedono tutti i clienti: il contatore sul tetto si riempie all'alba (il robot ha lavorato di notte) e scende di uno per ogni cliente servito.
+
 Il primo blocco del gestionale, **"Cosa c'è da fare?"**, è diviso in tre parti:
 
 | Parte | Titolo | Cosa c'è |
@@ -42,9 +44,9 @@ Note:
 
 | Giorno | Meteo | Clienti | Regola da scrivere | Cosa impara |
 |---|---|---|---|---|
-| 1 | ☀️ sole | 20 | SE meteo è sole ALLORA produci **30** coni | senza regole il robot non fa niente; i 10 coni avanzati si buttano |
-| 2 | 🌧️ pioggia | 8 | SE meteo è pioggia ALLORA produci **10** coni | con la pioggia vengono in pochi: con 30 coni ne avresti buttati 22 |
-| 3 | ⛅ nuvoloso | 15 | SE meteo è nuvoloso ALLORA produci **20** coni | serve una regola per ogni tempo |
+| 1 | ☀️ sole | 10 | SE meteo è sole ALLORA produci **15** coni | senza regole il robot non fa niente; i 5 coni avanzati si buttano |
+| 2 | 🌧️ pioggia | 4 | SE meteo è pioggia ALLORA produci **5** coni | con la pioggia vengono in pochi: con 15 coni ne avresti buttati 11 |
+| 3 | ⛅ nuvoloso | 8 | SE meteo è nuvoloso ALLORA produci **10** coni | serve una regola per ogni tempo |
 
 Nel tutorial non c'è l'affitto (si guadagna sempre qualcosa) e il magazzino si riempie da solo.
 Prima della sfida un messaggio avvisa che da ora **arriverà molta più gente**.
@@ -57,7 +59,7 @@ Alla fine di ogni fase il gioco si ferma: riepilogo della fase e **novità** del
 
 | Fase | Giorni | Durata | Novità (meccanica) | Blocchi nuovi | Magazzino |
 |---|---|---|---|---|---|
-| 1 | 1–4 | 4 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 40 kg) |
+| 1 | 1–4 | 4 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 20 kg) |
 | 2 | 5–8 | 4 | 📅 **Weekend** | SE oggi è weekend · ALLORA produci in più / in meno | automatico |
 | 3 | 9–11 | 3 | 🌡️ **Temperatura** | SE temperatura > / < … | automatico |
 | 4 | 12–15 | 4 | 💶 **Prezzo** | ALLORA metti il prezzo a… | automatico |
@@ -77,8 +79,8 @@ Nel calendario i giorni speciali hanno un'icona (🏅 🚌 🕵️ 🆚).
 |---|---|---|---|---|
 | **8** | 🏃 Educazione fisica | **Giochi studenteschi: gara a Todi** | giorno **13** | clienti ×1,6 quel giorno · nuovo blocco **SE 🏅 oggi c'è la gara** |
 | **14** | 📈 Economia politica | **Arriva la concorrenza**: apre la Gelateria Rivale (cono a 2,50 €) | dal giorno **17** | se il tuo prezzo supera 2,50 €, perdi molti clienti in più (−60% per ogni € in più) · in 3D compare il chiosco "RIVALE 2,50 €" nel giardino e alcuni clienti vanno lì |
-| **15** | 🇬🇧🇫🇷 Inglese e Francese | **Arrivano i turisti**: il pullman si ferma in cima alla strada | giorni **15, 18, 21, 26, 29** | +35 clienti circa (meno con la pioggia) · i turisti hanno sopra la testa un fumetto con la bandiera (inglese o francese) e "Hello!" / "Bonjour!" · nuovo blocco **SE 🚌 oggi arrivano i turisti** |
-| **18** | ⚖️ Diritto | **Controllo dell'ASL** | giorno **24** | gli ingredienti arrivati da **5 giorni o più** sono scaduti: vengono buttati e c'è una **multa di 100 €** |
+| **15** | 🇬🇧🇫🇷 Inglese e Francese | **Arrivano i turisti**: il pullman si ferma in cima alla strada | giorni **15, 18, 21, 26, 29** | +18 clienti circa (meno con la pioggia) · i turisti hanno sopra la testa un fumetto con la bandiera (inglese o francese) e "Hello!" / "Bonjour!" · nuovo blocco **SE 🚌 oggi arrivano i turisti** |
+| **18** | ⚖️ Diritto | **Controllo dell'ASL** | giorno **24** | gli ingredienti arrivati da **5 giorni o più** sono scaduti: vengono buttati e c'è una **multa di 50 €** |
 
 I testi degli annunci spiegano la materia:
 - **🏃 Educazione fisica:** al SIA c'è la **curvatura sportiva**: 2 ore in più a settimana di educazione fisica con un esperto di uno sport, ogni anno diverso.
@@ -90,8 +92,8 @@ I testi degli annunci spiegano la materia:
 - Il magazzino è fatto di consegne ("lotti") e il robot usa sempre prima gli ingredienti più vecchi.
 - Se si ordina troppo, gli ingredienti restano fermi e scadono.
 - Esempi provati con la sfida standard:
-  - `SE magazzino < 30 ALLORA riordina 40`: **nessuna multa**;
-  - `SE magazzino < 40 ALLORA riordina 60`: **48 kg scaduti + multa**.
+  - `SE magazzino < 15 ALLORA riordina 20`: **nessuna multa**;
+  - `SE magazzino < 20 ALLORA riordina 30`: **ingredienti scaduti + multa**.
 - Dall'annuncio in poi, nel gestionale si vede da quanti giorni sono fermi gli ingredienti più vecchi.
 
 **Nei tentativi successivi:**
@@ -109,3 +111,17 @@ I testi degli annunci spiegano la materia:
 - **Tutorial:** circa 25–30 s per giorno, più la ricezione del meteo (circa 4 s).
 - **Sfida:** circa 12 s per giorno, quindi circa 6 minuti in tutto, più gli annunci e il tempo per scrivere le regole.
 - **Velocità 2× e 4×:** i tempi si dimezzano o si riducono a un quarto.
+
+---
+
+## 6. Presentazione per l'open day
+
+Si apre `index.html?promo` (online: https://profostili.github.io/GelatoExpress/?promo), si avvia la registrazione dello schermo e si preme "Avvia la presentazione". Dura circa 55 secondi, con la musica generata dal browser:
+
+1. Titolo: "ITCG Einaudi: SIAmo gli studenti che programmano il futuro" · "Pensi di essere in grado di gestire una GELATERIA AUTOMATICA!?" · "Ti aspetto all'open day".
+2. La scuola e la Consolazione, il gelataio che apre.
+3. Clienti felici e arrabbiati, con la scritta "Studia il mercato e come fare impresa".
+4. La notte: il robot prepara i coni dietro la vetrina.
+5. La pioggia, con la scritta "Dovrai scegliere quanto produrre in base al meteo!".
+6. Gli eventi con il cartellino in basso a destra: la corsa ("Potenziamento sportivo"), la Gelateria Rivale ("Economia Politica"), i turisti ("Inglese e Francese"), il controllo ASL con la multa ("Diritto").
+7. La classifica con "Chi vincerà?!" e "Ti aspetto all'open day dell'ITCG Einaudi di Todi per sfidarmi!", poi dissolvenza in nero.
