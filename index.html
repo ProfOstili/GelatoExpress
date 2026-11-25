@@ -655,7 +655,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
 <!-- la presentazione per l'open day (index.html?promo) -->
 <div class="promo hidden" id="promo">
   <div class="promo-avvio" id="promo-avvio"><div class="ic">🍦🤖</div><h2>Presentazione per l'open day</h2>
-    <p>Circa 2 minuti e mezzo, con la musica. Scegli la musica (premi per ascoltarla), fai partire la registrazione dello schermo (meglio a schermo intero: F11), poi premi Avvia.</p>
+    <p>Circa 2 minuti, con la musica. Scegli la musica (premi per ascoltarla), fai partire la registrazione dello schermo (meglio a schermo intero: F11), poi premi Avvia.</p>
     <div class="promo-musiche" id="promo-musiche"></div>
     <button class="btn big pink" id="promo-via">▶ Avvia la presentazione</button></div>
   <div class="promo-titolo" id="promo-titolo">
@@ -8446,7 +8446,8 @@ async function avviaPromo(){
   Diorama.setPacchi(8); Diorama.setConi(5, 5); Diorama.setOra(8.4); Diorama.rivale(false);
 
   // IL COPIONE, in secondi (la musica segue le stesse scene, qualunque sia il suo ritmo)
-  const T = { titolo:0, scuola:13, gelateria:27, clienti:42, notte:66, meteo:82, gara:106, rivale:116, turisti:126, asl:136, classifica:146, nero:160, fine:164 };
+  const K = 0.7;                                                     // tutta la presentazione accorciata del 30%
+  const T = Object.fromEntries(Object.entries({ titolo:0, scuola:13, gelateria:27, clienti:42, notte:66, meteo:82, gara:106, rivale:116, turisti:126, asl:136, classifica:146, nero:160, fine:164 }).map(([k, v]) => [k, v * K]));
   const SEZ = (n, s) => s < T.scuola - 0.5 ? 'intro' : s < T.notte ? (Math.floor(n / 8) % 2 ? 'forte' : 'pieno') : s < T.meteo - 0.5 ? 'pausa'
     : s < T.classifica - 0.5 ? (s < T.gara ? 'pieno' : 'forte') : s < T.classifica + Musica.BAR - 0.01 ? 'colpo' : s < T.nero ? 'forte' : s < T.fine ? 'fine' : 'silenzio';
   Musica.avvia(SEZ, Infinity, 0.55);
@@ -8461,42 +8462,42 @@ async function avviaPromo(){
   // 1 · il titolo (13 s: ogni riga resta a lungo)
   cam(8.8, 8.6, 0.3, { lento:true });
   const TT = $('#promo-titolo'); TT.classList.add('su');
-  [...TT.querySelectorAll('.riga')].forEach((r, i) => setTimeout(() => r.classList.add('su'), [400, 4200, 8200][i] ));
+  [...TT.querySelectorAll('.riga')].forEach((r, i) => setTimeout(() => r.classList.add('su'), [400, 4200, 8200][i] * K));
   await fino(T.scuola - 1); TT.classList.add('via');
   // 2 · i ragazzi entrano a scuola, la camera si allontana piano su tutta Todi
   await fino(T.scuola); TT.classList.add('hidden');
   dida('🏫 Una mattina a <b>Todi</b>: i ragazzi entrano a scuola');
-  await ore(8.4, 9.6, T.scuola + 6);
+  await ore(8.4, 9.6, T.scuola + 6 * K);
   cam(9, 4.5, 1.0, { lento:true }); dida('🏙️ La città, la scuola… e una <b>gelateria</b> tutta da gestire!');
   await ore(9.6, 10.0, T.gelateria);
   // 3 · il gelataio porta dentro i pacchi, porta fuori il bancone e apre
   cam(15.4, 8.1, 0.36, { lento:true }); dida('🍦 Il <b>gelataio</b> porta dentro gli ingredienti, porta fuori il bancone e apre');
-  const apre = Diorama.apri(4, 12000);
+  const apre = Diorama.apri(4, 12000 * K);
   await ore(10.0, 10.5, T.clienti - 1); await Promise.race([apre, fino(T.clienti)]);
   Diorama.setConi(5, 5);
   // 4 · i clienti: 5 coni per 8 clienti, uno alla volta (non si sovrappongono); poi i coni finiscono
   cam(12.6, 8.4, 0.5, { lento:true }); dida('📈 Studia il <b>mercato</b> e come <b>fare impresa</b>');
   let coni = 5;
-  for(let i = 0; i < 8; i++) setTimeout(() => Diorama.cliente(i < 5, 5200, () => {
+  for(let i = 0; i < 8; i++) setTimeout(() => Diorama.cliente(i < 5, 4200, () => {
     if(i < 5){ coni--; Diorama.setConi(coni); } else { Diorama.setFinito(true); if(i === 5) dida('😠 Coni <b>finiti</b>: chi arriva adesso resta senza gelato!'); }
-  }), 600 + i * 2700);
+  }), (600 + i * 2700) * K);
   await ore(10.5, 19.6, T.notte);
   // 5 · la sera si chiude; di notte il robot prepara i coni
-  dida(''); Diorama.chiudi(3500);
+  dida(''); Diorama.chiudi(3500 * K);
   cam(14.2, 8.1, 0.32, { lento:true });
-  await ore(19.6, 23, T.notte + 5);
+  await ore(19.6, 23, T.notte + 5 * K);
   dida('🌙 Di notte il <b>robot</b> prepara i coni… come lo hai <b>programmato</b> tu!');
   await ore(23, 31.8, T.meteo);
   // 6 · il meteo cambia: sole, nuvole, pioggia (con ombrelli, pozzanghere e fulmini)
   Diorama.svuota(); Diorama.setFinito(false); Diorama.setConi(5, 5);
   cam(9, 4.5, 0.95, { lento:true }); dida('🌦️ Dovrai scegliere <b>quanto produrre</b> in base al <b>meteo</b>!');
   meteo('☀️ Sole: tanti clienti'); Diorama.apri(2, 1500);
-  const passanti = (n, dur, ogni) => { for(let i = 0; i < n; i++) setTimeout(() => Diorama.cliente(true, dur), i * ogni); };
+  const passanti = (n, dur, ogni) => { for(let i = 0; i < n; i++) setTimeout(() => Diorama.cliente(true, dur * K), i * ogni * K); };
   passanti(3, 5200, 1700);
-  await ore(8.2, 10.5, T.meteo + 8);
+  await ore(8.2, 10.5, T.meteo + 8 * K);
   Diorama.setMeteo('nuvoloso'); meteo('⛅ Nuvoloso: un po\' meno');
   passanti(2, 5200, 2400);
-  await ore(10.5, 12.5, T.meteo + 15);
+  await ore(10.5, 12.5, T.meteo + 15 * K);
   Diorama.setMeteo('pioggia'); meteo('🌧️ Pioggia: pochi clienti, con l\'ombrello'); cam(10.5, 8.6, 0.5, { lento:true });
   passanti(2, 5600, 2600);
   await ore(12.5, 15, T.gara - 0.5);
@@ -8508,21 +8509,21 @@ async function avviaPromo(){
   await ore(10, 11, T.rivale);
   Diorama.corsa(false); Diorama.rivale(true); cam(5.6, 8.1, 0.4, { lento:true });
   titolo('🆚 In piazza apre la Gelateria Rivale'); tag('📈 Economia Politica');
-  for(let i = 0; i < 3; i++) setTimeout(() => Diorama.cliente(true, 4200, null, { rivale:true }), 1200 + i * 2400);
+  for(let i = 0; i < 3; i++) setTimeout(() => Diorama.cliente(true, 4200 * K, null, { rivale:true }), (1200 + i * 2400) * K);
   await ore(11, 12, T.turisti);
   Diorama.autobus(true); cam(5.2, 9.3, 0.45, { lento:true });
   titolo('🚌 Arrivano i turisti stranieri'); tag('🗣️ Inglese e Francese');
-  for(let i = 0; i < 5; i++) setTimeout(() => Diorama.cliente(true, 6500, null, { turista: i % 2 ? 'fr' : 'gb' }), 2600 + i * 1300);
+  for(let i = 0; i < 5; i++) setTimeout(() => Diorama.cliente(true, 6500 * K, null, { turista: i % 2 ? 'fr' : 'gb' }), (2600 + i * 1300) * K);
   await ore(12, 13, T.asl);
   Diorama.ispettore(true); cam(16.6, 8.2, 0.38, { lento:true });
   titolo('🕵️ Il controllo dell\'ASL'); tag('⚖️ Diritto');
-  setTimeout(() => $('#promo-multa').classList.add('su'), 5000);
+  setTimeout(() => $('#promo-multa').classList.add('su'), 5000 * K);
   await ore(13, 14, T.classifica);
   // 8 · la classifica: chi vincerà?
   titolo(''); tag(''); $('#promo-multa').classList.remove('su'); Diorama.ispettore(false); Diorama.autobus(false);
   cam(9, 4.5, 1.0, { az:-22, lento:true }); document.body.classList.add('promo-sfoca');
   $('#promo-fine').classList.add('su');
-  [...$('#promo-fine').querySelectorAll('li')].forEach((li, i) => setTimeout(() => li.classList.add('su'), 700 + i * 450));
+  [...$('#promo-fine').querySelectorAll('li')].forEach((li, i) => setTimeout(() => li.classList.add('su'), (700 + i * 450) * K));
   await ore(14, 17, T.nero, p => Diorama.regia({ x:9, y:4.5, h:1.4, zoom:1.0, az:-22 + 40 * p, lento:true }));
   // 9 · dissolvenza
   $('#promo-nero').classList.add('su'); Musica.ferma((T.fine - T.nero) * 1000);

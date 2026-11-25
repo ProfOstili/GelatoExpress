@@ -120,18 +120,18 @@ Si apre `index.html?promo` (online: https://profostili.github.io/GelatoExpress/?
 1. Si sceglie la musica (si può ascoltare un pezzetto): ⚡ Sfida elettronica, 👾 Arcade 8-bit, 🎬 Epica.
 2. Si avvia la registrazione dello schermo e si preme "Avvia la presentazione".
 
-La presentazione dura circa **2 minuti e 45 secondi**, con il tempo di leggere ogni scritta. La musica scelta si usa anche nella panoramica del gioco.
+La presentazione dura circa **1 minuto e 55 secondi**, con il tempo di leggere ogni scritta. La musica scelta si usa anche nella panoramica del gioco.
 
 | Secondi | Scena |
 |---|---|
-| 0–13 | Titolo: "ITCG Einaudi: SIAmo gli studenti che programmano il futuro" · "Pensi di essere in grado di gestire una GELATERIA AUTOMATICA!?" · "Ti aspetto all'open day" |
-| 13–27 | Zoom out dalla scuola mentre i ragazzi entrano, poi tutta Todi |
-| 27–42 | Il gelataio porta dentro i pacchi, porta fuori il bancone e apre |
-| 42–66 | 5 coni e 8 clienti, uno alla volta: 5 felici, poi "coni finiti" e 3 arrabbiati. Scritta "Studia il mercato e come fare impresa" |
-| 66–82 | Sera e notte: il robot prepara i coni dietro la vetrina |
-| 82–106 | Il meteo: ☀️ sole, ⛅ nuvoloso (nebbia), 🌧️ pioggia (ombrelli, pozzanghere, nuvoloni). Scritta "Dovrai scegliere quanto produrre in base al meteo!" |
-| 106–146 | Gli eventi, 10 s ciascuno, con il titolo in alto al centro e la materia in basso a destra: la gara (Potenziamento sportivo), la Gelateria Rivale (Economia Politica), i turisti (Inglese e Francese), il controllo ASL con la multa (Diritto) |
-| 146–160 | "Chi vincerà?!" con la classifica e "Ti aspetto all'open day dell'ITCG Einaudi di Todi per sfidarmi!" |
-| 160–164 | Dissolvenza in nero |
+| 0–9 | Titolo: "ITCG Einaudi: SIAmo gli studenti che programmano il futuro" · "Pensi di essere in grado di gestire una GELATERIA AUTOMATICA!?" · "Ti aspetto all'open day" |
+| 9–19 | Zoom out dalla scuola mentre i ragazzi entrano, poi tutta Todi |
+| 19–29 | Il gelataio porta dentro i pacchi, porta fuori il bancone e apre |
+| 29–46 | 5 coni e 8 clienti, uno alla volta: 5 felici, poi "coni finiti" e 3 arrabbiati. Scritta "Studia il mercato e come fare impresa" |
+| 46–57 | Sera e notte: il robot prepara i coni dietro la vetrina |
+| 57–74 | Il meteo: ☀️ sole, ⛅ nuvoloso (nebbia), 🌧️ pioggia (ombrelli, pozzanghere, nuvoloni). Scritta "Dovrai scegliere quanto produrre in base al meteo!" |
+| 74–102 | Gli eventi, 7 s ciascuno, con il titolo in alto al centro e la materia in basso a destra: la gara (Potenziamento sportivo), la Gelateria Rivale (Economia Politica), i turisti (Inglese e Francese), il controllo ASL con la multa (Diritto) |
+| 102–112 | "Chi vincerà?!" con la classifica e "Ti aspetto all'open day dell'ITCG Einaudi di Todi per sfidarmi!" |
+| 112–115 | Dissolvenza in nero |
 
-I tempi si cambiano in `avviaPromo()` (oggetto `T`).
+I tempi si cambiano in `avviaPromo()` (oggetto `T`; `K = 0.7` accorcia tutto del 30%).
