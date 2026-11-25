@@ -245,7 +245,6 @@ select,input{font-family:inherit}
   .prog-grid,.sim-grid,.res-grid{grid-template-columns:1fr}
   .sim-side{order:2}
   .prog-grid > .col:first-child{display:contents}
-  #card-base{order:1} .prog-grid > .col:last-child{order:2} #card-forecast{order:3} #card-fact{order:4}
 }
 @media (max-width:600px){
   .topbar{gap:6px;padding:8px 10px}
@@ -273,6 +272,30 @@ select,input{font-family:inherit}
   .scene{height:330px}
   .shop{height:210px}
 }
+
+/* ---------- gestionale in tre passi ---------- */
+.passi{display:flex;flex-direction:column;gap:14px;max-width:1000px;margin:0 auto}
+.passo-tit{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:24px}
+.passo-tit .n{width:38px;height:38px;border-radius:50%;background:var(--pink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+.passo .coach{border:0;box-shadow:none;padding:0;margin:0 0 8px;background:none}
+.passo .hint{margin:0 0 8px}
+.passo-3{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.passo-3 .passo-tit{margin:0;flex:1 1 auto}
+.passo-3 .btn.big{font-size:24px}
+#card-fact{max-width:1000px;margin:14px auto 0}
+.fase-giorni{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.fase-giorni .fday{width:62px}
+.domani{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800;margin-top:4px}
+.domani .ic{font-size:56px;line-height:1}
+.rule select option:disabled{color:#aaa}
+/* panoramica iniziale: la scena a tutta larghezza con le didascalie */
+#scr-sim.intro .sim-grid{grid-template-columns:1fr}
+#scr-sim.intro .sim-side,#scr-sim.intro .speed-row,#scr-sim.intro .sim-top,#scr-sim.intro .stockbar,#scr-sim.intro .sky-weather{display:none!important}
+#scr-sim.intro .scene.modo3d{height:clamp(330px,calc(100vh - 110px),680px)}
+.didascalia{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(255,250,242,.96);border:3px solid var(--line);border-radius:16px;padding:8px 16px;font-size:22px;font-weight:700;z-index:6;text-align:center;max-width:calc(100% - 140px);box-shadow:var(--shadow)}
+#btn-salta-intro{position:absolute;right:12px;top:12px;z-index:6;padding:8px 16px;font-size:17px}
+#scr-sim:not(.intro) .didascalia,#scr-sim:not(.intro) #btn-salta-intro{display:none}
+.scene.senza-magazzino .stockbar{display:none}
 
 /* ---------- grafica 3D (diorama) ---------- */
 .scene .diorama-tela{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -372,39 +395,26 @@ select,input{font-family:inherit}
 
 <!-- ============ PROGRAMMA ============ -->
 <section id="scr-program" class="screen hidden">
-  <div id="coach" class="coach hidden"></div>
-  <div class="prog-grid">
-    <div class="col">
-      <div class="card" id="card-base">
-        <h2>⚙️ Valori di base</h2>
-        <div class="hint">Ogni giorno la gelateria parte da qui.</div>
-        <div class="stepper"><span class="lbl">💶 Prezzo cono</span>
-          <button data-step="prezzo" data-d="-1">−</button><span class="val" id="v-prezzo"></span><button data-step="prezzo" data-d="1">+</button></div>
-        <div class="stepper"><span class="lbl">🍦 Coni al giorno</span>
-          <button data-step="produzione" data-d="-1">−</button><span class="val" id="v-produzione"></span><button data-step="produzione" data-d="1">+</button></div>
-        <div class="info-chips" id="info-chips"></div>
-      </div>
-      <div class="card" id="card-forecast">
-        <h2 id="forecast-title">📡 Previsioni meteo</h2>
-        <div id="forecast-box"></div>
-      </div>
-      <div class="card fact" id="card-fact"><h2>💡 Lo sapevi che…</h2><p id="fact-text"></p></div>
+  <!-- il gestionale in tre passi: 1 cosa c'è da fare · 2 le regole del robot · 3 si parte -->
+  <div class="passi">
+    <div class="card passo">
+      <h2 class="passo-tit"><span class="n">1</span> Cosa c'è da fare?</h2>
+      <div id="coach" class="coach"></div>
+      <div id="forecast-box"></div>
     </div>
-    <div class="col">
-      <div class="card" id="card-rules">
-        <div class="prog-head">
-          <h2>🧠 Il tuo programma</h2>
-          <span class="hint">Le regole si leggono dall'alto in basso. Se due regole cambiano la stessa cosa, vince l'ultima.</span>
-        </div>
-        <div class="rules" id="rules"></div>
-        <button class="btn yellow" id="btn-add">➕ Aggiungi regola</button>
-      </div>
-      <div class="run-row">
-        <div class="start-chips" id="start-chips"></div>
-        <button class="btn big mint" id="btn-run">▶ AVVIA</button>
-      </div>
+    <div class="card passo" id="card-rules">
+      <h2 class="passo-tit"><span class="n">2</span> Regole del robot</h2>
+      <p class="hint">Il robot legge le regole dall'alto in basso. Se nessuna regola dice di produrre, non fa coni!</p>
+      <div class="rules" id="rules"></div>
+      <button class="btn yellow" id="btn-add">➕ Aggiungi regola</button>
+    </div>
+    <div class="card passo passo-3">
+      <h2 class="passo-tit"><span class="n">3</span> Partiamo!</h2>
+      <div class="start-chips" id="start-chips"></div>
+      <button class="btn big mint" id="btn-run">▶ AVVIA</button>
     </div>
   </div>
+  <div class="card fact hidden" id="card-fact"><h2>💡 Lo sapevi che…</h2><p id="fact-text"></p></div>
 </section>
 
 <!-- ============ SIMULAZIONE ============ -->
@@ -450,6 +460,8 @@ select,input{font-family:inherit}
           <span class="tel" id="d3-coni">🍦 0 coni</span><span class="tel no" id="d3-negozio">CHIUSO</span>
         </div>
         <button class="scene-btn d3" id="btn-pieno" aria-label="Schermo intero">⛶</button>
+        <div class="didascalia hidden" id="didascalia" aria-live="polite"></div>
+        <button class="btn d3" id="btn-salta-intro">Salta ⏭</button>
         <div class="gira d3"><b>📱</b>Gira il telefono in orizzontale<br><small>per vedere meglio la città</small></div>
       </div>
       <div class="speed-row">
@@ -469,7 +481,7 @@ select,input{font-family:inherit}
   <div class="res-grid">
     <div class="col">
       <div class="card profit-hero">
-        <div class="lbl">Profitto in 14 giorni</div>
+        <div class="lbl">Profitto in 30 giorni</div>
         <div class="val" id="r-profit">0 €</div>
         <div class="rec" id="r-record"></div>
         <div class="rec" id="r-rank"></div>
@@ -6050,14 +6062,16 @@ window.Diorama = (() => {
   const MIRA = new THREE.Vector3();
   const schermoPiccolo = () => stato.inquadratura === 'segui' || (stato.inquadratura === 'auto' && (W < 700 || window.innerWidth < 760 || window.innerHeight < 500));   // telefono (non una scena bassa su un PC)
   function aggiornaInquadratura(dt, notte) {
-    let zoom = 1, off = 1; MIRA.copy(CAM.miraBase);
-    if (schermoPiccolo()) {
+    let zoom = 1, off = 1, az = 0, lento = false; MIRA.copy(CAM.miraBase);
+    if (stato.regia) {                                               // la "regia" (panoramica iniziale): il gioco decide dove guardare
+      const r = stato.regia; O.L.localToWorld(MIRA.set(r.x, r.h ?? 1.4, r.y)); zoom = r.zoom ?? 0.5; off = 0; az = (r.az || 0) * Math.PI / 180; lento = !!r.lento;
+    } else if (schermoPiccolo()) {
       const cs = stato.camion, viaggia = O.furgone.g.visible && cs.attivo && cs.ore < 22.8;
       if (viaggia) { MIRA.copy(O.furgone.g.position).setY(0.8); O.L.localToWorld(MIRA); zoom = 0.6; off = 0; }
       else if (notte < 0.6) { O.L.localToWorld(MIRA.set(12.3, 1.6, 7.6)); zoom = W / H < 1.5 ? 0.42 : 0.5; off = 0; }   // più vicina se la scena è stretta
     }
-    const k = Math.min(1, dt * 1.6);
-    CAM.mira.lerp(MIRA, k); CAM.z += (zoom - CAM.z) * k; CAM.off += (off - CAM.off) * k;
+    const k = Math.min(1, dt * (lento ? 0.55 : 1.6));
+    CAM.mira.lerp(MIRA, k); CAM.z += (zoom - CAM.z) * k; CAM.off += (off - CAM.off) * k; CAM.azX = (CAM.azX || 0) + (az - (CAM.azX || 0)) * k;
     camera.setViewOffset(W, H, CAM.offset[0] * CAM.off, CAM.offset[1] * CAM.off, W, H);
   }
   function ridimensiona() {
@@ -6140,7 +6154,7 @@ window.Diorama = (() => {
     const th = (2.5 * Math.sin(t * 0.07)) * Math.PI / 180;
     O.perno.rotation.y = th; O.ombraTile.rotation.z = th;
     if (CAM.vista) { camera.position.copy(CAM.vista[0]); camera.lookAt(CAM.vista[1]); } else
-    { aggiornaInquadratura(dt, notte); piazzaCamera(CAM.az + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * CAM.z * (1 + 0.012 * Math.sin(t * 0.11))); }
+    { aggiornaInquadratura(dt, notte); piazzaCamera(CAM.az + (CAM.azX || 0) + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * CAM.z * (1 + 0.012 * Math.sin(t * 0.11))); }
     O.sole.target.position.set(0, 0, 0);
 
     // --- il furgone, il fumo del comignolo e la scia
@@ -6573,6 +6587,10 @@ window.Diorama = (() => {
     get schermoPiccolo() { return !!R && schermoPiccolo(); },
     // 'auto' (segue l'azione sugli schermi piccoli), 'segui' (sempre), 'tutto' (sempre tutta la piastrella)
     setInquadratura(m) { stato.inquadratura = m; },
+    // la regia della camera: { x, y (coordinate della città), h (altezza), zoom (1 = tutta la piastrella), az (gradi), lento } oppure null
+    regia(r) { stato.regia = r || null; },
+    // toglie dalla scena clienti in giro e faccine (quando si passa da una scena all'altra)
+    svuota() { eventi.length = 0; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
     setPortaOgni(n) { stato.portaOgni = Math.max(0, Math.round(n)); },
     onRifornito: null,
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
@@ -6606,8 +6624,7 @@ window.Diorama = (() => {
    ===================================================================== */
 const CONFIG = {
   seed: 2026,               // meteo della sfida (uguale per tutti). Si può cambiare con ?seed=123 nell'indirizzo
-  giorni: 14,               // durata della sfida
-  giorniPrevisione: 3,      // giorni con meteo visibile prima che la stazione si rompa
+  giorni: 30,               // durata della sfida (divisa in fasi: vedi "fasi" qui sotto)
   cassaIniziale: 500,       // € in cassa all'inizio
   magazzinoIniziale: 40,    // kg di ingredienti all'inizio
   magazzinoMax: 100,        // kg massimi nel congelatore (l'eccesso viene buttato)
@@ -6646,9 +6663,35 @@ const CONFIG = {
   codiceSenzaGruppo: 'LIBERO',
 
   sogliaSpreco: 10,         // "ieri ho buttato gelato" = almeno 10 coni avanzati
-  durataGiornoMs: 1250,     // animazione di un giorno (più la notte)
-  durataNotteMs: 250,
-  durataGiornoTutorialMs: 3200,
+  durataGiornoMs: 2600,     // grafica classica: animazione di un giorno (più la notte)
+  durataNotteMs: 500,
+  durataGiornoTutorialMs: 7000,
+
+  // LA SFIDA A FASI: ogni pochi giorni si sblocca qualcosa di nuovo da gestire (la somma dei giorni fa 30).
+  //   cond / azioni = blocchi nuovi per le regole · auto = il fornitore riempie da solo il magazzino ogni notte
+  //   previsioni = si vede il meteo dei giorni della fase
+  fasi: [
+    { giorni:4, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
+      testo:'Il robot guarda il <b>meteo</b> e decide quanti coni fare. Scrivi una regola per ogni tempo: ☀️ sole, ⛅ nuvoloso, 🌧️ pioggia.',
+      esempio:{ c:'meteo', cv:'sole', a:'produci', av:100 } },
+    { giorni:4, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
+      testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
+      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:140 } },
+    { giorni:4, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
+      testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
+      esempio:{ c:'giorno', cv:'weekend', a:'piu', av:30 } },
+    { giorni:5, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
+      testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
+      esempio:{ c:'magazzino', op:'<', cv:30, a:'riordina', av:60 } },
+    { giorni:4, cond:[], azioni:['prezzo'], auto:false, previsioni:true, titolo:'💶 Il prezzo',
+      testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50 €). Più caro = più guadagno a cono, ma meno clienti!',
+      esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
+    { giorni:4, cond:['ieri'], azioni:[], auto:false, previsioni:true, titolo:'🍨 Ieri',
+      testo:'Novità: il robot si ricorda di <b>ieri</b>. Se ieri il gelato è finito, oggi produci di più; se l\'hai buttato, produci meno.',
+      esempio:{ c:'ieri', cv:'finito', a:'piu', av:20 } },
+    { giorni:5, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
+      testo:'Ultima fase: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
+  ],
 
   // tutorial: 3 giorni con meteo noto
   tutorial: {
@@ -6700,7 +6743,13 @@ const AZIONI = {
   prezzo:   { label:'💶 metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>eur(v,2), def:3 },
   riordina: { label:'🚚 riordina', values:range(10,100,10), fmt:v=>v+' kg', def:60 }
 };
-function nuovaRegola(){ return { c:'temp', op:'>', cv:30, a:'produci', av:100 }; }
+function nuovaRegola(){
+  // la prima condizione disponibile, e per il meteo il primo tempo che non ha ancora una regola
+  const D = blocchiDisponibili(), c = D.cond.includes('meteo') ? 'meteo' : D.cond[0];
+  if(c === 'meteo'){ const coperti = S.prog.regole.filter(r=>r.c==='meteo').map(r=>r.cv); const cv = ['sole','nuvoloso','pioggia'].find(m=>!coperti.includes(m)) || 'sole';
+    return { c:'meteo', op:'>', cv, a:'produci', av:{sole:100,nuvoloso:60,pioggia:20}[cv] }; }
+  return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'produci', av:100 };
+}
 function testoRegola(r){
   const C = COND[r.c], A = AZIONI[r.a];
   return `SE ${C.label} ${C.ops ? r.op+' ' : ''}${C.fmt(r.cv)} ALLORA ${A.label} ${A.fmt(r.av)}`;
@@ -6777,7 +6826,8 @@ function statoIniziale(opz={}){
            ordini: [], ieri: { persi:0, avanzati:0 } };
 }
 // Simula una lista di giorni. Restituisce i risultati giorno per giorno e lo stato finale.
-function simula(prog, giorni, stato0){
+// opz.auto = il fornitore riempie da solo il magazzino ogni notte (senza costo di consegna); le regole "riordina" non servono
+function simula(prog, giorni, stato0, opz={}){
   const C = CONFIG, costoCono = C.costoKg / C.coniPerKg;
   const st = JSON.parse(JSON.stringify(stato0 || statoIniziale()));
   const res = [];
@@ -6804,13 +6854,13 @@ function simula(prog, giorni, stato0){
     const persi = clienti - venduti;
     const avanzati = prodotti - venduti;
     // 5. riordino: arriva domani mattina
-    const ordine = dec.riordina;
+    const ordine = opz.auto ? Math.max(0, Math.round(C.magazzinoMax - st.stock)) : dec.riordina;
     if(ordine > 0) st.ordini.push({ kg:ordine, arriva:g.n+1 });
     // 6. conti
     const ricavi = venduti * dec.prezzo;
     const cIngredienti = venduti * costoCono;
     const cSpreco = avanzati * costoCono + eccesso * C.costoKg;
-    const cConsegna = ordine > 0 ? C.costoConsegna : 0;
+    const cConsegna = ordine > 0 && !opz.auto ? C.costoConsegna : 0;
     const cAffitto = C.affittoGiorno;
     const costi = cIngredienti + cSpreco + cConsegna + cAffitto;
     const profitto = ricavi - costi;
@@ -6818,16 +6868,19 @@ function simula(prog, giorni, stato0){
     st.cassa += profitto;
     res.push({ ...g, prezzo:dec.prezzo, obiettivo:dec.produzione, fired:dec.fired, prodotti, limitato,
       clienti, venduti, persi, avanzati, arrivo, eccesso, ordine, stockPrimaArrivo, stockInizio, stockFine:st.stock,
-      ricavi, cIngredienti, cSpreco, cConsegna, cAffitto, costi, profitto, cassaInizio, cassaFine:st.cassa });
+      ricavi, cIngredienti, cSpreco, cConsegna, cAffitto, costi, profitto, cassaInizio, cassaFine:st.cassa, auto:!!opz.auto });
     st.ieri = { persi, avanzati };
   }
+  return { giorni:res, tot:totali(res), stato:st };
+}
+function totali(res){
   const tot = { ricavi:0, cIngredienti:0, cSpreco:0, cConsegna:0, cAffitto:0, profitto:0, venduti:0, persi:0, avanzati:0, eccesso:0, ordini:0 };
   for(const d of res){
     tot.ricavi+=d.ricavi; tot.cIngredienti+=d.cIngredienti; tot.cSpreco+=d.cSpreco; tot.cConsegna+=d.cConsegna;
     tot.cAffitto+=d.cAffitto; tot.profitto+=d.profitto; tot.venduti+=d.venduti; tot.persi+=d.persi;
-    tot.avanzati+=d.avanzati; tot.eccesso+=d.eccesso; if(d.ordine>0) tot.ordini++;
+    tot.avanzati+=d.avanzati; tot.eccesso+=d.eccesso; if(d.ordine>0 && !d.auto) tot.ordini++;
   }
-  return { giorni:res, tot, stato:st };
+  return tot;
 }
 
 /* ---------- analisi per i messaggi di "debug" ---------- */
@@ -6897,7 +6950,7 @@ function analizza(sim){
 /* =====================================================================
    SALVATAGGI NEL BROWSER (localStorage)
    ===================================================================== */
-const KEY_PLAYERS = 'gelateria.giocatori.v1', KEY_BOARD = 'gelateria.classifica.v1';
+const KEY_PLAYERS = 'gelateria.giocatori.v2', KEY_BOARD = 'gelateria.classifica.v2';   // v2: sfida di 30 giorni a fasi
 function load(k, def){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; }catch(e){ return def; } }
 function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 function datiGiocatore(nick){ const all = load(KEY_PLAYERS, {}); return all[nick.toLowerCase()] || null; }
@@ -6916,7 +6969,7 @@ function salvaGiocatore(){
   if(!S.nick) return;
   salvaSessione();
   const all = load(KEY_PLAYERS, {});
-  all[S.nick.toLowerCase()] = { nick:S.nick, prog:S.prog, tutorialFatto:S.tutorialFatto, tentativi:S.tentativi, best:S.best };
+  all[S.nick.toLowerCase()] = { nick:S.nick, prog:S.prog, tutorialFatto:S.tutorialFatto, tentativi:S.tentativi, best:S.best, maxFase:S.maxFase };
   save(KEY_PLAYERS, all);
 }
 const norm = s => String(s||'').trim().toLowerCase();
@@ -6978,9 +7031,12 @@ const S = {
   mode:'game',                 // 'tutorial' | 'game'
   tut:{ giorno:0, stato:null, giorni:giorniTutorial() },
   giorniSfida: generaGiorni(SEED),
-  ultimaSim:null, factIdx:0
+  ultimaSim:null, factIdx:0,
+  sfida:null,                  // la sfida in corso: { fase, stato, giorni:[risultati dei giorni già giocati] }
+  maxFase:0                    // la fase più avanzata raggiunta (i blocchi sbloccati restano disponibili nei tentativi dopo)
 };
-function progBase(){ return { prezzo:CONFIG.prezzoBase, produzione:CONFIG.produzioneBase, regole:[] }; }
+// niente valori di base da impostare: se nessuna regola dice di produrre, il robot fa 0 coni
+function progBase(){ return { prezzo:CONFIG.prezzoBase, produzione:0, regole:[] }; }
 
 /* =====================================================================
    NAVIGAZIONE
@@ -7051,6 +7107,7 @@ async function entra(saltaTutorial){
   S.tutorialFatto = d ? d.tutorialFatto : false;
   S.tentativi = d ? d.tentativi : 0;
   S.best = d ? d.best : null;
+  S.maxFase = d && d.maxFase || 0; S.prog.produzione = 0;
   await provaGrafica();
   if(saltaTutorial || S.tutorialFatto){ S.tutorialFatto = true; salvaGiocatore(); vaiAlGioco(); }
   else iniziaTutorial();
@@ -7067,25 +7124,37 @@ $('#tb-board').onclick = () => mostraClassifica('gruppo');
 function opts(values, sel, fmt){
   return values.map(v => `<option value="${v}" ${String(v)===String(sel)?'selected':''}>${fmt?fmt(v):v}</option>`).join('');
 }
-function renderValoriBase(){
-  $('#v-prezzo').textContent = eur(S.prog.prezzo,2);
-  $('#v-produzione').textContent = S.prog.produzione + ' 🍦';
+/* ---------- fasi della sfida e blocchi sbloccati ---------- */
+const FASI = CONFIG.fasi;
+function faseInfo(f){ let da = 1; for(let i=0;i<f;i++) da += FASI[i].giorni; return { ...FASI[f], da, a: da + FASI[f].giorni - 1, n:f }; }
+// i blocchi delle regole che si possono usare: nel tutorial solo il meteo, poi crescono fase dopo fase
+function blocchiDisponibili(){
+  if(S.mode === 'tutorial') return { cond:['meteo'], azioni:['produci'] };
+  const f = Math.max(S.sfida ? S.sfida.fase : 0, S.maxFase || 0), cond = [], azioni = [];
+  for(let i=0;i<=f;i++){ cond.push(...FASI[i].cond); azioni.push(...FASI[i].azioni); }
+  return { cond, azioni };
+}
+// cosa si mostra nella simulazione: la temperatura, il magazzino, il prezzo… solo quando servono
+function cosaVedi(){
+  if(S.mode === 'tutorial') return { temp:false, magazzino:false, prezzo:false };
+  const D = blocchiDisponibili(), F = FASI[S.sfida.fase];
+  return { temp:D.cond.includes('temp'), magazzino:!F.auto, prezzo:D.azioni.includes('prezzo') };
 }
 function renderRegole(){
-  const box = $('#rules'), R = S.prog.regole;
+  const box = $('#rules'), R = S.prog.regole, D = blocchiDisponibili();
   if(!R.length){
-    box.innerHTML = `<div class="empty-rules">Nessuna regola: la gelateria usa sempre i valori di base.<br>Premi <b>➕ Aggiungi regola</b>!</div>`;
+    box.innerHTML = `<div class="empty-rules">Nessuna regola: il robot non sa cosa fare e <b>non produce coni</b>.<br>Premi <b>➕ Aggiungi regola</b>!</div>`;
   } else box.innerHTML = R.map((r,i)=>{
     const C = COND[r.c], A = AZIONI[r.a];
     return `<div class="rule" data-i="${i}">
       <span class="num">${i+1}</span>
       <div class="blk cond"><b>SE</b>
-        <select data-k="c">${opts(Object.keys(COND), r.c, k=>COND[k].label)}</select>
+        <select data-k="c">${opts(Object.keys(COND).filter(k=>D.cond.includes(k) || k===r.c), r.c, k=>COND[k].label)}</select>
         ${C.ops ? `<select data-k="op">${opts(C.ops, r.op)}</select>` : ''}
         <select data-k="cv">${opts(C.values, r.cv, C.fmt)}</select>
       </div>
       <div class="blk act"><b>ALLORA</b>
-        <select data-k="a">${opts(Object.keys(AZIONI), r.a, k=>AZIONI[k].label)}</select>
+        <select data-k="a">${opts(Object.keys(AZIONI).filter(k=>D.azioni.includes(k) || k===r.a), r.a, k=>AZIONI[k].label)}</select>
         <select data-k="av">${opts(A.values, r.av, A.fmt)}</select>
       </div>
       <div class="tools">
@@ -7121,26 +7190,12 @@ $('#btn-add').onclick = ()=>{
   $('#btn-add').classList.remove('pulse');
   renderRegole(); salvaGiocatore(); pulisciErroreCoach();
 };
-document.querySelectorAll('[data-step]').forEach(b => b.onclick = ()=>{
-  const k = b.dataset.step, d = +b.dataset.d, C = CONFIG;
-  if(k==='prezzo') S.prog.prezzo = Math.round(clamp(S.prog.prezzo + d*C.prezzoPasso, C.prezzoMin, C.prezzoMax)*100)/100;
-  else S.prog.produzione = clamp(S.prog.produzione + d*C.produzionePasso, C.produzioneMin, C.produzioneMax);
-  renderValoriBase(); salvaGiocatore(); pulisciErroreCoach();
-});
-function renderInfo(){
-  const C = CONFIG;
-  $('#info-chips').innerHTML = [
-    `1 kg = ${C.coniPerKg} coni`, `🍦 1 cono costa ${eur(C.costoKg/C.coniPerKg,2)}`,
-    `🏠 affitto ${eur(C.affittoGiorno)}/giorno`, `🚚 consegna ${eur(C.costoConsegna)}`,
-    `🚚 arriva il giorno dopo`, `📦 max ${C.magazzinoMax} kg`
-  ].map(t=>`<span>${t}</span>`).join('');
-}
-function renderPrevisioni(box, giorni, visibili, attuale){
+function renderPrevisioni(box, giorni, visibili, attuale, conTemp){
   let html = '<div class="forecast">';
   giorni.forEach((g,i)=>{
     const vis = i < visibili;
     html += `<div class="fday ${vis?'':'unk'} ${attuale===i?'now':''}" data-d="${i}">${GIORNI_SETT[g.dow]} ${g.n}
-      <span class="ic">${vis ? METEO[g.meteo].ic : '❓'}</span>${vis ? g.temp+'°' : '—'}</div>`;
+      <span class="ic">${vis ? METEO[g.meteo].ic : '❓'}</span>${vis && conTemp ? g.temp+'°' : ''}</div>`;
   });
   html += '</div>';
   box.innerHTML = html;
@@ -7153,21 +7208,46 @@ function nuovoFatto(){
 /* =====================================================================
    SCHERMATA PROGRAMMA (gioco vero)
    ===================================================================== */
+// una nuova sfida di 30 giorni: si riparte dalla fase 1 (le regole restano)
 function vaiAlGioco(){
   S.mode = 'game';
-  $('#coach').classList.add('hidden');
-  $('#card-fact').classList.remove('hidden');
-  $('#forecast-title').textContent = '📡 Previsioni meteo';
-  renderPrevisioni($('#forecast-box'), S.giorniSfida, CONFIG.giorniPrevisione);
-  $('#forecast-box').insertAdjacentHTML('beforeend',
-    `<div class="station-note">📡💥 Dopo il giorno ${CONFIG.giorniPrevisione} la stazione meteo si rompe: il tuo programma dovrà cavarsela con qualsiasi tempo!</div>`);
-  $('#start-chips').innerHTML = `<span>📦 ${CONFIG.magazzinoIniziale} kg</span><span>💰 ${eur(CONFIG.cassaIniziale)}</span><span>📅 ${CONFIG.giorni} giorni</span>`;
-  $('#btn-run').textContent = `▶ AVVIA ${CONFIG.giorni} GIORNI`;
+  S.sfida = { fase:0, stato:statoIniziale(), giorni:[] };
+  renderFase();
+}
+// la schermata del gestionale per la fase in corso
+function renderFase(){
+  salvaSessione();
+  const F = faseInfo(S.sfida.fase), V = cosaVedi();
+  const es = F.esempio ? `<div>Per esempio:</div><div class="target">${bloccoTarget(F.esempio)}</div>` : '';
+  $('#coach').innerHTML = `<div class="mascot">🍦</div><div class="body">
+     <p class="say">Fase ${S.sfida.fase+1} di ${FASI.length} · giorni ${F.da}–${F.a} · ${F.titolo}</p>
+     <p style="margin:0 0 6px">${F.testo}</p>${es}</div>`;
+  const giorni = S.giorniSfida.slice(F.da-1, F.a);
+  $('#forecast-box').innerHTML = F.previsioni
+    ? `<div class="hint">📡 Previsioni dei prossimi giorni</div><div class="forecast fase-giorni">${giorni.map(g=>`<div class="fday">${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">${METEO[g.meteo].ic}</span>${V.temp ? g.temp+'°' : ''}</div>`).join('')}</div>`
+    : `<div class="station-note">📡💥 Niente previsioni: il programma deve funzionare con qualsiasi tempo.</div>`;
+  const chips = [`<span>📅 Giorni ${F.da}–${F.a} di ${CONFIG.giorni}</span>`];
+  if(S.sfida.giorni.length) chips.push(`<span>💰 ${eur(S.sfida.stato.cassa)}</span>`);
+  if(V.magazzino) chips.push(`<span>📦 ${round1(S.sfida.stato.stock)} kg</span>`);
+  $('#start-chips').innerHTML = chips.join('');
+  $('#btn-run').textContent = `▶ AVVIA GIORNI ${F.da}–${F.a}`;
   $('#btn-add').classList.remove('pulse');
-  renderValoriBase(); renderRegole(); renderInfo(); nuovoFatto();
+  $('#card-fact').classList.remove('hidden');
+  renderRegole(); nuovoFatto();
   show('program');
 }
-$('#btn-run').onclick = ()=>{
+// attenzione se si parte con un programma che non produce niente
+async function controllaPrima(){
+  const R = S.prog.regole;
+  if(R.some(r => r.a === 'produci' || r.a === 'piu')) return true;
+  const scelta = await modal(`<div class="ic">⚠️</div><h3>Attenzione!</h3>
+    <p>${R.length ? 'Nessuna regola dice al robot di <b>produrre coni</b>.' : 'Il robot <b>non ha nessuna regola</b>.'}</p>
+    <p>Così non farà nessun cono e i clienti resteranno senza gelato!</p>`,
+    [{t:'✏️ Torno alle regole', cls:'mint'},{t:'Parto lo stesso', cls:'neutro'}]);
+  return scelta === 1;
+}
+$('#btn-run').onclick = async ()=>{
+  if(!(await controllaPrima())) return;
   if(S.mode==='tutorial') return avviaGiornoTutorial();
   avviaSfida();
 };
@@ -7175,26 +7255,28 @@ $('#btn-run').onclick = ()=>{
 /* =====================================================================
    TUTORIAL (3 giorni con meteo noto)
    ===================================================================== */
+// il tutorial: 3 giorni, una regola sul meteo al giorno. Il magazzino lo riempie il fornitore da solo.
 const TUT = [
-  { target:{ c:'temp', op:'>', cv:30, a:'produci', av:100 },
-    say:`Domani ☀️ <b>31 °C</b>: arriveranno <b>tantissimi</b> clienti! Con 60 coni il gelato finisce subito.`,
-    task:'Aggiungi questa regola:',
-    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='temp');
-      if(!ok) return 'Manca la regola con 🌡️ temperatura. Premi ➕ Aggiungi regola (o ✨ Aiutami).';
-      if(d.persi > 5) return 'La regola c\'è, ma i coni sono ancora pochi: arriveranno circa 100 clienti!';
+  { target:{ c:'meteo', cv:'sole', a:'produci', av:100 },
+    say:`Domani c'è il ☀️ <b>sole</b>: arriveranno <b>tantissimi</b> clienti! Ma il robot non ha regole: così <b>non produce nessun cono</b>.`,
+    task:'Insegnagli cosa fare con questa regola:',
+    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='sole');
+      if(!ok) return 'Manca la regola SE ☁️ meteo è ☀️ sole. Premi ➕ Aggiungi regola (o ✨ Aiutami).';
+      if(d.persi > 8) return 'La regola c\'è, ma i coni sono pochi: col sole arrivano circa 100 clienti!';
       return null; } },
   { target:{ c:'meteo', cv:'pioggia', a:'produci', av:20 },
-    say:`Domani 🌧️ <b>piove</b> e fa fresco (19 °C): verranno <b>pochi</b> clienti. Se produci 60 coni, ne butterai tanti!`,
+    say:`Domani 🌧️ <b>piove</b>: verranno <b>pochi</b> clienti. Se il robot fa troppi coni, quelli avanzati si buttano!`,
     task:'Aggiungi questa regola:',
-    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo');
-      if(!ok) return 'Manca la regola con ☁️ meteo è 🌧️ pioggia.';
-      if(d.avanzati > 15) return 'La regola c\'è, ma produci ancora troppo: con la pioggia arrivano circa 15 clienti.';
+    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='pioggia');
+      if(!ok) return 'Manca la regola SE ☁️ meteo è 🌧️ pioggia.';
+      if(d.avanzati > 15) return 'La regola c\'è, ma produci troppo: con la pioggia arrivano circa 15 clienti.';
       return null; } },
-  { target:{ c:'magazzino', op:'<', cv:30, a:'riordina', av:60 },
-    say:`Domani ⛅ 25 °C. Attenzione: nel 📦 magazzino restano solo <b>13 kg</b>! Il camion impiega <b>un giorno</b> ad arrivare: meglio ordinare prima di restare senza.`,
-    task:'Aggiungi questa regola:',
-    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].a==='riordina');
-      if(!ok) return 'Manca la regola che fa 🚚 riordina quando il 📦 magazzino è basso.';
+  { target:{ c:'meteo', cv:'nuvoloso', a:'produci', av:60 },
+    say:`Domani è ⛅ <b>nuvoloso</b>: arriverà una via di mezzo di clienti. Manca solo la regola per questo tempo!`,
+    task:'Aggiungi l\'ultima regola:',
+    check(d, prog){ const ok = d.fired.some(i=>prog.regole[i].c==='meteo' && prog.regole[i].cv==='nuvoloso');
+      if(!ok) return 'Manca la regola SE ☁️ meteo è ⛅ nuvoloso.';
+      if(d.persi > 12 || d.avanzati > 20) return 'Quasi! Con le nuvole arrivano circa 55 clienti: prova 60 coni.';
       return null; } }
 ];
 function bloccoTarget(r){
@@ -7206,23 +7288,23 @@ async function iniziaTutorial(){
   S.prog = progBase();
   S.tut.giorno = 0;
   S.tut.stato = statoIniziale({ magazzino:CONFIG.tutorial.magazzino, cassa:CONFIG.tutorial.cassa });
-  renderInfo();
+  await introPanoramica();                           // prima una panoramica lenta della città e di una giornata
   show('program');
   renderTutorial();
   await modal(`<div class="ic">🍦🤖</div><h3>Ciao ${esc(S.nick)}!</h3>
-    <p>La tua gelateria è <b>automatica</b>: non vendi tu il gelato, scrivi il <b>programma</b> che decide ogni mattina cosa fare.</p>
-    <p>Facciamo una prova di <b>3 giorni</b> insieme!</p>`, [{t:'Iniziamo! ▶'}]);
-  await modal(`<div class="ic">⚙️</div><h3>Le variabili</h3>
-    <p>Il <b>prezzo</b> del cono e i <b>coni al giorno</b> sono i valori di base: ogni giorno la gelateria parte da qui.</p>
-    <p>Con le <b>regole</b> SE… ALLORA… il programma li cambia quando serve.</p>`, [{t:'Ho capito! ▶'}]);
+    <p>La tua gelateria è <b>automatica</b>: un <b>robot</b> decide ogni mattina quanti coni fare.</p>
+    <p>Tu gli scrivi le <b>regole</b>. Facciamo una prova di <b>3 giorni</b> insieme!</p>`, [{t:'Iniziamo! ▶'}]);
+  await modal(`<div class="ic">🤖</div><h3>Le regole</h3>
+    <p>Una regola dice: <b>SE</b> succede qualcosa, <b>ALLORA</b> il robot fa qualcosa.</p>
+    <p>Per esempio: SE c'è il sole ALLORA produci 100 coni.</p>
+    <p>Senza regole il robot <b>non fa niente</b>!</p>`, [{t:'Ho capito! ▶'}]);
+  renderRegole();
 }
 function renderTutorial(){
   salvaSessione();
   const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k];
   $('#card-fact').classList.add('hidden');
-  $('#forecast-title').textContent = `📡 Domani (giorno ${k+1} di 3)`;
-  $('#forecast-box').innerHTML = `<div class="tomorrow"><span class="ic">${METEO[g.meteo].ic}</span><div>${METEO[g.meteo].nome}<br>${g.temp} °C</div></div>
-     <div class="info-chips" style="margin-top:8px"><span>📦 magazzino: ${round1(S.tut.stato.stock)} kg</span></div>`;
+  $('#forecast-box').innerHTML = `<div class="domani"><span class="ic">${METEO[g.meteo].ic}</span><div>Domani (giorno ${k+1} di 3):<br>${METEO[g.meteo].nome}</div></div>`;
   const coach = $('#coach');
   coach.classList.remove('hidden');
   coach.innerHTML = `<div class="mascot">🍦</div><div class="body">
@@ -7232,20 +7314,20 @@ function renderTutorial(){
      <p class="err hidden" id="coach-err"></p></div>`;
   $('#btn-help').onclick = ()=>{
     const t = T.target;
-    const idx = S.prog.regole.findIndex(r => r.c===t.c);
+    const idx = S.prog.regole.findIndex(r => r.c===t.c && r.cv===t.cv);
     if(idx >= 0) S.prog.regole[idx] = { ...t, op:t.op||'>' };
     else S.prog.regole.push({ ...t, op:t.op||'>' });
     renderRegole(); salvaGiocatore(); pulisciErroreCoach();
   };
-  $('#start-chips').innerHTML = `<span>💰 ${eur(S.tut.stato.cassa)}</span>`;
+  $('#start-chips').innerHTML = '';
   $('#btn-run').textContent = `▶ AVVIA GIORNO ${k+1}`;
   $('#btn-add').classList.toggle('pulse', true);
-  renderValoriBase(); renderRegole();
+  renderRegole();
 }
 function pulisciErroreCoach(){ const e = $('#coach-err'); if(e) e.classList.add('hidden'); }
 async function avviaGiornoTutorial(){
   const k = S.tut.giorno, T = TUT[k], g = S.tut.giorni[k];
-  const prova = simula(S.prog, [g], S.tut.stato);
+  const prova = simula(S.prog, [g], S.tut.stato, { auto:true });
   const err = T.check(prova.giorni[0], S.prog);
   if(err){
     const e = $('#coach-err'); e.textContent = '🙈 ' + err; e.classList.remove('hidden');
@@ -7253,23 +7335,23 @@ async function avviaGiornoTutorial(){
     return;
   }
   // cosa sarebbe successo senza la nuova regola?
-  const senza = { ...S.prog, regole: S.prog.regole.filter(r => !(r.c===T.target.c || (k===2 && r.a==='riordina'))) };
-  const d0 = simula(senza, [g], S.tut.stato).giorni[0];
+  const senza = { ...S.prog, regole: S.prog.regole.filter(r => !(r.c===T.target.c && r.cv===T.target.cv)) };
+  const d0 = simula(senza, [g], S.tut.stato, { auto:true }).giorni[0];
   const d = prova.giorni[0];
-  await animaSimulazione(prova, { tutorial:true, giorniVisibili:S.tut.giorni.length, tuttiGiorni:S.tut.giorni });
+  await animaSimulazione(prova, { tutorial:true, giorniVisibili:S.tut.giorni.length, tuttiGiorni:S.tut.giorni, vedi:{ temp:false, magazzino:false, prezzo:false } });
   S.tut.stato = prova.stato; salvaSessione();
   let html;
   if(k===0) html = `<div class="ic">😋</div><h3>Giorno 1: fatto!</h3>
      <div class="stats"><span>👥 ${d.clienti} clienti</span><span>🍦 ${d.venduti} venduti</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
-     <p>Senza la regola avresti perso <b>${d0.persi} clienti</b>!</p><div class="card fact"><p>${FATTI.programmazione}</p></div>`;
+     <p>Senza la regola il robot non avrebbe fatto coni e avresti perso <b>${d0.persi} clienti</b>!</p><div class="card fact"><p>${FATTI.programmazione}</p></div>`;
   else if(k===1) html = `<div class="ic">🌧️</div><h3>Giorno 2: fatto!</h3>
      <div class="stats"><span>🍦 ${d.venduti} venduti</span><span>🗑️ ${d.avanzati} buttati</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
      <p>Senza la regola avresti buttato <b>${d0.avanzati} coni</b> (${eur(d0.avanzati*CONFIG.costoKg/CONFIG.coniPerKg)})!</p>
      <p>Oggi sei in perdita lo stesso: l'affitto di ${eur(CONFIG.affittoGiorno)} si paga anche quando piove.</p>
      <div class="card fact"><p>${FATTI.costiFissi}</p></div>`;
-  else html = `<div class="ic">🚚💨</div><h3>Giorno 3: fatto!</h3>
-     <div class="stats"><span>🍦 ${d.venduti} venduti</span><span>🚚 ordinati ${d.ordine} kg</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
-     <p>Il camion è partito: arriverà <b>domattina</b>. Così il magazzino non resta mai vuoto!</p>
+  else html = `<div class="ic">⛅</div><h3>Giorno 3: fatto!</h3>
+     <div class="stats"><span>🍦 ${d.venduti} venduti</span><span>😞 ${d.persi} persi</span><span>🗑️ ${d.avanzati} buttati</span><span class="${d.profitto>=0?'pos':'neg'}">${eurS(d.profitto)}</span></div>
+     <p>Ora il robot sa cosa fare con <b>ogni</b> tempo: ☀️ sole, ⛅ nuvole e 🌧️ pioggia!</p>
      <div class="card fact"><p>${FATTI.automazione}</p></div>`;
   show('program');
   await modal(html, [{t: k<2 ? 'Avanti ▶' : 'Avanti ▶'}]);
@@ -7277,9 +7359,9 @@ async function avviaGiornoTutorial(){
   // fine tutorial
   S.tutorialFatto = true; salvaGiocatore();
   await modal(`<div class="ic">🏁</div><h3>Ora tocca a te!</h3>
-    <p>La sfida vera dura <b>${CONFIG.giorni} giorni</b>. Le tue 3 regole sono già nel programma: migliorale!</p>
-    <p>Vedrai il meteo dei primi <b>${CONFIG.giorniPrevisione} giorni</b>… poi 📡💥 la stazione meteo si rompe!</p>
-    <p>Il tuo programma dovrà funzionare con <b>qualsiasi</b> tempo.</p>`, [{t:'Alla sfida! 🚀', cls:'mint'}]);
+    <p>La sfida vera dura <b>${CONFIG.giorni} giorni</b>. Le tue 3 regole sono già nel programma.</p>
+    <p>Ogni pochi giorni arriva una <b>novità</b> da gestire: la temperatura, il weekend, il magazzino…</p>
+    <p>Alla fine conta quanto hai guadagnato in tutto!</p>`, [{t:'Alla sfida! 🚀', cls:'mint'}]);
   vaiAlGioco();
 }
 
@@ -7344,12 +7426,10 @@ function spawnCliente(servito, durata){
   setTimeout(()=>{ el.insertAdjacentHTML('beforeend', servito ? '<i>🍦</i>' : '<i>😞</i>'); }, durata*0.62);
   anim.onfinish = () => el.remove();
 }
-function renderDecisione(d){
-  const rows = [
-    `<div><span>🍦 Produzione</span><span>${d.obiettivo} coni</span></div>`,
-    `<div><span>💶 Prezzo</span><span>${eur(d.prezzo,2)}</span></div>`,
-    `<div><span>🚚 Riordino</span><span>${d.ordine ? d.ordine+' kg' : '—'}</span></div>`
-  ];
+function renderDecisione(d, V = {}){
+  const rows = [ `<div><span>🍦 Produzione</span><span>${d.obiettivo} coni</span></div>` ];
+  if(V.prezzo) rows.push(`<div><span>💶 Prezzo</span><span>${eur(d.prezzo,2)}</span></div>`);
+  if(V.magazzino) rows.push(`<div><span>🚚 Riordino</span><span>${d.ordine ? d.ordine+' kg' : '—'}</span></div>`);
   if(d.limitato) rows.push(`<div class="warn"><span>⚠️ Ingredienti finiti!</span><span>solo ${d.prodotti}</span></div>`);
   if(d.eccesso > 0) rows.push(`<div class="warn"><span>❄️ Congelatore pieno</span><span>−${round1(d.eccesso)} kg</span></div>`);
   $('#s-decision').innerHTML = rows.join('');
@@ -7365,9 +7445,10 @@ async function animaGiorno(d, opz){
   const scene = $('#scene');
   $('#s-day').textContent = `📅 Giorno ${d.n}${opz.tutorial?'':'/'+opz.tuttiGiorni.length} · ${GIORNI_SETT[d.dow]}`;
   scene.classList.remove('sole','nuvoloso','pioggia'); scene.classList.add(d.meteo);
-  $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${d.temp} °C</span>`;
+  $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${opz.vedi.temp ? d.temp+' °C' : METEO[d.meteo].nome}</span>`;
+  $('#scene').classList.toggle('senza-magazzino', !opz.vedi.magazzino);
   $('#s-soldout').classList.add('hidden');
-  renderPrevisioni($('#s-forecast'), opz.tuttiGiorni, Math.max(opz.giorniVisibili, d.n), d.n-1);
+  renderPrevisioni($('#s-forecast'), opz.tuttiGiorni, Math.max(opz.giorniVisibili, d.n), d.n-1, opz.vedi.temp);
   if(d.n > opz.giorniVisibili){ const c = $('#s-forecast').querySelector(`[data-d="${d.n-1}"]`); if(c) c.classList.add('pop'); }
   setClock(8); setCash(d.cassaInizio);
   // mattina: arriva il camion?
@@ -7376,11 +7457,11 @@ async function animaGiorno(d, opz){
     setTruck(24);
     await sleep(durata*0.08);
     truck.attivo = false; setTruck(0);
-    floater(`+${d.arrivo} kg 📦`, 40, 72, '#3f866c');
+    if(opz.vedi.magazzino) floater(`+${d.arrivo} kg 📦`, 40, 72, '#3f866c');
   }
   setStock(d.stockInizio);
   // il programma decide
-  renderMiniRegole(d.fired); renderDecisione(d);
+  renderMiniRegole(d.fired); renderDecisione(d, opz.vedi);
   await sleep(durata*0.08);
   setStock(d.stockFine);
   $('#s-cones').textContent = '🍦 ' + d.prodotti;
@@ -7423,12 +7504,12 @@ async function animaGiorno(d, opz){
    ===================================================================== */
 // durate delle scene in 3D (ms a velocità 1×), [tutorial, sfida]: si aggiungono alla giornata
 const GRAFICA3D = {
-  giornoMs: [9000, 4500],        // le ore di apertura (9-20): qui arrivano i clienti
-  aperturaMs: [5000, 2600],      // il gelataio apre, porta dentro i pacchi, porta fuori il bancone
-  chiusuraMs: [2400, 1300],      // la sera porta dentro il bancone e chiude
-  notteMs: [1500, 800],          // la notte senza ordini
-  notteFurgoneMs: [4000, 2400],  // la notte, quando c'è un ordine, il furgone viaggia e scarica i pacchi
-  clienteMs: [3000, 2400],       // quanto dura il giro di un cliente
+  giornoMs: [16000, 5500],       // le ore di apertura (9-20): qui arrivano i clienti
+  aperturaMs: [6500, 2600],      // il gelataio apre, porta dentro i pacchi, porta fuori il bancone
+  chiusuraMs: [3200, 1400],      // la sera porta dentro il bancone e chiude
+  notteMs: [2000, 900],          // la notte senza consegne
+  notteFurgoneMs: [6000, 2600],  // la notte, quando c'è una consegna, il furgone viaggia e scarica i pacchi
+  clienteMs: [4200, 2800],       // quanto dura il giro di un cliente
   kgPacco: CONFIG.magazzinoMax / 12   // un pacco sul pallet: il magazzino pieno sono 12 pacchi
 };
 const G3 = { attivo:false, pronto:false, montaggio:null, lento:0 };
@@ -7451,7 +7532,7 @@ function impostaGrafica(modo, salva){
   aggiornaMenuGrafica();
 }
 function iniziaSimulazione3D(){
-  Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setFinito(false); Diorama.setConi(0, 1); Diorama.setSpeed(speed);
+  Diorama.svuota(); Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setFinito(false); Diorama.setConi(0, 1); Diorama.setSpeed(speed);
 }
 // i numeri che volano partono dal posto giusto del diorama
 // aspetta il diorama, ma mai più del doppio del previsto (se la grafica cambia a metà, il gioco va avanti lo stesso)
@@ -7461,17 +7542,18 @@ async function animaGiorno3D(d, opz){
   const k = opz.tutorial ? 0 : 1;
   $('#s-day').textContent = $('#f-day').textContent = `📅 Giorno ${d.n}${opz.tutorial?'':'/'+opz.tuttiGiorni.length} · ${GIORNI_SETT[d.dow]}`;
   Diorama.setMeteo(d.meteo); Diorama.nuovoGiorno();
-  $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${d.temp} °C</span>`;
-  renderPrevisioni($('#s-forecast'), opz.tuttiGiorni, Math.max(opz.giorniVisibili, d.n), d.n-1);
+  $('#s-weather').innerHTML = `${METEO[d.meteo].ic}<span>${opz.vedi.temp ? d.temp+' °C' : METEO[d.meteo].nome}</span>`;
+  $('#scene').classList.toggle('senza-magazzino', !opz.vedi.magazzino);
+  renderPrevisioni($('#s-forecast'), opz.tuttiGiorni, Math.max(opz.giorniVisibili, d.n), d.n-1, opz.vedi.temp);
   if(d.n > opz.giorniVisibili){ const c = $('#s-forecast').querySelector(`[data-d="${d.n-1}"]`); if(c) c.classList.add('pop'); }
   setClock(8); setCash(d.cassaInizio);
   // mattina: il furgone è arrivato stanotte, i pacchi aspettano sul pallet
   truck.attivo = false; setTruck(0);
   setStock(d.stockInizio);
   Diorama.setPacchi(pacchiDi(d.stockInizio));
-  if(d.arrivo > 0) floater3D(`+${d.arrivo} kg 📦`, 'casse', '#3f866c');
+  if(d.arrivo > 0 && opz.vedi.magazzino) floater3D(`+${d.arrivo} kg 📦`, 'casse', '#3f866c');
   Diorama.setFinito(false); Diorama.setConi(0, Math.max(1, d.prodotti));
-  renderMiniRegole(d.fired); renderDecisione(d);
+  renderMiniRegole(d.fired); renderDecisione(d, opz.vedi);
   // apertura: il gelataio porta dentro i pacchi che servono per i coni di oggi, poi porta fuori il bancone
   let n = pacchiDi(d.stockInizio) - pacchiDi(d.stockFine);
   if(d.prodotti > 0) n = Math.max(1, n);
@@ -7552,6 +7634,78 @@ async function provaGrafica(){
   ov.classList.add('hidden');
 }
 
+/* ---- PANORAMICA INIZIALE (prima del tutorial) ----
+   La camera scorre lentamente da sinistra a destra e racconta una giornata intera, come se qualcuno stesse giocando:
+   i ragazzi entrano a scuola, il gelataio apre, clienti felici, gelato finito e clienti arrabbiati, la sera si chiude,
+   di notte arriva il furgone, la camera gira sulla città, poi un nuovo giorno con la pioggia. Si può saltare. */
+async function introPanoramica(){
+  if(!G3.attivo || !G3.pronto) return;
+  const salta = { si:false };
+  const frame = () => new Promise(r => requestAnimationFrame(r));
+  const attesa = async ms => { const t0 = performance.now(); while(!salta.si && performance.now() - t0 < ms) await frame(); };
+  // fa scorrere l'ora (e altro, se serve) in ms millisecondi
+  const scorri = async (da, a, ms, ogni) => { const t0 = performance.now();
+    while(!salta.si){ const p = Math.min(1, (performance.now() - t0) / ms); Diorama.setOra(da + (a - da) * p); if(ogni) ogni(p); if(p >= 1) break; await frame(); } };
+  // aspetta che il diorama finisca (apre, chiude…), a meno che non si salti
+  const finche = prom => Promise.race([prom, new Promise(r => { const f = () => salta.si ? r() : requestAnimationFrame(f); f(); })]);
+  const dida = html => { const el = $('#didascalia'); el.innerHTML = html; el.classList.remove('hidden'); };
+  const cam = (x, y, zoom, extra) => Diorama.regia({ x, y, h:1.4, zoom, lento:true, ...extra });
+  $('#scr-sim').classList.add('intro'); show('sim');
+  $('#btn-salta-intro').onclick = () => { salta.si = true; };
+  Diorama.setSpeed(1); Diorama.svuota(); Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setMeteo('sole');
+  Diorama.setFinito(false); Diorama.setConi(0, 12); Diorama.setPacchi(8); Diorama.setOra(8.2);
+  try {
+    // 1. da sinistra: la città si sveglia, i ragazzi entrano a scuola
+    cam(1, 5, 0.75); dida('🌅 <b>Mattina</b> a Todi: i ragazzi entrano a scuola');
+    await attesa(2500);
+    cam(8.8, 9, 0.42);
+    await scorri(8.2, 10.1, 7000);
+    // 2. il gelataio apre e porta fuori il bancone
+    cam(14.6, 8, 0.4); dida('🍦 Il <b>gelataio</b> apre: porta dentro gli ingredienti e fuori il bancone');
+    if(!salta.si) await finche(Diorama.apri(4, 7000));
+    // 3. clienti felici
+    let coni = 6; Diorama.setConi(coni, 6);
+    dida('😍 Arrivano i <b>clienti</b>: chi prende il gelato è felice!');
+    for(let i = 0; i < 6 && !salta.si; i++){
+      Diorama.cliente(true, 4200, () => { coni = Math.max(0, coni - 1); Diorama.setConi(coni); if(coni === 0) Diorama.setFinito(true); });
+      await scorri(10 + i * 0.8, 10.8 + i * 0.8, 1500);
+    }
+    await attesa(2500);
+    // 4. gelato finito: clienti arrabbiati
+    Diorama.setConi(0); Diorama.setFinito(true);
+    dida('😠 I coni sono <b>finiti</b>: chi arriva adesso resta senza e si arrabbia');
+    for(let i = 0; i < 3 && !salta.si; i++){ Diorama.cliente(false, 4200); await scorri(15 + i, 16 + i, 1700); }
+    await attesa(2500);
+    // 5. sera: si chiude
+    cam(12.5, 7, 0.6); dida('🌇 <b>Sera</b>: il gelataio porta dentro il bancone e chiude');
+    await scorri(18.5, 20.1, 2500);
+    if(!salta.si) await finche(Diorama.chiudi(4000));
+    // 6. notte: arriva il furgone (la camera lo segue)
+    dida('🌙 <b>Notte</b>: il furgone porta gli ingredienti per domani');
+    Diorama.regia(null); Diorama.setInquadratura('segui');
+    await scorri(20.5, 29, 10000, p => Diorama.camion(true, 30, 24 * p, 4));
+    Diorama.camion(false); Diorama.setInquadratura('auto');
+    // 7. la camera gira piano sulla città
+    dida('🔄 Questa è la tua città: <b>Todi</b>!');
+    cam(9, 4.5, 0.95, { az:-26 }); await attesa(3000);
+    cam(9, 4.5, 0.95, { az:26 }); await scorri(29, 31.6, 6000);
+    // 8. nuovo giorno: piove, e si ricomincia
+    Diorama.setMeteo('pioggia'); Diorama.setFinito(false); Diorama.setConi(6, 6); Diorama.setPacchi(8);
+    cam(13.5, 8, 0.5); dida('🌧️ <b>Nuovo giorno</b>: oggi piove… e si ricomincia!');
+    await scorri(8.2, 9, 2500);
+    if(!salta.si) await finche(Diorama.apri(2, 5000));
+    for(let i = 0; i < 2 && !salta.si; i++){ Diorama.cliente(true, 4200); await scorri(9.5 + i, 10.5 + i, 2000); }
+    await attesa(2500);
+    dida('🤖 Ora tocca a te: scrivi le <b>regole</b> per il robot della gelateria!');
+    await attesa(3000);
+  } finally {
+    // tutto come prima, per il tutorial
+    Diorama.regia(null); Diorama.setInquadratura('auto'); Diorama.camion(false); Diorama.svuota(); Diorama.chiudiSubito();
+    Diorama.setMeteo('sole'); Diorama.setFinito(false); Diorama.setOra(8);
+    $('#didascalia').classList.add('hidden'); $('#scr-sim').classList.remove('intro');
+  }
+}
+
 // ---- il menu della grafica (ingranaggio ⚙️ in alto a destra) ----
 function aggiornaMenuGrafica(){
   const si3D = supporta3D();
@@ -7611,9 +7765,6 @@ async function animaSimulazione(sim, opz){
   show('sim');
   if(G3.attivo){ await prepara3D(); if(G3.pronto) iniziaSimulazione3D(); }
   for(const d of sim.giorni){
-    if(!opz.tutorial && d.n === CONFIG.giorniPrevisione+1){
-      await toast(`<span class="big">📡💥</span>La stazione meteo si è rotta!<br><span style="font-size:18px">Da ora il tuo programma deve cavarsela da solo.</span>`, 1600);
-    }
     await animaGiorno(d, opz);
   }
   await sleep(300);
@@ -7622,18 +7773,34 @@ async function animaSimulazione(sim, opz){
 /* =====================================================================
    SFIDA, RISULTATI, CLASSIFICA
    ===================================================================== */
+// gioca i giorni della fase in corso; alla fine della fase arriva la novità, alla fine dell'ultima i risultati
 async function avviaSfida(){
   $('#btn-run').disabled = true;
-  const sim = simula(S.prog, S.giorniSfida, statoIniziale());
-  S.ultimaSim = sim;
-  await animaSimulazione(sim, { tutorial:false, giorniVisibili:CONFIG.giorniPrevisione, tuttiGiorni:S.giorniSfida });
+  const sf = S.sfida, F = faseInfo(sf.fase), V = cosaVedi();
+  const sim = simula(S.prog, S.giorniSfida.slice(F.da-1, F.a), sf.stato, { auto:F.auto });
+  const visibili = F.previsioni ? F.a : F.da - 1;
+  await animaSimulazione(sim, { tutorial:false, giorniVisibili:visibili, tuttiGiorni:S.giorniSfida, vedi:V });
   $('#btn-run').disabled = false;
+  sf.stato = sim.stato; sf.giorni.push(...sim.giorni);
+  if(sf.fase < FASI.length - 1){
+    sf.fase++; S.maxFase = Math.max(S.maxFase, sf.fase); salvaGiocatore();
+    const N = faseInfo(sf.fase);
+    const es = N.esempio ? `<div class="target" style="justify-content:center">${bloccoTarget(N.esempio)}</div>` : '';
+    show('program'); renderFase();
+    await modal(`<div class="ic">✅</div><h3>Giorni ${F.da}–${F.a}: fatto!</h3>
+      <div class="stats"><span class="${sim.tot.profitto>=0?'pos':'neg'}">${eurS(sim.tot.profitto)}</span><span>🍦 ${sim.tot.venduti} venduti</span><span>😞 ${sim.tot.persi} persi</span><span>🗑️ ${sim.tot.avanzati} buttati</span></div>
+      <h3 style="margin-top:14px">🆕 ${N.titolo}</h3><p>${N.testo}</p>${es}`, [{t:'Aggiorno le regole ▶', cls:'mint'}]);
+    return;
+  }
+  // fine dei 30 giorni
+  const tutto = { giorni:sf.giorni, tot:totali(sf.giorni), stato:sf.stato };
+  S.ultimaSim = tutto;
   S.tentativi++;
   const prima = S.best;
-  if(S.best === null || sim.tot.profitto > S.best) S.best = sim.tot.profitto;
+  if(S.best === null || tutto.tot.profitto > S.best) S.best = tutto.tot.profitto;
   salvaGiocatore();
-  const pos = registraPunteggio(sim.tot.profitto);
-  mostraRisultati(sim, prima, pos);
+  const pos = registraPunteggio(tutto.tot.profitto);
+  mostraRisultati(tutto, prima, pos);
 }
 function mostraRisultati(sim, recordPrima, pos){
   const T = sim.tot;
@@ -7779,12 +7946,13 @@ async function riprendiPartita(x){
   S.tutorialFatto = d ? d.tutorialFatto : false;
   S.tentativi = d ? d.tentativi : 0;
   S.best = d ? d.best : null;
+  S.maxFase = d && d.maxFase || 0; S.prog.produzione = 0;
   await provaGrafica();
   if(S.tutorialFatto){ vaiAlGioco(); return; }
   S.mode = 'tutorial';
   S.tut.giorno = clamp(x.tutGiorno || 0, 0, 2);
   S.tut.stato = x.tutStato || statoIniziale({ magazzino:CONFIG.tutorial.magazzino, cassa:CONFIG.tutorial.cassa });
-  renderInfo(); show('program'); renderTutorial(); renderValoriBase(); renderRegole();
+  show('program'); renderTutorial(); renderRegole();
 }
 (async ()=>{
   const x = leggiSessione(); if(!x) return;

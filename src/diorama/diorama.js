@@ -439,14 +439,16 @@ window.Diorama = (() => {
   const MIRA = new THREE.Vector3();
   const schermoPiccolo = () => stato.inquadratura === 'segui' || (stato.inquadratura === 'auto' && (W < 700 || window.innerWidth < 760 || window.innerHeight < 500));   // telefono (non una scena bassa su un PC)
   function aggiornaInquadratura(dt, notte) {
-    let zoom = 1, off = 1; MIRA.copy(CAM.miraBase);
-    if (schermoPiccolo()) {
+    let zoom = 1, off = 1, az = 0, lento = false; MIRA.copy(CAM.miraBase);
+    if (stato.regia) {                                               // la "regia" (panoramica iniziale): il gioco decide dove guardare
+      const r = stato.regia; O.L.localToWorld(MIRA.set(r.x, r.h ?? 1.4, r.y)); zoom = r.zoom ?? 0.5; off = 0; az = (r.az || 0) * Math.PI / 180; lento = !!r.lento;
+    } else if (schermoPiccolo()) {
       const cs = stato.camion, viaggia = O.furgone.g.visible && cs.attivo && cs.ore < 22.8;
       if (viaggia) { MIRA.copy(O.furgone.g.position).setY(0.8); O.L.localToWorld(MIRA); zoom = 0.6; off = 0; }
       else if (notte < 0.6) { O.L.localToWorld(MIRA.set(12.3, 1.6, 7.6)); zoom = W / H < 1.5 ? 0.42 : 0.5; off = 0; }   // più vicina se la scena è stretta
     }
-    const k = Math.min(1, dt * 1.6);
-    CAM.mira.lerp(MIRA, k); CAM.z += (zoom - CAM.z) * k; CAM.off += (off - CAM.off) * k;
+    const k = Math.min(1, dt * (lento ? 0.55 : 1.6));
+    CAM.mira.lerp(MIRA, k); CAM.z += (zoom - CAM.z) * k; CAM.off += (off - CAM.off) * k; CAM.azX = (CAM.azX || 0) + (az - (CAM.azX || 0)) * k;
     camera.setViewOffset(W, H, CAM.offset[0] * CAM.off, CAM.offset[1] * CAM.off, W, H);
   }
   function ridimensiona() {
@@ -529,7 +531,7 @@ window.Diorama = (() => {
     const th = (2.5 * Math.sin(t * 0.07)) * Math.PI / 180;
     O.perno.rotation.y = th; O.ombraTile.rotation.z = th;
     if (CAM.vista) { camera.position.copy(CAM.vista[0]); camera.lookAt(CAM.vista[1]); } else
-    { aggiornaInquadratura(dt, notte); piazzaCamera(CAM.az + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * CAM.z * (1 + 0.012 * Math.sin(t * 0.11))); }
+    { aggiornaInquadratura(dt, notte); piazzaCamera(CAM.az + (CAM.azX || 0) + (1.2 * Math.sin(t * 0.05)) * Math.PI / 180, CAM.el + (0.8 * Math.sin(t * 0.09)) * Math.PI / 180, CAM.dist * CAM.z * (1 + 0.012 * Math.sin(t * 0.11))); }
     O.sole.target.position.set(0, 0, 0);
 
     // --- il furgone, il fumo del comignolo e la scia
@@ -962,6 +964,10 @@ window.Diorama = (() => {
     get schermoPiccolo() { return !!R && schermoPiccolo(); },
     // 'auto' (segue l'azione sugli schermi piccoli), 'segui' (sempre), 'tutto' (sempre tutta la piastrella)
     setInquadratura(m) { stato.inquadratura = m; },
+    // la regia della camera: { x, y (coordinate della città), h (altezza), zoom (1 = tutta la piastrella), az (gradi), lento } oppure null
+    regia(r) { stato.regia = r || null; },
+    // toglie dalla scena clienti in giro e faccine (quando si passa da una scena all'altra)
+    svuota() { eventi.length = 0; if (O.clienti) O.clienti.forEach((p) => { p.visible = false; }); if (O.faccine) O.faccine.forEach((f) => { f.visible = false; }); },
     setPortaOgni(n) { stato.portaOgni = Math.max(0, Math.round(n)); },
     onRifornito: null,
     get fps() { return fps.valore; }, get qualita() { return stato.qualita; },
