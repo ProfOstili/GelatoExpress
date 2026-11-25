@@ -365,9 +365,7 @@ window.Diorama = (() => {
     O.traguardo = new THREE.Group(); O.traguardo.userData.vivo = true; O.traguardo.visible = false; O.traguardo.position.set(xS, 0, 4.6); L.add(O.traguardo);
     for (const x of [-1.0, 1.0]) metti(O.traguardo, new THREE.CylinderGeometry(0.05, 0.05, 2.0, 8), PAL.ardesia, [x, 1.0, 0]);
     const texT = texCanvas(512, 96, (ctx, W, H) => {
-      for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) { ctx.fillStyle = (i + j) % 2 ? '#272b36' : '#ffffff'; ctx.fillRect(i * 12, j * 24, 12, 24); ctx.fillRect(W - 96 + i * 12, j * 24, 12, 24); }
-      ctx.fillStyle = '#ff6fa5'; ctx.fillRect(96, 0, W - 192, H);
-      ctx.fillStyle = '#ffffff'; ctx.font = fontGrassetto(40); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('GIOCHI STUDENTESCHI', W / 2, H / 2 + 2);
+      for (let i = 0; i < 32; i++) for (let j = 0; j < 6; j++) { ctx.fillStyle = (i + j) % 2 ? '#272b36' : '#ffffff'; ctx.fillRect(i * 16, j * 16, 16, 16); }   // solo la bandiera a scacchi
     });
     metti(O.traguardo, new THREE.PlaneGeometry(2.1, 0.4), new THREE.MeshStandardMaterial({ map: texT, side: THREE.DoubleSide, roughness: 0.7 }), [0, 1.8, 0], null, false);
     cartellone(O.traguardo, ['GIOCHI', 'STUDENTESCHI'], '#ff6fa5', '#ffffff', -2.05, -0.45, 1.6, 0.8, 1.0);     // a lato della strada, vicino all'arrivo
