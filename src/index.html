@@ -379,7 +379,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
 .promo-dida.su{opacity:1;transform:translate(-50%,0)}
 .promo-musiche{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:0 0 18px}
 .promo-musiche .btn{font-size:18px}.promo-musiche .btn.on{background:var(--ink);color:#fff}
-.promo-evento{position:absolute;left:50%;top:4vh;transform:translate(-50%,-40px);opacity:0;background:var(--ink);color:#fff;border:4px solid #fff;border-radius:22px;padding:.4em 1.1em;font-size:clamp(22px,3.2vw,46px);font-weight:900;text-align:center;max-width:92vw;box-shadow:0 6px 0 rgba(0,0,0,.25);transition:all .5s cubic-bezier(.2,1.4,.4,1)}
+.promo-evento{position:absolute;left:50%;top:3vh;transform:translate(-50%,-40px);opacity:0;background:var(--ink);color:#fff;border:4px solid #fff;border-radius:18px;padding:.35em .9em;font-size:clamp(11px,2.3vw,40px);font-weight:900;text-align:center;white-space:nowrap;max-width:96vw;box-shadow:0 6px 0 rgba(0,0,0,.25);transition:all .5s cubic-bezier(.2,1.4,.4,1)}
 .promo-evento.su{opacity:1;transform:translate(-50%,0)}
 .promo-meteo{position:absolute;left:3vw;top:4vh;transform:translateX(-40px);opacity:0;background:rgba(255,250,242,.97);border:4px solid var(--line);border-radius:18px;padding:.35em .9em;font-size:clamp(20px,2.6vw,38px);font-weight:800;box-shadow:0 6px 0 rgba(39,43,54,.25);transition:all .45s cubic-bezier(.2,1.4,.4,1)}
 .promo-meteo.su{opacity:1;transform:none}
@@ -2185,14 +2185,14 @@ async function avviaPromo(){
   // 6 · il meteo cambia: sole, nuvole, pioggia (con ombrelli, pozzanghere e fulmini)
   Diorama.svuota(); Diorama.setFinito(false); Diorama.setConi(3, 3);
   cam(9, 4.5, 0.95, { lento:true }); dida(''); titolo('🌦️ Dovrai scegliere quanto produrre in base… al <b>METEO</b>');
-  Diorama.apri(2, 1500);
+  Diorama.apri(2, 1500); tag('☀️ Sole = + clienti');
   const passanti = (n, dur, ogni) => { for(let i = 0; i < n; i++) setTimeout(() => Diorama.cliente(true, dur * K), i * ogni * K); };
   passanti(3, 5200, 1700);
   await ore(8.2, 10.5, T.meteo + 6);
-  Diorama.setMeteo('nuvoloso');
+  Diorama.setMeteo('nuvoloso'); tag('⛅ Nuvolo = − clienti');
   passanti(2, 5200, 2400);
   await ore(10.5, 12.5, T.meteo + 12);
-  Diorama.setMeteo('pioggia'); cam(10.5, 8.6, 0.5, { lento:true });
+  Diorama.setMeteo('pioggia'); tag('🌧️ Pioggia = − − clienti'); cam(10.5, 8.6, 0.5, { lento:true });
   passanti(2, 5600, 2600);
   await ore(12.5, 15, T.gara - 0.5);
   dida('');
