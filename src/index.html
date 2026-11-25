@@ -294,6 +294,11 @@ select,input{font-family:inherit}
 .fday.grande .ic{font-size:52px}
 .fday.grande b{display:block;font-size:16px}
 .fday.grande span:last-child:not(.ic){font-size:16px}
+.meteo-chiedi{margin:6px 0;text-align:center;font-weight:700;font-size:15px}
+#btn-meteo-sfida{font-size:17px;padding:10px 12px}
+.radio-giorni{display:flex;gap:10px;justify-content:center;align-items:flex-end}
+.radio-giorni .fday{min-width:90px;padding:6px 4px;font-size:14px}.radio-giorni .fday .ic{font-size:34px}.radio-giorni .fday b{display:block}
+.radio-giorni .fday.grosso{min-width:130px}.radio-giorni .fday.grosso .ic{font-size:60px}.radio-giorni .dom{color:var(--pink-d);font-size:15px}
 .poi-tit{font-size:13px;font-weight:800;color:var(--ink-soft);text-align:center;margin-top:4px}
 .poi{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 @media (max-width:700px){#scr-program.gioco #coach{grid-template-columns:1fr}.fase-dx{border-left:0;padding-left:0;border-top:3px solid var(--tint-line);padding-top:10px}}
@@ -773,7 +778,7 @@ const CONFIG = {
   //   previsioni = si vede il meteo dei giorni della fase
   fasi: [
     { giorni:3, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
-      testo:'Il <b>robot</b> la sera guarda il tempo del giorno dopo e prepara i coni in base alle tue <b>regole</b>.<br>In un giorno normale sai che verranno tra le 15 e le 25 persone.',
+      testo:'Il <b>robot</b> la sera guarda il tempo del giorno dopo e prepara i coni in base alle tue <b>regole</b>.<br>In un <b>giorno normale soleggiato</b> sai che verranno tra le <b>15 e le 25 persone</b>.',
       esempio:{ c:'meteo', cv:'sole', a:'produci', av:50 } },
     { giorni:3, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
       testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
@@ -1454,10 +1459,16 @@ function renderFase(){
   const giornoBox = (g, grande) => F.previsioni
     ? `<div class="fday ${grande ? 'grande' : ''}">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">${METEO[g.meteo].ic}</span>${grande ? `<b>${METEO[g.meteo].nome}</b>` : ''}${V.temp ? `<span>${g.temp}°</span>` : ''}</div>`
     : `<div class="fday unk ${grande ? 'grande' : ''}">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`;
+  const ricevuto = !F.previsioni || S.sfida.meteo === TU.da;
   $('#coach').innerHTML = `<div class="fase-sx"><div class="mascot">🍦</div><div class="body">
        <p style="margin:0 0 8px">${F.testo}</p>${es}</div></div>
-     <div class="fase-dx"><div class="domani-tit">DOMANI</div>${giornoBox(giorni[0], true)}
-       ${giorni.length > 1 ? `<div class="poi-tit">${F.previsioni ? 'I giorni dopo' : '📡💥 Niente previsioni'}</div><div class="poi">${giorni.slice(1).map(g => giornoBox(g, false)).join('')}</div>` : ''}</div>`;
+     <div class="fase-dx">${ricevuto
+       ? `<div class="domani-tit">DOMANI</div>${giornoBox(giorni[0], true)}
+          ${giorni.length > 1 ? `<div class="poi-tit">${F.previsioni ? 'I giorni dopo' : '📡💥 Niente previsioni'}</div><div class="poi">${giorni.slice(1).map(g => giornoBox(g, false)).join('')}</div>` : ''}`
+       : `<div class="domani-tit">PREVISIONI</div><p class="meteo-chiedi">Che tempo farà nei prossimi ${giorni.length} giorni?</p>
+          <button class="btn sky btn-meteo pulse" id="btn-meteo-sfida">📡 Ricevi dati meteo</button>`}</div>`;
+  const bm = $('#btn-meteo-sfida');
+  if(bm) bm.onclick = async () => { await animaRadio(giorni, V.temp); S.sfida.meteo = TU.da; renderFase(); };
   $('#forecast-box').innerHTML = avvisiHTML(TU.da);
   $('#scr-program').classList.add('gioco');
   const chips = [`<span>📅 Giorni ${TU.da}–${TU.a} di ${CONFIG.giorni}</span>`];
@@ -1592,9 +1603,16 @@ $('#btn-help').onclick = ()=>{
 };
 // A · la ricezione dei dati meteo: l'antenna manda onde, arrivano i numeri, sullo schermo compare la previsione
 async function riceviMeteo(){
-  const k = S.tut.giorno, g = S.tut.giorni[k], ov = $('#radio'), dati = $('#radio-dati'), schermo = $('#radio-schermo');
+  const k = S.tut.giorno;
+  await animaRadio([S.tut.giorni[k]], false);
+  (S.tut.meteo ??= [])[k] = true;
+  renderTutorial();
+}
+// l'animazione della ricezione dei dati meteo: alla fine svela le previsioni dei giorni indicati
+async function animaRadio(giorni, conTemp){
+  const g = giorni[0], ov = $('#radio'), dati = $('#radio-dati'), schermo = $('#radio-schermo');
   const attesa = ms => new Promise(r => setTimeout(r, ms));
-  $('#btn-meteo').classList.remove('pulse');
+  document.querySelectorAll('#btn-meteo,#btn-meteo-sfida').forEach(b => b.classList.remove('pulse'));
   ov.classList.remove('hidden'); $('#radio-esito').classList.add('hidden'); $('#radio-esito').innerHTML = '';
   schermo.parentElement.classList.remove('pronto'); schermo.innerHTML = '…'; $('#radio-fill').style.width = '0%';
   const fasi = ['Collegamento con la stazione meteo…', 'Ricevo i dati: temperatura, vento, nuvole…', 'Il computer calcola la previsione…'];
@@ -1619,13 +1637,13 @@ async function riceviMeteo(){
   schermo.parentElement.classList.add('pronto'); schermo.innerHTML = `<span class="ic">${METEO[g.meteo].ic}</span>`;
   $('#radio-txt').textContent = '✅ Dati ricevuti!';
   await attesa(500);
-  $('#radio-esito').innerHTML = `<div class="grande"><span class="ic">${METEO[g.meteo].ic}</span><div>Domani:<br>${METEO[g.meteo].nome.toUpperCase()}</div></div>
-    <div class="res-actions" style="margin-top:12px"><button class="btn big pink" id="radio-ok">Ho capito! ▶</button></div>`;
+  $('#radio-esito').innerHTML = (giorni.length === 1
+    ? `<div class="grande"><span class="ic">${METEO[g.meteo].ic}</span><div>Domani:<br>${METEO[g.meteo].nome.toUpperCase()}</div></div>`
+    : `<div class="radio-giorni">${giorni.map((x, i) => `<div class="fday ${i ? '' : 'grosso'}">${i ? '' : '<b class="dom">DOMANI</b>'}${GIORNI_SETT[x.dow]} ${x.n}<span class="ic">${METEO[x.meteo].ic}</span><b>${METEO[x.meteo].nome}</b>${conTemp ? `<span>${x.temp}°</span>` : ''}</div>`).join('')}</div>`)
+    + `<div class="res-actions" style="margin-top:12px"><button class="btn big pink" id="radio-ok">Ho capito! ▶</button></div>`;
   $('#radio-esito').classList.remove('hidden');
   await new Promise(r => { $('#radio-ok').onclick = r; });
   ov.classList.add('hidden'); dati.innerHTML = '';
-  (S.tut.meteo ??= [])[k] = true;
-  renderTutorial();
 }
 function pulisciErroreCoach(){ const e = $('#coach-err'); if(e) e.classList.add('hidden'); }
 async function avviaGiornoTutorial(){
