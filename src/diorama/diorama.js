@@ -638,7 +638,10 @@ window.Diorama = (() => {
     O.finestreAccese.emissiveIntensity = 2.6 * luci;
     O_finestra().emissiveIntensity = 2.2 * luci;
     O.vetriFornitore.emissiveIntensity = 0.3 + 1.4 * luci;
-    O.matVetrina.emissiveIntensity = 0.4 + 0.9 * luci; O.matConi.emissiveIntensity = 0.6 + 0.8 * luci;
+    O.matVetrina.emissiveIntensity = 0.4 + 0.9 * luci;
+    // il robot lavora solo di notte: la sera il vetro nero con la scritta GELATO diventa trasparente e il laboratorio si accende
+    O.vetroNero.material.opacity = 1 - notte; O.vetroNero.visible = notte < 0.99;
+    O.robot.g.visible = notte > 0.01; O.luceLab.intensity = 2.2 * notte; O.matConi.emissiveIntensity = 0.6 + 0.8 * luci;
     O.luceNegozio.intensity = 3 * luci;
     O.furgone.fari.emissiveIntensity = 2.6 * Math.max(luci, kp * 0.6, Math.abs(furgoneStato.v) > 0.05 ? 0.4 : 0);
 

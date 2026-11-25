@@ -5061,6 +5061,15 @@ function gelateria(L, O) {
   });
   O.matVetro = new THREE.MeshStandardMaterial({ map: texRiflesso, transparent: true, depthWrite: false, roughness: 0.1 });
   sulMuro(L, 'y', (VX0 + VX1) / 2, fy - 0.02, (VZ0 + VZ1) / 2, VX1 - VX0, VZ1 - VZ0, O.matVetro, 0.01);
+  // di giorno il vetro è nero con la scritta GELATO (il robot lavora solo di notte): si dissolve la sera
+  const texGelato = texCanvas(512, 326, (ctx, W, H) => {
+    ctx.fillStyle = '#16141b'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(W * 0.1, 0); ctx.lineTo(W * 0.32, 0); ctx.lineTo(W * 0.12, H); ctx.lineTo(-W * 0.1, H); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.font = fontGrassetto(118); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('GELATO', W / 2, H / 2 + 6);
+  });
+  O.vetroNero = sulMuro(L, 'y', (VX0 + VX1) / 2, fy - 0.012, (VZ0 + VZ1) / 2, VX1 - VX0, VZ1 - VZ0,
+    new THREE.MeshStandardMaterial({ map: texGelato, emissiveMap: texGelato, emissive: '#ffffff', emissiveIntensity: 0.45, roughness: 0.25, transparent: true }), 0.01);
+  O.vetroNero.userData.vivo = true;
   // il contatore dei coni: un'insegna luminosa sul tetto, ben visibile
   O.texConi = texCanvas(1024, 480);
   O.matConi = new THREE.MeshStandardMaterial({ map: O.texConi, emissiveMap: O.texConi, emissive: '#ffffff', emissiveIntensity: 0.6, roughness: 0.5 });
@@ -5880,7 +5889,10 @@ window.Diorama = (() => {
     O.finestreAccese.emissiveIntensity = 2.6 * luci;
     O_finestra().emissiveIntensity = 2.2 * luci;
     O.vetriFornitore.emissiveIntensity = 0.3 + 1.4 * luci;
-    O.matVetrina.emissiveIntensity = 0.4 + 0.9 * luci; O.matConi.emissiveIntensity = 0.6 + 0.8 * luci;
+    O.matVetrina.emissiveIntensity = 0.4 + 0.9 * luci;
+    // il robot lavora solo di notte: la sera il vetro nero con la scritta GELATO diventa trasparente e il laboratorio si accende
+    O.vetroNero.material.opacity = 1 - notte; O.vetroNero.visible = notte < 0.99;
+    O.robot.g.visible = notte > 0.01; O.luceLab.intensity = 2.2 * notte; O.matConi.emissiveIntensity = 0.6 + 0.8 * luci;
     O.luceNegozio.intensity = 3 * luci;
     O.furgone.fari.emissiveIntensity = 2.6 * Math.max(luci, kp * 0.6, Math.abs(furgoneStato.v) > 0.05 ? 0.4 : 0);
 
