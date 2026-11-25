@@ -377,6 +377,12 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
 .promo-titolo .r3{font-size:clamp(22px,3.4vw,48px);background:#ffd166;color:var(--ink);padding:.3em .9em;border-radius:99px;text-shadow:none}
 .promo-dida{position:absolute;left:50%;bottom:6vh;transform:translate(-50%,40px);opacity:0;background:rgba(255,250,242,.97);border:4px solid var(--line);border-radius:22px;padding:.5em 1.1em;font-size:clamp(20px,2.8vw,40px);font-weight:700;text-align:center;max-width:90vw;box-shadow:0 6px 0 rgba(39,43,54,.25);transition:all .5s cubic-bezier(.2,1.4,.4,1)}
 .promo-dida.su{opacity:1;transform:translate(-50%,0)}
+.promo-musiche{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:0 0 18px}
+.promo-musiche .btn{font-size:18px}.promo-musiche .btn.on{background:var(--ink);color:#fff}
+.promo-evento{position:absolute;left:50%;top:4vh;transform:translate(-50%,-40px);opacity:0;background:var(--ink);color:#fff;border:4px solid #fff;border-radius:22px;padding:.4em 1.1em;font-size:clamp(22px,3.2vw,46px);font-weight:900;text-align:center;max-width:92vw;box-shadow:0 6px 0 rgba(0,0,0,.25);transition:all .5s cubic-bezier(.2,1.4,.4,1)}
+.promo-evento.su{opacity:1;transform:translate(-50%,0)}
+.promo-meteo{position:absolute;left:3vw;top:4vh;transform:translateX(-40px);opacity:0;background:rgba(255,250,242,.97);border:4px solid var(--line);border-radius:18px;padding:.35em .9em;font-size:clamp(20px,2.6vw,38px);font-weight:800;box-shadow:0 6px 0 rgba(39,43,54,.25);transition:all .45s cubic-bezier(.2,1.4,.4,1)}
+.promo-meteo.su{opacity:1;transform:none}
 .promo-tag{position:absolute;right:3vw;bottom:5vh;transform:translateX(60px);opacity:0;background:var(--pink);color:#fff;border:4px solid var(--line);border-radius:18px;padding:.45em 1em;font-size:clamp(20px,2.6vw,38px);font-weight:900;box-shadow:0 6px 0 rgba(39,43,54,.3);transition:all .45s cubic-bezier(.2,1.4,.4,1)}
 .promo-tag.su{opacity:1;transform:none}
 .promo-multa{position:absolute;left:50%;top:22vh;transform:translateX(-50%) rotate(-12deg) scale(2.5);opacity:0;border:8px solid #e04a58;color:#e04a58;background:rgba(255,255,255,.9);border-radius:16px;padding:.3em .8em;font-size:clamp(22px,3vw,44px);font-weight:900;text-align:center;line-height:1.1;transition:all .35s cubic-bezier(.3,1.6,.5,1)}
@@ -649,7 +655,8 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
 <!-- la presentazione per l'open day (index.html?promo) -->
 <div class="promo hidden" id="promo">
   <div class="promo-avvio" id="promo-avvio"><div class="ic">🍦🤖</div><h2>Presentazione per l'open day</h2>
-    <p>Circa 55 secondi, con la musica. Fai partire la registrazione dello schermo (meglio a schermo intero: F11), poi premi il pulsante.</p>
+    <p>Circa 2 minuti e mezzo, con la musica. Scegli la musica (premi per ascoltarla), fai partire la registrazione dello schermo (meglio a schermo intero: F11), poi premi Avvia.</p>
+    <div class="promo-musiche" id="promo-musiche"></div>
     <button class="btn big pink" id="promo-via">▶ Avvia la presentazione</button></div>
   <div class="promo-titolo" id="promo-titolo">
     <div class="riga r1"><b>ITCG Einaudi</b>: <span class="sia">SIA</span>mo gli studenti che programmano il futuro.</div>
@@ -657,6 +664,8 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
     <div class="riga r3">Ti aspetto all'open day 🎉</div>
   </div>
   <div class="promo-dida" id="promo-dida"></div>
+  <div class="promo-evento" id="promo-evento"></div>
+  <div class="promo-meteo" id="promo-meteo"></div>
   <div class="promo-tag" id="promo-tag"></div>
   <div class="promo-multa" id="promo-multa">🕵️ CONTROLLO ASL<br><b>MULTA 50 €</b></div>
   <div class="promo-fine" id="promo-fine">
@@ -1993,8 +2002,7 @@ async function introPanoramica(){
    ===================================================================== */
 const Musica = (() => {
   let ctx = null, master = null, timer = null, prossima = 0, battuta = 0, t0 = 0, rumore = null, volume = 0.5, muto = false;
-  const B = 60 / 132, BAR = 4 * B;
-  const ACCORDI = [[57,60,64],[53,57,60],[48,52,55],[55,59,62]], BASSI = [45,41,48,43], RIFF = [0,12,7,12,3,12,7,10];
+  let stile = (() => { try { return localStorage.getItem('gelateria-musica') || 'sfida'; } catch(e){ return 'sfida'; } })();
   const f = m => 440 * Math.pow(2, (m - 69) / 12);
   function init(){
     if(ctx) return true;
@@ -2004,17 +2012,19 @@ const Musica = (() => {
     rumore = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = rumore.getChannelData(0); for(let i=0;i<d.length;i++) d[i] = Math.random()*2 - 1;
     return true;
   }
+  // gli strumenti: tutti sintetizzati
   const inv = (t, g0, a, dec) => { const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(g0, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); g.connect(master); return g; };
-  function kick(t, v = 1){ const o = ctx.createOscillator(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); o.connect(inv(t, 0.9*v, 0.003, 0.28)); o.start(t); o.stop(t + 0.33); }
+  function kick(t, v = 1, giu = 42, dec = 0.28){ const o = ctx.createOscillator(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(giu, t + 0.12); o.connect(inv(t, 0.9*v, 0.003, dec)); o.start(t); o.stop(t + dec + 0.05); }
   function noise(t, dur, g0, tipo, freq, q = 1){ const s = ctx.createBufferSource(); s.buffer = rumore; const fl = ctx.createBiquadFilter(); fl.type = tipo; fl.frequency.value = freq; fl.Q.value = q; s.connect(fl); fl.connect(inv(t, g0, 0.002, dur)); s.start(t, Math.random()*0.5); s.stop(t + dur + 0.05); }
-  function snare(t, v = 1){ noise(t, 0.16, 0.45*v, 'bandpass', 1800, 0.8); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(140, t + 0.08); o.connect(inv(t, 0.25*v, 0.002, 0.1)); o.start(t); o.stop(t + 0.15); }
+  function snare(t, v = 1, coda = 0.16){ noise(t, coda, 0.45*v, 'bandpass', 1800, 0.8); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(140, t + 0.08); o.connect(inv(t, 0.25*v, 0.002, 0.1)); o.start(t); o.stop(t + 0.15); }
   const hat = (t, v = 1) => noise(t, 0.04, 0.12*v, 'highpass', 8000);
+  function tom(t, m, v = 1){ const o = ctx.createOscillator(); o.frequency.setValueAtTime(f(m) * 1.6, t); o.frequency.exponentialRampToValueAtTime(f(m), t + 0.15); o.connect(inv(t, 0.6*v, 0.003, 0.35)); o.start(t); o.stop(t + 0.42); }
   function tono(t, m, dur, tipo, g0, cut){ const o = ctx.createOscillator(); o.type = tipo; o.frequency.value = f(m); let n = o; if(cut){ const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = cut; fl.Q.value = 4; o.connect(fl); n = fl; } n.connect(inv(t, g0, 0.008, dur)); o.start(t); o.stop(t + dur + 0.05); }
-  function pad(t, acc, dur, g0){
+  function pad(t, acc, dur, g0, cut = 1000, tipo = 'sawtooth'){
     acc.forEach(m => [-7, 7].forEach(det => {
-      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f(m); o.detune.value = det;
-      const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 1000; const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(g0, t + 0.25); g.gain.setValueAtTime(g0, t + dur - 0.25); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      const o = ctx.createOscillator(); o.type = tipo; o.frequency.value = f(m); o.detune.value = det;
+      const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = cut; const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(g0, t + Math.min(0.25, dur/3)); g.gain.setValueAtTime(g0, t + dur - Math.min(0.25, dur/3)); g.gain.linearRampToValueAtTime(0.0001, t + dur);
       o.connect(fl); fl.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
     }));
   }
@@ -2024,29 +2034,65 @@ const Musica = (() => {
     const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + dur); g.gain.setValueAtTime(0.0001, t + dur + 0.01);
     s.connect(fl); fl.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.05);
   }
-  function suonaBattuta(t, n, sez){
-    const k = n % 4, acc = ACCORDI[k], bs = BASSI[k];
-    if(sez === 'silenzio') return;
-    if(sez === 'intro' || sez === 'pausa' || sez === 'fine') pad(t, acc, BAR, 0.045);
-    if(sez === 'intro'){ for(let i=0;i<4;i++) kick(t + i*B, 0.55); for(let i=0;i<8;i++) hat(t + i*B/2, 0.5); if(n % 4 === 3) riser(t, BAR); }
-    if(sez === 'pausa'){ for(let i=0;i<8;i++) hat(t + i*B/2, 0.35); tono(t, bs, BAR*0.9, 'triangle', 0.25); if(n % 2 === 1) riser(t, BAR); }
-    if(sez === 'pieno' || sez === 'forte'){
-      for(let i=0;i<4;i++){ kick(t + i*B); if(i % 2) snare(t + i*B); }
-      for(let i=0;i<8;i++){ hat(t + i*B/2, i % 2 ? 1 : 0.6); tono(t + i*B/2, bs + (i % 2 ? 12 : 0), B/2*0.8, 'sawtooth', 0.22, sez === 'forte' ? 1300 : 800); }
-      for(let i=0;i<8;i++) tono(t + i*B/2, acc[0] + 12 + (sez === 'forte' ? 12 : 0) + RIFF[i], B/2*0.7, 'square', sez === 'forte' ? 0.05 : 0.06, 2600);
-      if(sez === 'forte'){ pad(t, acc.map(m => m + 12), BAR, 0.02); if(n % 4 === 3) for(let i=0;i<4;i++) snare(t + 3*B + i*B/4, 0.6); }
-    }
-    if(sez === 'colpo'){ kick(t, 1.2); noise(t, 1.4, 0.5, 'lowpass', 3000); pad(t, acc, BAR, 0.07); tono(t, bs - 12, BAR, 'sawtooth', 0.3, 400); }
-  }
+  // LE MUSICHE. Ognuna: battiti al minuto e come suona una battuta di ogni sezione
+  // (intro · pieno · forte · pausa · colpo · fine · silenzio)
+  const STILI = {
+    // ⚡ Sfida elettronica: La minore, basso pulsante, riff a ottavi
+    sfida: { nome:'⚡ Sfida elettronica', bpm:132, battuta(t, n, sez, B, BAR){
+      const A = [[57,60,64],[53,57,60],[48,52,55],[55,59,62]][n % 4], bs = [45,41,48,43][n % 4], RIFF = [0,12,7,12,3,12,7,10];
+      if(sez === 'intro' || sez === 'pausa' || sez === 'fine') pad(t, A, BAR, 0.045);
+      if(sez === 'intro'){ for(let i=0;i<4;i++) kick(t + i*B, 0.55); for(let i=0;i<8;i++) hat(t + i*B/2, 0.5); if(n % 4 === 3) riser(t, BAR); }
+      if(sez === 'pausa'){ for(let i=0;i<8;i++) hat(t + i*B/2, 0.35); tono(t, bs, BAR*0.9, 'triangle', 0.25); if(n % 4 === 3) riser(t, BAR); }
+      if(sez === 'pieno' || sez === 'forte'){
+        for(let i=0;i<4;i++){ kick(t + i*B); if(i % 2) snare(t + i*B); }
+        for(let i=0;i<8;i++){ hat(t + i*B/2, i % 2 ? 1 : 0.6); tono(t + i*B/2, bs + (i % 2 ? 12 : 0), B/2*0.8, 'sawtooth', 0.22, sez === 'forte' ? 1300 : 800); }
+        for(let i=0;i<8;i++) tono(t + i*B/2, A[0] + 12 + (sez === 'forte' ? 12 : 0) + RIFF[i], B/2*0.7, 'square', sez === 'forte' ? 0.05 : 0.06, 2600);
+        if(sez === 'forte'){ pad(t, A.map(m => m + 12), BAR, 0.02); if(n % 4 === 3) for(let i=0;i<4;i++) snare(t + 3*B + i*B/4, 0.6); }
+      }
+      if(sez === 'colpo'){ kick(t, 1.2); noise(t, 1.4, 0.5, 'lowpass', 3000); pad(t, A, BAR, 0.07); tono(t, bs - 12, BAR, 'sawtooth', 0.3, 400); }
+    } },
+    // 👾 Arcade 8-bit: Mi minore, veloce, melodia da videogioco e arpeggi a sedicesimi
+    arcade: { nome:'👾 Arcade 8-bit', bpm:150, battuta(t, n, sez, B, BAR){
+      const k = n % 4, A = [[64,67,71],[60,64,67],[67,71,74],[62,66,69]][k], bs = [40,36,43,38][k];
+      const MEL = [[76,79,83,81,79,76,74,76],[72,76,79,76,74,72,71,72],[74,79,83,86,83,79,81,79],[78,74,76,78,81,79,78,74]][k];
+      if(sez === 'intro' || sez === 'fine'){ for(let i=0;i<8;i++) tono(t + i*B/2, A[i % 3] + 12, B/2*0.6, 'square', 0.05, 3500); if(sez === 'intro' && n % 4 === 3) riser(t, BAR); }
+      if(sez === 'pausa'){ for(let i=0;i<4;i++) tono(t + i*B, bs + 12, B*0.8, 'triangle', 0.25); for(let i=0;i<8;i++) hat(t + i*B/2, 0.3); for(let i=0;i<4;i++) tono(t + i*B, A[i % 3] + 12, B*0.5, 'square', 0.035, 3000); }
+      if(sez === 'pieno' || sez === 'forte'){
+        for(let i=0;i<4;i++){ kick(t + i*B, 0.9, 60, 0.15); if(i % 2) noise(t + i*B, 0.1, 0.35, 'highpass', 1500); }
+        for(let i=0;i<8;i++){ hat(t + i*B/2, 0.6); tono(t + i*B/2, bs + (i % 2 ? 12 : 0), B/2*0.7, 'triangle', 0.32); }
+        for(let i=0;i<8;i++) tono(t + i*B/2, MEL[i] - (sez === 'forte' ? 0 : 12), B/2*0.85, 'square', 0.055, 4000);
+        if(sez === 'forte') for(let i=0;i<16;i++) tono(t + i*B/4, A[i % 3] + 24, B/4*0.6, 'square', 0.022, 5000);
+      }
+      if(sez === 'colpo'){ kick(t, 1.2); for(let i=0;i<6;i++) tono(t + i*0.06, A[i % 3] + 12 + 12 * Math.floor(i / 3), 0.5, 'square', 0.06, 5000); noise(t, 1, 0.3, 'lowpass', 4000); }
+    } },
+    // 🎬 Epica: Re minore, lenta e potente, tamburi grandi, archi a ostinato e accordi di "ottoni"
+    epica: { nome:'🎬 Epica', bpm:96, battuta(t, n, sez, B, BAR){
+      const k = n % 4, A = [[50,53,57],[46,50,53],[53,57,60],[48,52,55]][k], bs = [38,34,41,36][k];
+      if(sez !== 'silenzio') pad(t, A, BAR, sez === 'forte' || sez === 'colpo' ? 0.05 : 0.04, 1400);
+      if(sez === 'intro'){ tom(t, 38, 0.8); tom(t + 2*B, 38, 0.6); if(n % 4 === 3){ riser(t, BAR); for(let i=0;i<8;i++) tom(t + 2*B + i*B/4, 43 - i, 0.25 + i*0.06); } }
+      if(sez === 'pausa'){ for(let i=0;i<8;i++) tono(t + i*B/2, bs + 12 + (i % 4 === 2 ? 3 : 0), B/2*0.6, 'sawtooth', 0.06, 900); }
+      if(sez === 'pieno' || sez === 'forte'){
+        kick(t, 1.1, 38, 0.45); kick(t + 2.5*B, 0.9, 38, 0.45); snare(t + B, 0.9, 0.5); snare(t + 3*B, 0.9, 0.5);
+        for(let i=0;i<16;i++) tono(t + i*B/4, bs + 24 + (i % 8 === 6 ? 3 : i % 4 === 3 ? 7 : 0), B/4*0.6, 'sawtooth', 0.05, 1800);   // gli archi
+        tono(t, bs, BAR*0.95, 'sawtooth', 0.22, 500);
+        if(sez === 'forte'){ [0, 1.5, 3].forEach(x => A.forEach(m => tono(t + x*B, m + 12, B*0.45, 'sawtooth', 0.045, 2400))); if(n % 4 === 3) for(let i=0;i<4;i++) tom(t + 3*B + i*B/4, 45 - 2*i, 0.6); }
+      }
+      if(sez === 'colpo'){ kick(t, 1.3, 35, 0.8); tom(t, 33, 1); noise(t, 2, 0.4, 'lowpass', 2000); A.forEach(m => tono(t, m + 12, BAR*0.9, 'sawtooth', 0.06, 2000)); }
+    } }
+  };
+  const S = () => STILI[stile] || STILI.sfida;
   return {
-    BAR,
-    // sezione(n) = la sezione della battuta n; battute = quante (poi si ferma)
+    STILI,
+    get stile(){ return stile; }, set stile(v){ if(STILI[v]){ stile = v; try { localStorage.setItem('gelateria-musica', v); } catch(e){ /* niente */ } } },
+    get B(){ return 60 / S().bpm; }, get BAR(){ return 240 / S().bpm; },
+    // sezione(n, secondi) = la sezione della battuta n (che inizia al secondo indicato); battute = quante (poi si ferma)
     avvia(sezione, battute = Infinity, vol = 0.5){
       if(!init()) return 0;
       ctx.resume(); if(timer) clearInterval(timer);
       volume = vol; battuta = 0; prossima = t0 = ctx.currentTime + 0.12;
       master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(muto ? 0.0001 : volume, ctx.currentTime);
-      const pianifica = () => { while(prossima < ctx.currentTime + 0.6 && battuta < battute){ suonaBattuta(prossima, battuta, sezione(battuta)); prossima += BAR; battuta++; } };
+      const st = S(), B = 60 / st.bpm, BAR = 4 * B;
+      const pianifica = () => { while(prossima < ctx.currentTime + 0.6 && battuta < battute){ const sez = sezione(battuta, battuta * BAR); if(sez !== 'silenzio') st.battuta(prossima, battuta, sez, B, BAR); prossima += BAR; battuta++; } };
       pianifica(); timer = setInterval(pianifica, 100);
       return t0;
     },
@@ -2071,78 +2117,106 @@ $('#btn-musica').onclick = () => { Musica.muto = !Musica.muto; $('#btn-musica').
 async function avviaPromo(){
   document.body.classList.add('promo');
   const P = $('#promo'); P.classList.remove('hidden');
+  // la scelta della musica (con un ascolto di prova)
+  if(Musica.STILI[params.get('musica')]) Musica.stile = params.get('musica');
+  const segna = () => document.querySelectorAll('#promo-musiche button').forEach(b => b.classList.toggle('on', b.dataset.m === Musica.stile));
+  $('#promo-musiche').innerHTML = Object.entries(Musica.STILI).map(([k, s]) => `<button class="btn" data-m="${k}">${s.nome}</button>`).join('');
+  document.querySelectorAll('#promo-musiche button').forEach(b => b.onclick = () => {
+    Musica.stile = b.dataset.m; segna();
+    Musica.avvia(n => n < 2 ? 'pieno' : 'forte', 4, 0.5);            // 4 battute di prova
+  });
+  segna();
   await new Promise(r => { $('#promo-via').onclick = r; });
+  Musica.ferma(100);
   $('#promo-avvio').classList.add('hidden'); document.body.classList.add('senza-cursore');
   show('sim'); $('#scr-sim').classList.add('intro');
   impostaGrafica('3d'); await prepara3D();
   if(!G3.pronto){ $('#promo-avvio').classList.remove('hidden'); $('#promo-avvio').innerHTML = '<p>Questo computer non supporta la grafica 3D.</p>'; return; }
   Diorama.impostaGrafica({ auto:true, qualita:'alta' }); Diorama.setSpeed(1);
   Diorama.svuota(); Diorama.chiudiSubito(); Diorama.camion(false); Diorama.setMeteo('sole'); Diorama.setFinito(false);
-  Diorama.setPacchi(8); Diorama.setConi(9, 9); Diorama.setOra(8.2); Diorama.rivale(false);
-  const BAR = Musica.BAR, SEZ = b => b < 4 ? 'intro' : b < 13 ? 'pieno' : b < 15 ? 'pausa' : b < 25 ? 'forte' : b === 25 ? 'colpo' : b < 28 ? 'forte' : 'fine';
-  Musica.avvia(SEZ, 31, 0.55);
+  Diorama.setPacchi(8); Diorama.setConi(5, 5); Diorama.setOra(8.4); Diorama.rivale(false);
+
+  // IL COPIONE, in secondi (la musica segue le stesse scene, qualunque sia il suo ritmo)
+  const T = { titolo:0, scuola:13, gelateria:27, clienti:42, notte:66, meteo:82, gara:106, rivale:116, turisti:126, asl:136, classifica:146, nero:160, fine:164 };
+  const SEZ = (n, s) => s < T.scuola - 0.5 ? 'intro' : s < T.notte ? (Math.floor(n / 8) % 2 ? 'forte' : 'pieno') : s < T.meteo - 0.5 ? 'pausa'
+    : s < T.classifica - 0.5 ? (s < T.gara ? 'pieno' : 'forte') : s < T.classifica + Musica.BAR - 0.01 ? 'colpo' : s < T.nero ? 'forte' : s < T.fine ? 'fine' : 'silenzio';
+  Musica.avvia(SEZ, Infinity, 0.55);
   const frame = () => new Promise(r => requestAnimationFrame(r));
-  const fino = async bar => { while(Musica.ora() < bar * BAR) await frame(); };
-  // fa scorrere l'ora da a fino alla battuta b
-  const ore = async (da, a, finoBar, ogni) => { const s0 = Musica.ora(), s1 = finoBar * BAR; while(Musica.ora() < s1){ const p = clamp((Musica.ora() - s0) / (s1 - s0), 0, 1); Diorama.setOra(da + (a - da) * p); if(ogni) ogni(p); await frame(); } Diorama.setOra(a); };
-  const cam = (x, y, zoom, extra) => Diorama.regia({ x, y, h:1.4, zoom, ...extra });   // spostamenti rapidi, a tempo di musica
-  const dida = html => { const d = $('#promo-dida'); if(!html){ d.classList.remove('su'); return; } d.innerHTML = html; d.classList.remove('su'); void d.offsetWidth; d.classList.add('su'); };
-  const tag = html => { const d = $('#promo-tag'); if(!html){ d.classList.remove('su'); return; } d.innerHTML = html; d.classList.remove('su'); void d.offsetWidth; d.classList.add('su'); };
-  // 1 · il titolo (4 battute)
-  cam(9, 4.5, 1.0, { az:-18 });
-  const T = $('#promo-titolo'); T.classList.add('su');
-  [...T.querySelectorAll('.riga')].forEach((r, i) => setTimeout(() => r.classList.add('su'), [200, 2900, 5200][i]));
-  Diorama.setOra(8.2);
-  await fino(3.7); T.classList.add('via');
-  // 2 · la città si sveglia: la scuola, poi la Consolazione (battute 4-7)
-  await fino(4); T.classList.add('hidden');
-  cam(8.8, 8.5, 0.45);
-  await ore(8.4, 9.6, 5.8);
-  cam(4.4, 2.6, 0.5, { h:3.2 });
-  await ore(9.6, 10.0, 7);
-  // 3 · il gelataio apre (battute 7-9)
-  cam(14.6, 8, 0.42);
-  const apre = Diorama.apri(4, BAR * 1.8 * 1000);
-  await ore(10, 10.4, 9); await Promise.race([apre, fino(9.4)]);   // mai in ritardo sulla musica
-  // 4 · i clienti: felici, poi gelato finito e arrabbiati (battute 9-13)
-  dida('📈 Studia il <b>mercato</b> e come <b>fare impresa</b>');
-  cam(12.5, 8.3, 0.55);
-  let coni = 9; Diorama.setConi(coni, 9);
-  for(let i = 0; i < 12; i++) setTimeout(() => Diorama.cliente(i < 9, 3600, () => { if(i < 9){ coni--; Diorama.setConi(coni); } else Diorama.setFinito(true); }), i * 520);
-  await ore(10.5, 19.5, 13);
-  // 5 · la notte: il gelataio chiude, il robot prepara i coni (battute 13-15)
-  dida(''); Diorama.chiudi(1400);
-  cam(14.2, 8.1, 0.3);
-  await ore(20.0, 23.5, 14.2);
-  dida('🌙 Di notte il <b>robot</b> prepara i coni… come lo hai programmato tu!');
-  await ore(23.5, 27, 15);
-  // 6 · un nuovo giorno: cambia il meteo (battute 15-17)
-  Diorama.svuota(); Diorama.setFinito(false); Diorama.setConi(9, 9); Diorama.setMeteo('pioggia');
-  cam(9, 4.5, 0.95); dida('🌦️ Dovrai scegliere <b>quanto produrre</b> in base al <b>meteo</b>!');
-  await ore(8.2, 9.5, 16.5);
-  Diorama.setMeteo('sole'); Diorama.apri(2, 900);
-  await ore(9.5, 10, 17);
-  // 7 · gli eventi delle materie, due battute ciascuno (battute 17-25)
-  dida(''); Diorama.corsa(true); cam(2.4, 5.4, 0.5); tag('🏃 Potenziamento sportivo');
-  await ore(10, 11, 19);
-  Diorama.corsa(false); Diorama.rivale(true); cam(5.6, 8.1, 0.4); tag('📈 Economia Politica');
-  for(let i = 0; i < 4; i++) setTimeout(() => Diorama.cliente(true, 3000, null, { rivale:true }), 300 + i * 650);
-  await ore(11, 12, 21);
-  Diorama.autobus(true); cam(5.2, 9.3, 0.45); tag(`🗣️ Inglese e Francese`);
-  for(let i = 0; i < 6; i++) setTimeout(() => Diorama.cliente(true, 5200, null, { turista: i % 2 ? 'fr' : 'gb' }), 1300 + i * 380);
-  await ore(12, 13, 23);
-  Diorama.ispettore(true); cam(16.6, 8.2, 0.38); tag('⚖️ Diritto');
-  setTimeout(() => $('#promo-multa').classList.add('su'), BAR * 1000 * 1.1);
-  await ore(13, 14, 25);
-  // 8 · la classifica: chi vincerà? (battute 25-29)
-  tag(''); $('#promo-multa').classList.remove('su'); Diorama.ispettore(false); Diorama.autobus(false);
-  cam(9, 4.5, 1.0, { az:-22 }); document.body.classList.add('promo-sfoca');
+  const fino = async sec => { while(Musica.ora() < sec) await frame(); };
+  // fa scorrere l'ora da a fino al secondo indicato
+  const ore = async (da, a, finoSec, ogni) => { const s0 = Musica.ora(); while(Musica.ora() < finoSec){ const p = clamp((Musica.ora() - s0) / (finoSec - s0), 0, 1); Diorama.setOra(da + (a - da) * p); if(ogni) ogni(p); await frame(); } Diorama.setOra(a); };
+  const cam = (x, y, zoom, extra) => Diorama.regia({ x, y, h:1.4, zoom, ...extra });
+  const scritta = (id, html) => { const d = $(id); if(!html){ d.classList.remove('su'); return; } d.innerHTML = html; d.classList.remove('su'); void d.offsetWidth; d.classList.add('su'); };
+  const dida = html => scritta('#promo-dida', html), tag = html => scritta('#promo-tag', html), titolo = html => scritta('#promo-evento', html), meteo = html => scritta('#promo-meteo', html);
+
+  // 1 · il titolo (13 s: ogni riga resta a lungo)
+  cam(8.8, 8.6, 0.3, { lento:true });
+  const TT = $('#promo-titolo'); TT.classList.add('su');
+  [...TT.querySelectorAll('.riga')].forEach((r, i) => setTimeout(() => r.classList.add('su'), [400, 4200, 8200][i] ));
+  await fino(T.scuola - 1); TT.classList.add('via');
+  // 2 · i ragazzi entrano a scuola, la camera si allontana piano su tutta Todi
+  await fino(T.scuola); TT.classList.add('hidden');
+  dida('🏫 Una mattina a <b>Todi</b>: i ragazzi entrano a scuola');
+  await ore(8.4, 9.6, T.scuola + 6);
+  cam(9, 4.5, 1.0, { lento:true }); dida('🏙️ La città, la scuola… e una <b>gelateria</b> tutta da gestire!');
+  await ore(9.6, 10.0, T.gelateria);
+  // 3 · il gelataio porta dentro i pacchi, porta fuori il bancone e apre
+  cam(15.4, 8.1, 0.36, { lento:true }); dida('🍦 Il <b>gelataio</b> porta dentro gli ingredienti, porta fuori il bancone e apre');
+  const apre = Diorama.apri(4, 12000);
+  await ore(10.0, 10.5, T.clienti - 1); await Promise.race([apre, fino(T.clienti)]);
+  Diorama.setConi(5, 5);
+  // 4 · i clienti: 5 coni per 8 clienti, uno alla volta (non si sovrappongono); poi i coni finiscono
+  cam(12.6, 8.4, 0.5, { lento:true }); dida('📈 Studia il <b>mercato</b> e come <b>fare impresa</b>');
+  let coni = 5;
+  for(let i = 0; i < 8; i++) setTimeout(() => Diorama.cliente(i < 5, 5200, () => {
+    if(i < 5){ coni--; Diorama.setConi(coni); } else { Diorama.setFinito(true); if(i === 5) dida('😠 Coni <b>finiti</b>: chi arriva adesso resta senza gelato!'); }
+  }), 600 + i * 2700);
+  await ore(10.5, 19.6, T.notte);
+  // 5 · la sera si chiude; di notte il robot prepara i coni
+  dida(''); Diorama.chiudi(3500);
+  cam(14.2, 8.1, 0.32, { lento:true });
+  await ore(19.6, 23, T.notte + 5);
+  dida('🌙 Di notte il <b>robot</b> prepara i coni… come lo hai <b>programmato</b> tu!');
+  await ore(23, 31.8, T.meteo);
+  // 6 · il meteo cambia: sole, nuvole, pioggia (con ombrelli, pozzanghere e fulmini)
+  Diorama.svuota(); Diorama.setFinito(false); Diorama.setConi(5, 5);
+  cam(9, 4.5, 0.95, { lento:true }); dida('🌦️ Dovrai scegliere <b>quanto produrre</b> in base al <b>meteo</b>!');
+  meteo('☀️ Sole: tanti clienti'); Diorama.apri(2, 1500);
+  const passanti = (n, dur, ogni) => { for(let i = 0; i < n; i++) setTimeout(() => Diorama.cliente(true, dur), i * ogni); };
+  passanti(3, 5200, 1700);
+  await ore(8.2, 10.5, T.meteo + 8);
+  Diorama.setMeteo('nuvoloso'); meteo('⛅ Nuvoloso: un po\' meno');
+  passanti(2, 5200, 2400);
+  await ore(10.5, 12.5, T.meteo + 15);
+  Diorama.setMeteo('pioggia'); meteo('🌧️ Pioggia: pochi clienti, con l\'ombrello'); cam(10.5, 8.6, 0.5, { lento:true });
+  passanti(2, 5600, 2600);
+  await ore(12.5, 15, T.gara - 0.5);
+  meteo(''); dida('');
+  // 7 · gli eventi delle altre materie (10 s ciascuno): titolo in alto, materia in basso a destra
+  Diorama.setMeteo('sole'); Diorama.svuota();
+  Diorama.corsa(true); cam(2.0, 5.2, 0.5, { lento:true });
+  titolo('🏅 Giochi studenteschi: la gara a Todi'); tag('🏃 Potenziamento sportivo');
+  await ore(10, 11, T.rivale);
+  Diorama.corsa(false); Diorama.rivale(true); cam(5.6, 8.1, 0.4, { lento:true });
+  titolo('🆚 In piazza apre la Gelateria Rivale'); tag('📈 Economia Politica');
+  for(let i = 0; i < 3; i++) setTimeout(() => Diorama.cliente(true, 4200, null, { rivale:true }), 1200 + i * 2400);
+  await ore(11, 12, T.turisti);
+  Diorama.autobus(true); cam(5.2, 9.3, 0.45, { lento:true });
+  titolo('🚌 Arrivano i turisti stranieri'); tag('🗣️ Inglese e Francese');
+  for(let i = 0; i < 5; i++) setTimeout(() => Diorama.cliente(true, 6500, null, { turista: i % 2 ? 'fr' : 'gb' }), 2600 + i * 1300);
+  await ore(12, 13, T.asl);
+  Diorama.ispettore(true); cam(16.6, 8.2, 0.38, { lento:true });
+  titolo('🕵️ Il controllo dell\'ASL'); tag('⚖️ Diritto');
+  setTimeout(() => $('#promo-multa').classList.add('su'), 5000);
+  await ore(13, 14, T.classifica);
+  // 8 · la classifica: chi vincerà?
+  titolo(''); tag(''); $('#promo-multa').classList.remove('su'); Diorama.ispettore(false); Diorama.autobus(false);
+  cam(9, 4.5, 1.0, { az:-22, lento:true }); document.body.classList.add('promo-sfoca');
   $('#promo-fine').classList.add('su');
-  [...$('#promo-fine').querySelectorAll('li')].forEach((li, i) => setTimeout(() => li.classList.add('su'), 500 + i * 260));
-  await ore(14, 17, 27.5, p => Diorama.regia({ x:9, y:4.5, h:1.4, zoom:1.0, az:-22 + 40 * p, lento:true }));
-  await fino(28.6);
+  [...$('#promo-fine').querySelectorAll('li')].forEach((li, i) => setTimeout(() => li.classList.add('su'), 700 + i * 450));
+  await ore(14, 17, T.nero, p => Diorama.regia({ x:9, y:4.5, h:1.4, zoom:1.0, az:-22 + 40 * p, lento:true }));
   // 9 · dissolvenza
-  $('#promo-nero').classList.add('su'); Musica.ferma(BAR * 1000 * 1.6);
+  $('#promo-nero').classList.add('su'); Musica.ferma((T.fine - T.nero) * 1000);
 }
 if(params.has('promo')) setTimeout(avviaPromo, 0);
 

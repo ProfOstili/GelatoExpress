@@ -1012,7 +1012,7 @@ window.Diorama = (() => {
       const u = e.el / e.dur;
       if (u >= 1) { p.visible = false; eventi.splice(i, 1); continue; }
       p.visible = true;
-      const da = e.da || [2.6, 8.95 + e.dz], banco = e.banco || [BANCO.x + 1.1 + e.dx, 9.0 + e.dz], via = e.servito ? (e.via || [19.0, 8.95 + e.dz]) : da;
+      const da = e.da || [2.6, 8.95 + e.dz], banco = e.banco || [BANCO.x + 1.1 + e.dx, 9.0 + e.dz], via = e.servito ? (e.via || [19.0, 8.95 + e.dz]) : [da[0], da[1] + 0.35];   // chi torna indietro passa più verso la strada
       let pos, testa = 0, verso = 0;
       const passi = (a, b, k, n, alt) => { const f = (k * n) % 1, q = Math.floor(k * n); return saltello(f, [lerp(a[0], b[0], q / n), lerp(a[1], b[1], q / n)], [lerp(a[0], b[0], (q + 1) / n), lerp(a[1], b[1], (q + 1) / n)], alt); };
       e.fase = u < 0.45 ? 'va' : u > 0.6 && !e.servito ? 'torna' : '';
