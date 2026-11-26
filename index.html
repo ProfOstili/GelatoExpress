@@ -309,7 +309,9 @@ select,input{font-family:inherit}
 .rule select option:disabled{color:#aaa}
 .btns-regole{display:flex;gap:10px;flex-wrap:wrap}
 /* la moneta del gioco: l'Einaudi (il logo della scuola, in oro) */
-.ei{display:inline-block;width:1.2em;height:.86em;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%2072%27%3E%3Cpath%20d%3D%27M47%2064C30%2044%2016%2035%203%2032C17%2047%2031%2059%2047%2064Z%27%20fill%3D%27%23f5c84c%27/%3E%3Cpath%20d%3D%27M53%2064C70%2044%2084%2035%2097%2032C83%2047%2069%2059%2053%2064Z%27%20fill%3D%27%23f5c84c%27/%3E%3Cpath%20d%3D%27M46%2062C35%2042%2031%2022%2033%203C44%2021%2048%2041%2046%2062Z%27%20fill%3D%27%23d9a21b%27/%3E%3Cpath%20d%3D%27M54%2062C65%2042%2069%2022%2067%203C56%2021%2052%2041%2054%2062Z%27%20fill%3D%27%23d9a21b%27/%3E%3Cpath%20d%3D%27M39%2057L50%2070L61%2057L50%2063Z%27%20fill%3D%27%238a6410%27/%3E%3C/svg%3E") center/contain no-repeat;vertical-align:-.06em;margin-left:.1em}
+.eventi-tit{display:inline-block;background:#2b2140;color:#ffd84d;font-weight:900;letter-spacing:.12em;font-size:1.5rem;padding:6px 18px;border-radius:12px;margin-bottom:6px}
+.moneta-intro{background:#fff6dc;border-radius:12px;padding:8px 12px}.moneta-intro .ei{font-size:1.8em;vertical-align:middle;margin-right:4px}
+.ei{display:inline-block;width:.86em;height:1.04em;background:url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%27-3%20-2%20106%20127%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%270%27%20x2=%271%27%20y2=%271%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe680%27/%3E%3Cstop%20offset=%27.55%27%20stop-color=%27%23f2bb2c%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23b9820c%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d=%27M0%20122L0%2076L3%2076L3%2073Q5%2062%2017%2060L20%2060L20%2056L25%2056L25%2053L29%2053L29%2034L27%2034L27%2031L30%2031C31%2020%2039%2015.5%2046%2014.5L46%209Q50%205.5%2054%209L54%2014.5C61%2015.5%2069%2020%2070%2031L73%2031L73%2034L71%2034L71%2053L75%2053L75%2056L80%2056L80%2060L83%2060Q95%2062%2097%2073L97%2076L100%2076L100%20122Z%27%20fill=%27url%28%23g%29%27%20stroke=%27%238a6410%27%20stroke-width=%273%27%20stroke-linejoin=%27round%27/%3E%3Cpath%20d=%27M49.3%200h1.4v7h-1.4zM47.8%201.6h4.4v1.2h-4.4zM0%2079h100v2.4H0zM0%2099h100v2H0zM25%2056h50v2H25zM45%20107h10v15H45zM34%2039h4v9h-4zM48%2039h4v9h-4zM62%2039h4v9h-4zM12%2086h5v8h-5zM83%2086h5v8h-5zM29%2086h5v8h-5zM66%2086h5v8h-5z%27%20fill=%27%238a6410%27%20fill-opacity=%27.55%27/%3E%3C/svg%3E") center/contain no-repeat;vertical-align:-.06em;margin-left:.1em}
 .come-conta{background:#eef5f8;border:3px solid var(--act);border-radius:14px;padding:8px 12px;margin:0 0 10px;font-size:15px;line-height:1.4}
 .come-conta small{font-size:13px;color:var(--ink-soft);font-weight:700}
 .mini-rules li.conto{margin-top:6px;background:#eef5f8;border-radius:10px;padding:5px 8px;list-style:none;font-size:14px}
@@ -6126,12 +6128,14 @@ window.Diorama = (() => {
     metti(g, rettangoloGeo(w, h, 0.03), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }), [0, alto + h / 2 - 0.05, 0], null, false);
     return g;
   }
-  // la moneta del gioco, l'Einaudi: il logo della scuola in oro (disegnato su una tela, centrato in x, y)
+  // la moneta del gioco, l'Einaudi: la sagoma della Consolazione di Todi, in oro (centrata in x, y)
   function monetaEinaudi(ctx, x, y, k = 1) {
-    ctx.save(); ctx.translate(x - 50 * k, y - 36 * k); ctx.scale(k, k);
-    [['M47 64C30 44 16 35 3 32C17 47 31 59 47 64Z', '#f5c84c'], ['M53 64C70 44 84 35 97 32C83 47 69 59 53 64Z', '#f5c84c'],
-     ['M46 62C35 42 31 22 33 3C44 21 48 41 46 62Z', '#d9a21b'], ['M54 62C65 42 69 22 67 3C56 21 52 41 54 62Z', '#d9a21b'], ['M39 57L50 70L61 57L50 63Z', '#8a6410']]
-      .forEach(([d, c]) => { ctx.fillStyle = c; ctx.fill(new Path2D(d)); });
+    ctx.save(); ctx.translate(x - 42 * k, y - 52 * k); ctx.scale(k * 0.84, k * 0.84);
+    const gr = ctx.createLinearGradient(0, 0, 100, 122);
+    gr.addColorStop(0, '#ffe680'); gr.addColorStop(0.55, '#f2bb2c'); gr.addColorStop(1, '#b9820c');
+    ctx.fillStyle = gr; ctx.strokeStyle = '#8a6410'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    const p = new Path2D('M0 122L0 76L3 76L3 73Q5 62 17 60L20 60L20 56L25 56L25 53L29 53L29 34L27 34L27 31L30 31C31 20 39 15.5 46 14.5L46 9Q50 5.5 54 9L54 14.5C61 15.5 69 20 70 31L73 31L73 34L71 34L71 53L75 53L75 56L80 56L80 60L83 60Q95 62 97 73L97 76L100 76L100 122Z'); ctx.fill(p); ctx.stroke(p);
+    ctx.fillStyle = 'rgba(138,100,16,0.55)'; ctx.fill(new Path2D('M49.3 0h1.4v7h-1.4zM47.8 1.6h4.4v1.2h-4.4zM0 79h100v2.4H0zM0 99h100v2H0zM25 56h50v2H25zM45 107h10v15H45zM34 39h4v9h-4zM48 39h4v9h-4zM62 39h4v9h-4zM12 86h5v8h-5zM83 86h5v8h-5zM29 86h5v8h-5zM66 86h5v8h-5z'));
     ctx.restore();
   }
   // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
@@ -7885,7 +7889,8 @@ async function iniziaTutorial(){
   renderTutorial();
   await modal(`<div class="ic">🍦🤖</div><h3>Ciao ${esc(S.nick)}!</h3>
     <p>La tua gelateria è <b>automatica</b>: un <b>robot</b> prepara ogni <b>notte</b> i coni gelato per il giorno dopo.</p>
-    <p>Tu gli scrivi le <b>regole</b>. Facciamo una prova di <b>3 giorni</b> insieme!</p>`, [{t:'Iniziamo! ▶'}]);
+    <p>Tu gli scrivi le <b>regole</b>. Facciamo una prova di <b>3 giorni</b> insieme!</p>
+    <p class="moneta-intro"><i class="ei"></i> In questo gioco si paga in <b>Einaudi</b>, la moneta d'oro con la sagoma del <b>Tempio della Consolazione</b> di Todi.</p>`, [{t:'Iniziamo! ▶'}]);
   await modal(`<div class="ic">🤖</div><h3>Le regole</h3>
     <p>Una regola dice: <b>SE</b> succede qualcosa, <b>ALLORA</b> il robot fa qualcosa.</p>
     <p>Per esempio: SE c'è il sole ALLORA produci 15 coni.</p>
@@ -8732,7 +8737,7 @@ const ANNUNCI = {
 async function annunciNelGestionale(oggi){
   for(const id of ['gara','concorrenza','turisti','asl']){
     if(EV[id].annuncio > oggi || (S.annunci || []).includes(id)) continue;
-    await modal(ANNUNCI[id](oggi), [{t:'Ho capito! ▶', cls:'mint'}]);
+    await modal(`<div class="eventi-tit">📣 EVENTI</div>${ANNUNCI[id](oggi)}`, [{t:'Ho capito! ▶', cls:'mint'}]);
     (S.annunci ??= []).push(id); salvaGiocatore(); renderFase();
   }
 }
@@ -8783,10 +8788,13 @@ async function avviaSfida(){
     const N = faseInfo(sf.fase);
     const es = N.esempio ? `<div class="target" style="justify-content:center">${bloccoTarget(N.esempio)}</div>` : '';
     show('program'); renderFase();
+    // schermata 1: i risultati del round (3 giorni)
     await modal(`<div class="ic">✅</div><h3>Giorni ${TU.da}–${TU.a}: fatto!</h3>
       <div class="stats"><span class="${sim.tot.profitto>=0?'pos':'neg'}">${eurS(sim.tot.profitto)}</span><span>🍦 ${sim.tot.venduti} venduti</span><span>😞 ${sim.tot.persi} persi</span><span>🗑️ ${sim.tot.avanzati} buttati</span></div>
       ${esitoASL(sim.giorni)}
-      ${nuovaFase ? `<h3 style="margin-top:14px">🆕 ${N.titolo}</h3><p>${N.testo}</p>${es}` : `<p style="margin-top:12px">Controlla le regole e avvia i prossimi giorni!</p>`}`, [{t:'Avanti ▶', cls:'mint'}]);
+      ${nuovaFase ? '' : `<p style="margin-top:12px">Controlla le regole e avvia i prossimi giorni!</p>`}`, [{t:'Avanti ▶', cls:'mint'}]);
+    // schermata 2: EVENTI, la novità che arriva con il nuovo round
+    if(nuovaFase) await modal(`<div class="eventi-tit">📣 EVENTI</div><h3>🆕 ${N.titolo}</h3><p>${N.testo}</p>${es}`, [{t:'Ho capito! ▶', cls:'mint'}]);
     await annunciNelGestionale(sf.giorno);                // gli eventi delle materie: si annunciano qui, nel gestionale
     return;
   }

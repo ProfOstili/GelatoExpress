@@ -5529,12 +5529,14 @@ window.Diorama = (() => {
     metti(g, rettangoloGeo(w, h, 0.03), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }), [0, alto + h / 2 - 0.05, 0], null, false);
     return g;
   }
-  // la moneta del gioco, l'Einaudi: il logo della scuola in oro (disegnato su una tela, centrato in x, y)
+  // la moneta del gioco, l'Einaudi: la sagoma della Consolazione di Todi, in oro (centrata in x, y)
   function monetaEinaudi(ctx, x, y, k = 1) {
-    ctx.save(); ctx.translate(x - 50 * k, y - 36 * k); ctx.scale(k, k);
-    [['M47 64C30 44 16 35 3 32C17 47 31 59 47 64Z', '#f5c84c'], ['M53 64C70 44 84 35 97 32C83 47 69 59 53 64Z', '#f5c84c'],
-     ['M46 62C35 42 31 22 33 3C44 21 48 41 46 62Z', '#d9a21b'], ['M54 62C65 42 69 22 67 3C56 21 52 41 54 62Z', '#d9a21b'], ['M39 57L50 70L61 57L50 63Z', '#8a6410']]
-      .forEach(([d, c]) => { ctx.fillStyle = c; ctx.fill(new Path2D(d)); });
+    ctx.save(); ctx.translate(x - 42 * k, y - 52 * k); ctx.scale(k * 0.84, k * 0.84);
+    const gr = ctx.createLinearGradient(0, 0, 100, 122);
+    gr.addColorStop(0, '#ffe680'); gr.addColorStop(0.55, '#f2bb2c'); gr.addColorStop(1, '#b9820c');
+    ctx.fillStyle = gr; ctx.strokeStyle = '#8a6410'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    const p = new Path2D('M0 122L0 76L3 76L3 73Q5 62 17 60L20 60L20 56L25 56L25 53L29 53L29 34L27 34L27 31L30 31C31 20 39 15.5 46 14.5L46 9Q50 5.5 54 9L54 14.5C61 15.5 69 20 70 31L73 31L73 34L71 34L71 53L75 53L75 56L80 56L80 60L83 60Q95 62 97 73L97 76L100 76L100 122Z'); ctx.fill(p); ctx.stroke(p);
+    ctx.fillStyle = 'rgba(138,100,16,0.55)'; ctx.fill(new Path2D('M49.3 0h1.4v7h-1.4zM47.8 1.6h4.4v1.2h-4.4zM0 79h100v2.4H0zM0 99h100v2H0zM25 56h50v2H25zM45 107h10v15H45zM34 39h4v9h-4zM48 39h4v9h-4zM62 39h4v9h-4zM12 86h5v8h-5zM83 86h5v8h-5zM29 86h5v8h-5zM66 86h5v8h-5z'));
     ctx.restore();
   }
   // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
