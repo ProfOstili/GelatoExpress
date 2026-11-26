@@ -72,6 +72,7 @@ select,input{font-family:inherit}
 #scr-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 60px);text-align:center;gap:14px}
 .hero-ico{font-size:84px;line-height:1;animation:bob 2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-10px) rotate(-4deg)}}
+#scr-welcome .versione{position:fixed;left:8px;bottom:6px;font-size:11px;font-weight:700;color:var(--ink-soft);opacity:.75;pointer-events:none;z-index:2}
 #scr-welcome h1{font-size:44px;margin:0;line-height:1.05}
 #scr-welcome h1 span{color:var(--pink)}
 #scr-welcome p.sub{font-size:20px;margin:0;max-width:560px}
@@ -522,6 +523,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
 
 <!-- ============ BENVENUTO ============ -->
 <section id="scr-welcome" class="screen">
+  <div class="versione" title="Versione del gioco">@VERSIONE@</div>
   <div class="hero-ico">🍦🤖</div>
   <h1>La Gelateria <span>Automatica</span></h1>
   <p class="sub">Non vendi tu il gelato: scrivi il <b>programma</b> che gestisce la gelateria al posto tuo!</p>
