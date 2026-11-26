@@ -7064,17 +7064,17 @@ const CONFIG = {
   seed: 2026,               // meteo della sfida (uguale per tutti). Si può cambiare con ?seed=123 nell'indirizzo
   giorni: 30,               // durata della sfida (divisa in fasi: vedi "fasi" qui sotto)
   cassaIniziale: 500,       // € in cassa all'inizio
-  magazzinoIniziale: 20,    // kg di ingredienti all'inizio (1 kg = 10 coni)
-  magazzinoMax: 50,         // kg massimi nel congelatore (l'eccesso viene buttato)
+  magazzinoIniziale: 10,    // kg di ingredienti all'inizio (1 kg = 10 coni)
+  magazzinoMax: 25,         // kg massimi nel congelatore (l'eccesso viene buttato)
   coniPerKg: 10,            // 1 kg di ingredienti = 10 coni
   costoKg: 8,               // € per kg di ingredienti  (=> 0,80 € a cono)
-  costoConsegna: 5,         // € fissi per ogni riordino (il camion)
-  affittoGiorno: 30,        // € al giorno: affitto + bollette (costo fisso)
+  costoConsegna: 3,         // € fissi per ogni riordino (il camion)
+  affittoGiorno: 15,        // € al giorno: affitto + bollette (costo fisso)
   maxRegole: 6,
 
   // valori di base iniziali e limiti
   prezzoBase: 2.5, prezzoMin: 1.5, prezzoMax: 5, prezzoPasso: 0.5,
-  produzioneBase: 30, produzioneMin: 0, produzioneMax: 150, produzionePasso: 5,
+  produzioneBase: 25, produzioneMin: 0, produzioneMax: 80, produzionePasso: 2,
 
   // probabilità e temperature del meteo
   meteoProb: { sole: 0.5, nuvoloso: 0.3, pioggia: 0.2 },
@@ -7082,8 +7082,8 @@ const CONFIG = {
 
   // curva della domanda
   domanda: {
-    base: 20,            // clienti a 20 °C, col sole, prezzo di riferimento (ogni cliente compra UN cono)
-    perGrado: 3,         // clienti in più per ogni grado sopra i 20 °C
+    base: 14,            // clienti a 20 °C, col sole, prezzo di riferimento (ogni cliente compra UN cono)
+    perGrado: 1,         // clienti in più per ogni grado sopra i 20 °C (sole, 26-36 °C: 20-30 clienti)
     tempRif: 20,
     minimo: 3,
     meteo: { sole: 1.0, nuvoloso: 0.8, pioggia: 0.45 },
@@ -7100,7 +7100,7 @@ const CONFIG = {
   // Chi scrive questo codice gioca SENZA gruppo: compare solo nella classifica globale.
   codiceSenzaGruppo: 'LIBERO',
 
-  sogliaSpreco: 5,          // "ieri ho buttato gelato" = almeno 5 coni avanzati
+  sogliaSpreco: 3,          // "ieri ho buttato gelato" = almeno 5 coni avanzati
   durataGiornoMs: 2600,     // grafica classica: animazione di un giorno (più la notte)
   durataNotteMs: 500,
   durataGiornoTutorialMs: 7000,
@@ -7110,23 +7110,23 @@ const CONFIG = {
   //   previsioni = si vede il meteo dei giorni della fase
   fasi: [
     { giorni:3, cond:['meteo'], azioni:['produci'], auto:true, previsioni:true, titolo:'☁️ Il meteo',
-      testo:'Il <b>robot</b> la sera guarda il tempo del giorno dopo e prepara i coni in base alle tue <b>regole</b>.<br>In un <b>giorno normale soleggiato</b> sai che verranno tra le <b>15 e le 25 persone</b>.',
-      esempio:{ c:'meteo', cv:'sole', a:'produci', av:50 } },
+      testo:'Il <b>robot</b> la sera guarda il tempo del giorno dopo e prepara i coni in base alle tue <b>regole</b>.<br>In un <b>giorno normale soleggiato</b> sai che verranno tra le <b>20 e le 30 persone</b>.',
+      esempio:{ c:'meteo', cv:'sole', a:'produci', av:26 } },
     { giorni:3, cond:['giorno'], azioni:['piu','meno'], auto:true, previsioni:true, titolo:'📅 Il weekend',
       testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
-      esempio:{ c:'giorno', cv:'weekend', a:'piu', av:15 } },
+      esempio:{ c:'giorno', cv:'weekend', a:'piu', av:8 } },
     { giorni:3, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
       testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
-      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:70 } },
+      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:30 } },
     { giorni:6, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'🏷️ Il prezzo',
       testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50<i class="ei"></i>). Più caro = più guadagno a cono, ma meno clienti!',
       esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
     { giorni:3, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
       testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
-      esempio:{ c:'magazzino', op:'<', cv:15, a:'riordina', av:20 } },
+      esempio:{ c:'magazzino', op:'<', cv:6, a:'riordina', av:8 } },
     { giorni:3, cond:['ieri'], azioni:[], auto:false, previsioni:true, titolo:'🍨 Ieri',
       testo:'Novità: il robot si ricorda di <b>ieri</b>. Se ieri il gelato è finito, oggi produci di più; se l\'hai buttato, produci meno.',
-      esempio:{ c:'ieri', cv:'finito', a:'piu', av:10 } },
+      esempio:{ c:'ieri', cv:'finito', a:'piu', av:4 } },
     { giorni:9, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
       testo:'Ultima fase, 9 giorni: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
   ],
@@ -7138,13 +7138,13 @@ const CONFIG = {
   eventi: {
     gara:        { annuncio:7,  giorno:13, molt:1.6 },                          // 🏅 Educazione fisica: più clienti
     concorrenza: { annuncio:10, da:14, prezzo:2.5, sensibilita:0.6 },           // 🆚 Economia politica: oltre 2,50 si perdono clienti
-    turisti:     { annuncio:13, giorni:[14,17,20,23,26,29], extra:18 },         // 🚌 Inglese e Francese: il pullman dei turisti
-    asl:         { annuncio:19, giorno:24, scadenza:5, multa:50 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
+    turisti:     { annuncio:13, giorni:[14,17,20,23,26,29], extra:9 },         // 🚌 Inglese e Francese: il pullman dei turisti
+    asl:         { annuncio:19, giorno:24, scadenza:5, multa:25 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
   },
 
   // tutorial: 3 giorni con meteo noto e un numero fisso di clienti (niente affitto: si impara solo a usare le regole)
   tutorial: {
-    magazzino: 20, cassa: 500,
+    magazzino: 10, cassa: 500,
     giorni: [
       { meteo: 'sole',     temp: 31, clienti: 10, dow: 0 },
       { meteo: 'pioggia',  temp: 19, clienti: 4,  dow: 1 },
@@ -7185,25 +7185,25 @@ const GIORNI_SETT = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const COND = {
   temp:      { label:'🌡️ temperatura', ops:['>','<'], values:range(15,40,1), fmt:v=>v+' °C', def:{op:'>',cv:30} },
   meteo:     { label:'☁️ meteo è', values:['sole','nuvoloso','pioggia'], fmt:v=>METEO[v].ic+' '+METEO[v].nome, def:{cv:'pioggia'} },
-  magazzino: { label:'📦 magazzino', ops:['<','>'], values:range(0,50,5), fmt:v=>v+' kg', def:{op:'<',cv:15} },
+  magazzino: { label:'📦 magazzino', ops:['<','>'], values:range(0,25,1), fmt:v=>v+' kg', def:{op:'<',cv:6} },
   giorno:    { label:'📅 oggi è', values:['weekend','feriale'], fmt:v=>v==='weekend'?'weekend':'giorno feriale', def:{cv:'weekend'} },
   ieri:      { label:'🍨 ieri', values:['finito','buttato'], fmt:v=>v==='finito'?'ho finito il gelato':'ho buttato gelato', def:{cv:'finito'} },
   gara:      { label:'🏅 oggi', values:['gara'], fmt:()=>"c'è la gara", def:{cv:'gara'} },
   turisti:   { label:'🚌 oggi', values:['turisti'], fmt:()=>'arrivano i turisti', def:{cv:'turisti'} }
 };
 const AZIONI = {
-  produci:  { label:'🍦 produci', values:range(0,150,5), fmt:v=>v+' coni', def:50 },
-  piu:      { label:'➕ produci in più', values:range(5,100,5), fmt:v=>v+' coni', def:10 },
-  meno:     { label:'➖ produci in meno', values:range(5,100,5), fmt:v=>v+' coni', def:10 },
+  produci:  { label:'🍦 produci', values:range(0,80,1), fmt:v=>v+' coni', def:25 },
+  piu:      { label:'➕ produci in più', values:range(1,40,1), fmt:v=>v+' coni', def:5 },
+  meno:     { label:'➖ produci in meno', values:range(1,40,1), fmt:v=>v+' coni', def:5 },
   prezzo:   { label:'🏷️ metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>v.toLocaleString('it-IT',{minimumFractionDigits:2})+' Einaudi', def:3 },
-  riordina: { label:'🚚 riordina', values:range(5,50,5), fmt:v=>v+' kg', def:20 }
+  riordina: { label:'🚚 riordina', values:range(1,25,1), fmt:v=>v+' kg', def:8 }
 };
 function nuovaRegola(){
   // la prima condizione disponibile, e per il meteo il primo tempo che non ha ancora una regola
   const D = blocchiDisponibili(), c = D.cond.includes('meteo') ? 'meteo' : D.cond[0];
   if(c === 'meteo'){ const coperti = S.prog.regole.filter(r=>r.c==='meteo').map(r=>r.cv); const cv = ['sole','nuvoloso','pioggia'].find(m=>!coperti.includes(m)) || 'sole';
-    return { c:'meteo', op:'>', cv, a:'produci', av:(S.mode==='tutorial' ? {sole:15,nuvoloso:10,pioggia:5} : {sole:50,nuvoloso:30,pioggia:10})[cv] }; }
-  return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'produci', av:50 };
+    return { c:'meteo', op:'>', cv, a:'produci', av:(S.mode==='tutorial' ? {sole:15,nuvoloso:10,pioggia:5} : {sole:26,nuvoloso:16,pioggia:7})[cv] }; }
+  return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'produci', av:25 };
 }
 function testoRegola(r){
   const C = COND[r.c], A = AZIONI[r.a];
@@ -7382,7 +7382,7 @@ function analizza(sim){
     out.push({ peso: persi*(d.prezzo-costoCono) + 1000, ic:'📦', tema:'scorte',
       t:`Giorno ${d.n}: ingredienti finiti! Hai potuto fare solo ${d.prodotti} coni.`,
       x:`Con il magazzino vuoto hai perso ${persi} clienti in ${vuoti.length} ${vuoti.length===1?'giorno':'giorni'}.`,
-      fix:'🔧 Prova: SE 📦 magazzino < 15 kg ALLORA 🚚 riordina 20 kg (il camion arriva il giorno dopo!)' });
+      fix:'🔧 Prova: SE 📦 magazzino < 6 kg ALLORA 🚚 riordina 8 kg (il camion arriva il giorno dopo!)' });
   }
   // gelato finito (non per colpa del magazzino)
   const esauriti = G.filter(d => d.persi > 0 && !d.limitato);
@@ -7397,7 +7397,7 @@ function analizza(sim){
       x:`In tutto ${persi} clienti sono andati via senza gelato.`, fix });
   }
   // spreco
-  if(T.avanzati >= 12){
+  if(T.avanzati >= 6){
     const d = G.reduce((a,b)=> b.avanzati > a.avanzati ? b : a);
     let fix = '🔧 Prova a produrre meno quando fa fresco.';
     if(d.meteo==='pioggia') fix = '🔧 Con la pioggia arrivano pochi clienti: prova SE ☁️ meteo è 🌧️ pioggia ALLORA 🍦 produci meno coni.';
@@ -7426,10 +7426,10 @@ function analizza(sim){
     out.push({ peso: T.cMulta + T.scaduti*CONFIG.costoKg + 200, ic:'⚖️', tema:'legge',
       t:`Controllo ASL: ${round1(T.scaduti)} kg di ingredienti scaduti e una multa di ${eur(T.cMulta)}!`,
       x:`Gli ingredienti erano fermi in magazzino da ${CONFIG.eventi.asl.scadenza} giorni o più: il magazzino era troppo pieno.`,
-      fix:'🔧 Riordina meno kg alla volta, così gli ingredienti restano freschi: per esempio SE 📦 magazzino < 15 kg ALLORA 🚚 riordina 15 kg.' });
+      fix:'🔧 Riordina meno kg alla volta, così gli ingredienti restano freschi: per esempio SE 📦 magazzino < 5 kg ALLORA 🚚 riordina 6 kg.' });
   }
   // 🆚 la concorrenza
-  if(T.rivale >= 10){
+  if(T.rivale >= 5){
     const d = G.filter(x=>x.rivale>0).reduce((a,b)=> b.rivale > a.rivale ? b : a);
     out.push({ peso: T.rivale*(d.prezzo-costoCono), ic:'🆚', tema:'concorrenza',
       t:`${T.rivale} clienti sono andati alla Gelateria Rivale!`,
@@ -7438,13 +7438,13 @@ function analizza(sim){
   }
   // 🏅 la gara e 🚌 i turisti
   const gara = G.find(d=>d.gara);
-  if(gara && gara.persi >= 5) out.push({ peso: gara.persi*(gara.prezzo-costoCono) + 50, ic:'🏅', tema:'sport',
+  if(gara && gara.persi >= 3) out.push({ peso: gara.persi*(gara.prezzo-costoCono) + 50, ic:'🏅', tema:'sport',
     t:`Giorno della gara: ${gara.persi} clienti sono rimasti senza gelato!`, x:`Con la gara a Todi sono arrivati ${gara.clienti} clienti.`,
-    fix:'🔧 Prova: SE 🏅 oggi c\'è la gara ALLORA ➕ produci in più 50 coni.' });
+    fix:'🔧 Prova: SE 🏅 oggi c\'è la gara ALLORA ➕ produci in più 20 coni.' });
   const tur = G.filter(d=>d.turisti), persiTur = tur.reduce((s,d)=>s+Math.min(d.persi, d.turistiN),0);
-  if(persiTur >= 8) out.push({ peso: persiTur*(2.5-costoCono) + 30, ic:'🚌', tema:'lingue',
+  if(persiTur >= 4) out.push({ peso: persiTur*(2.5-costoCono) + 30, ic:'🚌', tema:'lingue',
     t:`Nei giorni dei pullman ${persiTur} turisti sono rimasti senza gelato!`, x:'I turisti inglesi e francesi sono clienti in più.',
-    fix:'🔧 Prova: SE 🚌 oggi arrivano i turisti ALLORA ➕ produci in più 15 coni.' });
+    fix:'🔧 Prova: SE 🚌 oggi arrivano i turisti ALLORA ➕ produci in più 8 coni.' });
   // troppe consegne
   if(T.ordini >= 7){
     out.push({ peso: T.cConsegna, ic:'🚚', tema:'scorte', t:`Hai chiamato il camion ${T.ordini} volte: ${eur(T.cConsegna)} di consegne!`,

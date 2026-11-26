@@ -59,7 +59,7 @@ Ogni "AVVIA" fa giocare **3 giorni**, poi si torna al gestionale (riepilogo, eve
 
 | Fase | Giorni | Turni | Novità (meccanica) | Blocchi nuovi | Magazzino |
 |---|---|---|---|---|---|
-| 1 | 1–3 | 1 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 20 kg) |
+| 1 | 1–3 | 1 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 10 kg) |
 | 2 | 4–6 | 1 | 📅 **Weekend** | SE oggi è weekend · ALLORA produci in più / in meno | automatico |
 | 3 | 7–9 | 1 | 🌡️ **Temperatura** | SE temperatura > / < … | automatico |
 | 4 | 10–15 | 2 | 🏷️ **Prezzo** (selettore "Prezzo del gelato in Einaudi" nelle regole) | ALLORA metti il prezzo a… | automatico |
@@ -68,6 +68,8 @@ Ogni "AVVIA" fa giocare **3 giorni**, poi si torna al gestionale (riepilogo, eve
 | 7 | 22–30 | 3 | 📡💥 **Stazione meteo rotta** (niente previsioni) | — | manuale |
 
 La moneta del gioco è l'**Einaudi** (simbolo: il logo della scuola in oro).
+
+**Quanti clienti:** ogni cliente compra un cono. In un giorno normale di sole vengono **20–30 persone** (di più col caldo sopra i 30 °C e nel weekend: +30%), con le nuvole circa 12–18, con la pioggia circa 4–8. Magazzino: 10 kg all'inizio (1 kg = 10 coni), al massimo 25 kg. Affitto 15 al giorno, consegna 3, ingredienti 0,80 a cono, prezzo normale 2,50 Einaudi.
 
 ---
 
@@ -79,8 +81,8 @@ Ogni evento è **annunciato nel gestionale**, all'inizio di un turno, e accade *
 |---|---|---|---|---|
 | **7** | 🏃 Educazione fisica | Giochi studenteschi: gara a Todi | giorno **13** | clienti ×1,6 · blocco **SE 🏅 oggi c'è la gara** · in 3D la corsa con l'arco a scacchi e il cartellone "Giochi Studenteschi" |
 | **10** | 📈 Economia politica | Apre la Gelateria Rivale (cono a 2,50) | dal giorno **14** | oltre 2,50 si perdono molti clienti · chiosco con il cartellone "Gelati più buoni!" |
-| **13** | 🇬🇧🇫🇷 Inglese e Francese | Arrivano i turisti col pullman | giorni **14, 17, 20, 23, 26, 29** | +18 clienti circa · fumetti con le bandiere · blocco **SE 🚌 oggi arrivano i turisti** |
-| **19** | ⚖️ Diritto | Controllo dell'ASL | giorno **24** | ingredienti arrivati da 5 giorni o più = scaduti: buttati e **multa di 50** |
+| **13** | 🇬🇧🇫🇷 Inglese e Francese | Arrivano i turisti col pullman | giorni **14, 17, 20, 23, 26, 29** | +9 clienti circa · fumetti con le bandiere · blocco **SE 🚌 oggi arrivano i turisti** |
+| **19** | ⚖️ Diritto | Controllo dell'ASL | giorno **24** | ingredienti arrivati da 5 giorni o più = scaduti: buttati e **multa di 25** |
 
 ## 5. Tempi (velocità 1×, grafica 3D)
 
