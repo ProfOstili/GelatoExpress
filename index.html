@@ -292,7 +292,11 @@ select,input{font-family:inherit}
 .fase-sx .body{flex:1}.fase-sx p{font-size:17px}
 .conti{margin-top:12px;background:var(--tint,#fbf3e4);border-radius:12px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;line-height:1.35}
 .conti>b{flex-basis:100%;font-size:15px}.conti .pos,.conto-round .pos{color:#2f8a4e}.conti .neg,.conto-round .neg{color:#c0392b}
-.conto-round{margin-top:10px;font-size:15px;display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;align-items:center}
+.conto-round{margin:12px auto 0;max-width:440px;font-size:16px;text-align:left;border:2px solid var(--tint-line);border-radius:14px;padding:8px 14px;background:#fffdf6}
+.conto-round>div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--tint-line)}
+.conto-round small{color:var(--ink-soft);font-size:13px}
+.conto-round .tot{border-bottom:0;border-top:2px solid var(--line);margin-top:2px;padding-top:6px;font-weight:900;font-size:18px}
+#conti-box{flex-basis:100%;margin-top:0;flex-direction:column;font-size:15px}
 .es-tit{font-weight:800;margin:4px 0 2px}
 .fase-dx{border-left:3px solid var(--tint-line);padding-left:14px;display:flex;flex-direction:column;gap:6px;align-items:stretch}
 .domani-tit{font-size:20px;font-weight:900;letter-spacing:1px;text-align:center;color:var(--pink-d)}
@@ -550,7 +554,6 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
       <div class="prezzo-box hidden" id="prezzo-box">🏷️ Prezzo del gelato in Einaudi:
         <button id="prezzo-meno" aria-label="Prezzo più basso">−</button><span class="val" id="prezzo-val"></span><button id="prezzo-piu" aria-label="Prezzo più alto">+</button>
         <small>È il prezzo di tutti i giorni. Una regola «metti il prezzo a» lo cambia solo nei giorni in cui è vera.</small></div>
-      <p class="hint">Il robot legge le regole dall'alto in basso. Se nessuna regola dice di produrre, non fa coni!</p>
       <div class="come-conta hidden" id="come-conta">🧮 <b>Come conta il robot:</b> usa <b>tutte</b> le regole vere, dall'alto in basso.
         <b>🍦 produci</b> = <i>mette</i> quel numero (se due «produci» sono vere, vince quella più in basso) ·
         <b>➕ in più</b> / <b>➖ in meno</b> = <i>aggiunge</i> o <i>toglie</i>.<br>
@@ -566,6 +569,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
       <h2 class="passo-tit"><span class="n">3</span> Partiamo!</h2>
       <div class="start-chips" id="start-chips"></div>
       <button class="btn big mint" id="btn-run">▶ AVVIA</button>
+      <div class="conti hidden" id="conti-box"></div>
     </div>
   </div>
   <div class="card fact hidden" id="card-fact"><h2>💡 Lo sapevi che…</h2><p id="fact-text"></p></div>
@@ -7814,20 +7818,24 @@ function vaiAlGioco(){
 // il turno da giocare: 3 giorni (mai oltre la fine della fase)
 // i conti della gelateria, in basso nel primo blocco: quanto si guadagna e quanto si spende
 function contiHTML(V){
-  const C = CONFIG, cono = C.costoKg / C.coniPerKg;
-  return `<div class="conti"><b>💰 I conti della gelateria</b>
-    <span>🍦 ogni cono venduto: <b class="pos">+${eur(S.prog.prezzo, 2)}</b></span>
-    <span>🥛 ogni cono preparato: <b class="neg">−${eur(cono, 2)}</b> di ingredienti (anche se poi lo butti)</span>
-    <span>🏠 affitto: <b class="neg">−${eur(C.affittoGiorno)}</b> al giorno (anche se piove)</span>
-    ${V.magazzino ? `<span>🚚 ogni consegna: <b class="neg">−${eur(C.costoConsegna)}</b></span>` : ''}</div>`;
+  const C = CONFIG, cono = C.costoKg / C.coniPerKg, E = x => `${eur(x, Number.isInteger(x) ? 0 : 2).replace('<i', ' Einaudi<i')}`;
+  return `<b>📝 Ricorda:</b>
+    <span>🍦 ogni cono venduto: <b class="pos">+${E(S.prog.prezzo)}</b></span>
+    <span>🥛 ogni cono preparato: <b class="neg">−${E(cono)}</b> di ingredienti (anche se poi lo butti)</span>
+    <span>🏠 affitto: <b class="neg">−${E(C.affittoGiorno)}</b> al giorno (anche se piove)</span>
+    ${V.magazzino ? `<span>🚚 ogni consegna: <b class="neg">−${E(C.costoConsegna)}</b></span>` : ''}`;
 }
-// il conto del guadagno di un round: incassi meno spese
-function contoRound(T){
-  const ingr = T.cIngredienti + T.cSpreco, voci = [`🍦 incassi <b class="pos">+${eur(T.ricavi)}</b>`, `🥛 ingredienti <b class="neg">−${eur(ingr)}</b>`];
-  if(T.cAffitto) voci.push(`🏠 affitto <b class="neg">−${eur(T.cAffitto)}</b>`);
-  if(T.cConsegna) voci.push(`🚚 consegne <b class="neg">−${eur(T.cConsegna)}</b>`);
-  if(T.cMulta) voci.push(`⚖️ multa <b class="neg">−${eur(T.cMulta)}</b>`);
-  return `<div class="conto-round">${voci.join(' ')} = <b class="${T.profitto>=0?'pos':'neg'}">${eurS(T.profitto)}</b></div>`;
+// il conto del guadagno di un round, voce per voce: soldi fatti con i coni, costi per prepararli, affitto (e consegne, multa)
+function contoRound(T, nGiorni){
+  const prep = T.venduti + T.avanzati, riga = (ic, nome, nota, v) => `<div><span>${ic} ${nome}${nota ? ` <small>(${nota})</small>` : ''}</span><b class="${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : '−'}${eur(Math.abs(v))}</b></div>`;
+  const righe = [
+    riga('🍦', 'Soldi fatti con i coni', `${T.venduti} coni venduti`, T.ricavi),
+    riga('🥛', 'Costi per preparare i coni', `${prep} coni preparati`, -(T.cIngredienti + T.cSpreco)),
+    riga('🏠', 'Affitto', `${nGiorni} giorni × ${eur(CONFIG.affittoGiorno)}`, -T.cAffitto)
+  ];
+  if(T.cConsegna) righe.push(riga('🚚', 'Consegne', '', -T.cConsegna));
+  if(T.cMulta) righe.push(riga('⚖️', 'Multa ASL', '', -T.cMulta));
+  return `<div class="conto-round">${righe.join('')}<div class="tot"><span>💰 Guadagno</span><b class="${T.profitto>=0?'pos':'neg'}">${eurS(T.profitto)}</b></div></div>`;
 }
 function turno(){ const F = faseInfo(S.sfida.fase), da = S.sfida.giorno || F.da; return { da, a: Math.min(F.a, da + CONFIG.turno - 1) }; }
 // la schermata del gestionale per la fase in corso
@@ -7843,7 +7851,7 @@ function renderFase(){
     : `<div class="fday unk ${grande ? 'grande' : ''}">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`;
   const ricevuto = !F.previsioni || S.sfida.meteo === TU.da;
   $('#coach').innerHTML = `<div class="fase-sx"><div class="mascot">🍦</div><div class="body">
-       <p style="margin:0 0 8px">${F.testo}</p>${es}${contiHTML(V)}</div></div>
+       <p style="margin:0 0 8px">${F.testo}</p>${es}</div></div>
      <div class="fase-dx">${ricevuto
        ? `<div class="domani-tit">DOMANI</div>${giornoBox(giorni[0], true)}
           ${giorni.length > 1 ? `<div class="poi-tit">${F.previsioni ? 'I giorni dopo' : '📡💥 Niente previsioni'}</div><div class="poi">${giorni.slice(1).map(g => giornoBox(g, false)).join('')}</div>` : ''}`
@@ -7857,6 +7865,7 @@ function renderFase(){
   if(S.sfida.giorni.length) chips.push(`<span>💰 ${eur(S.sfida.stato.cassa)}</span>`);
   if(V.magazzino) chips.push(`<span>📦 ${round1(S.sfida.stato.stock)} kg${eventoNoto('asl', TU.da) && S.sfida.stato.stock > 0 ? ` · i più vecchi arrivati ${etaMagazzino(S.sfida.stato, TU.da) || 'oggi'}${etaMagazzino(S.sfida.stato, TU.da) ? ' giorni fa' : ''}` : ''}</span>`);
   $('#start-chips').innerHTML = chips.join('');
+  $('#conti-box').innerHTML = contiHTML(V); $('#conti-box').classList.remove('hidden');
   $('#btn-run').textContent = `▶ AVVIA GIORNI ${TU.da}–${TU.a}`;
   $('#btn-add').classList.remove('pulse');
   $('#btn-help').classList.add('hidden'); pulisciErroreCoach();
@@ -7970,7 +7979,7 @@ function renderTutorial(){
   $('#btn-meteo').onclick = () => riceviMeteo();
   $('#btn-help').classList.remove('hidden');
   $('#btn-help').disabled = !ricevuto;
-  $('#start-chips').innerHTML = '';
+  $('#start-chips').innerHTML = ''; $('#conti-box').classList.add('hidden');
   $('#btn-run').textContent = `▶ AVVIA GIORNO ${k+1}`;
   $('#btn-add').classList.toggle('pulse', ricevuto);
   pulisciErroreCoach();
@@ -8875,7 +8884,7 @@ async function avviaSfida(){
     // schermata 1: i risultati del round (3 giorni)
     await modal(`<div class="ic">✅</div><h3>Giorni ${TU.da}–${TU.a}: fatto!</h3>
       <div class="stats"><span class="${sim.tot.profitto>=0?'pos':'neg'}">${eurS(sim.tot.profitto)}</span><span>🍦 ${sim.tot.venduti} venduti</span><span>😞 ${sim.tot.persi} persi</span><span>🗑️ ${sim.tot.avanzati} buttati</span></div>
-      ${contoRound(sim.tot)}
+      ${contoRound(sim.tot, sim.giorni.length)}
       ${esitoASL(sim.giorni)}
       ${nuovaFase ? '' : `<p style="margin-top:12px">Controlla le regole e avvia i prossimi giorni!</p>`}`, [{t:'Avanti ▶', cls:'mint'}]);
     // schermata 2: EVENTI, la novità che arriva con il nuovo round

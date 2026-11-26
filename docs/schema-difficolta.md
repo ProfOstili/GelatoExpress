@@ -69,12 +69,12 @@ Ogni "AVVIA" fa giocare **3 giorni** (un round), poi si torna al gestionale (ris
 
 La moneta del gioco è l'**Einaudi**. Il simbolo è una moneta d'oro con la sagoma del Tempio della Consolazione di Todi e viene presentato nel primo messaggio del tutorial.
 
-Nel gestionale, in basso nel blocco "Cosa c'è da fare?", il riquadro **💰 I conti della gelateria** ricorda quanto vale ogni cono venduto (il prezzo scelto), il costo degli ingredienti per ogni cono preparato, l'affitto e, quando il magazzino è manuale, il costo della consegna.
+Nel gestionale, sotto "Partiamo!", il riquadro **📝 Ricorda** dice quanto vale ogni cono venduto (il prezzo scelto) e quanto costano gli ingredienti di ogni cono preparato e l'affitto. Quando il magazzino è manuale, aggiunge il costo della consegna.
 
 **Suoni e segnali:** quando parte un round si sente una fanfara 8-bit. A ogni gelato venduto suona il «cha-ching!» della cassa e accanto al cliente sale per poco la scritta col prezzo e la moneta (es. «+2,50 🪙»). Il pulsante 🔊/🔇 spegne anche gli effetti sonori.
 
 Alla fine di ogni round di 3 giorni compaiono due schermate:
-1. **i risultati**: guadagno, coni venduti, clienti persi, coni buttati, il conto del guadagno (incassi − ingredienti − affitto − consegne − multa) ed eventuale esito del controllo ASL;
+1. **i risultati**: guadagno, coni venduti, clienti persi, coni buttati, il conto voce per voce: soldi fatti con i coni, costi per preparare i coni, affitto (più consegne e multa, se ci sono) e guadagno ed eventuale esito del controllo ASL;
 2. **📣 EVENTI**: la novità del nuovo round (per esempio il weekend). Con la stessa intestazione compaiono anche gli annunci delle altre materie.
 
 **Quanti clienti:** ogni cliente compra un cono. In un giorno normale di sole vengono **20–30 persone** (di più col caldo sopra i 30 °C e nel weekend: +30%), con le nuvole circa 12–18, con la pioggia circa 4–8. Magazzino: 10 kg all'inizio (1 kg = 10 coni), al massimo 25 kg. Affitto 15 al giorno, consegna 3, ingredienti 0,80 a cono, prezzo normale 2,50 Einaudi.
