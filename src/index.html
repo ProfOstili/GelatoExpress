@@ -287,6 +287,9 @@ select,input{font-family:inherit}
 #scr-program.gioco #coach{display:grid;grid-template-columns:1fr 210px;gap:16px;align-items:start}
 .fase-sx{display:flex;gap:12px;align-items:flex-start}
 .fase-sx .body{flex:1}.fase-sx p{font-size:17px}
+.conti{margin-top:12px;background:var(--tint,#fbf3e4);border-radius:12px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;line-height:1.35}
+.conti>b{flex-basis:100%;font-size:15px}.conti .pos,.conto-round .pos{color:#2f8a4e}.conti .neg,.conto-round .neg{color:#c0392b}
+.conto-round{margin-top:10px;font-size:15px;display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;align-items:center}
 .es-tit{font-weight:800;margin:4px 0 2px}
 .fase-dx{border-left:3px solid var(--tint-line);padding-left:14px;display:flex;flex-direction:column;gap:6px;align-items:stretch}
 .domani-tit{font-size:20px;font-weight:900;letter-spacing:1px;text-align:center;color:var(--pink-d)}
@@ -311,7 +314,7 @@ select,input{font-family:inherit}
 /* la moneta del gioco: l'Einaudi (il logo della scuola, in oro) */
 .eventi-tit{display:inline-block;background:#2b2140;color:#ffd84d;font-weight:900;letter-spacing:.12em;font-size:1.5rem;padding:6px 18px;border-radius:12px;margin-bottom:6px}
 .moneta-intro{background:#fff6dc;border-radius:12px;padding:8px 12px}.moneta-intro .ei{font-size:1.8em;vertical-align:middle;margin-right:4px}
-.ei{display:inline-block;width:.86em;height:1.04em;background:url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%27-3%20-2%20106%20127%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%270%27%20x2=%271%27%20y2=%271%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe680%27/%3E%3Cstop%20offset=%27.55%27%20stop-color=%27%23f2bb2c%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23b9820c%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d=%27M0%20122L0%2076L3%2076L3%2073Q5%2062%2017%2060L20%2060L20%2056L25%2056L25%2053L29%2053L29%2034L27%2034L27%2031L30%2031C31%2020%2039%2015.5%2046%2014.5L46%209Q50%205.5%2054%209L54%2014.5C61%2015.5%2069%2020%2070%2031L73%2031L73%2034L71%2034L71%2053L75%2053L75%2056L80%2056L80%2060L83%2060Q95%2062%2097%2073L97%2076L100%2076L100%20122Z%27%20fill=%27url%28%23g%29%27%20stroke=%27%238a6410%27%20stroke-width=%273%27%20stroke-linejoin=%27round%27/%3E%3Cpath%20d=%27M49.3%200h1.4v7h-1.4zM47.8%201.6h4.4v1.2h-4.4zM0%2079h100v2.4H0zM0%2099h100v2H0zM25%2056h50v2H25zM45%20107h10v15H45zM34%2039h4v9h-4zM48%2039h4v9h-4zM62%2039h4v9h-4zM12%2086h5v8h-5zM83%2086h5v8h-5zM29%2086h5v8h-5zM66%2086h5v8h-5z%27%20fill=%27%238a6410%27%20fill-opacity=%27.55%27/%3E%3C/svg%3E") center/contain no-repeat;vertical-align:-.06em;margin-left:.1em}
+.ei{display:inline-block;width:1em;height:1em;background:url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%270%27%20x2=%271%27%20y2=%271%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23fff0a0%27/%3E%3Cstop%20offset=%27.5%27%20stop-color=%27%23f5c53a%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23c08a12%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle%20cx=%27100%27%20cy=%27100%27%20r=%2795%27%20fill=%27url%28%23g%29%27%20stroke=%27%238a6410%27%20stroke-width=%277%27/%3E%3Ccircle%20cx=%27100%27%20cy=%27100%27%20r=%2780%27%20fill=%27none%27%20stroke=%27%23b9820c%27%20stroke-width=%274%27/%3E%3Cg%20transform=%27translate%2856%2046.5%29%20scale%28.88%29%27%3E%3Cpath%20d=%27M0%20122L0%2076L3%2076L3%2073Q5%2062%2017%2060L20%2060L20%2056L25%2056L25%2053L29%2053L29%2034L27%2034L27%2031L30%2031C31%2020%2039%2015.5%2046%2014.5L46%209Q50%205.5%2054%209L54%2014.5C61%2015.5%2069%2020%2070%2031L73%2031L73%2034L71%2034L71%2053L75%2053L75%2056L80%2056L80%2060L83%2060Q95%2062%2097%2073L97%2076L100%2076L100%20122Z%27%20fill=%27%23c99317%27%20stroke=%27%237a560c%27%20stroke-width=%274%27%20stroke-linejoin=%27round%27/%3E%3Cpath%20d=%27M49.3%200h1.4v7h-1.4zM47.8%201.6h4.4v1.2h-4.4zM0%2079h100v2.4H0zM0%2099h100v2H0zM25%2056h50v2H25zM45%20107h10v15H45zM34%2039h4v9h-4zM48%2039h4v9h-4zM62%2039h4v9h-4zM12%2086h5v8h-5zM83%2086h5v8h-5zM29%2086h5v8h-5zM66%2086h5v8h-5z%27%20fill=%27%237a560c%27%20fill-opacity=%27.5%27/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;vertical-align:-.06em;margin-left:.1em}
 .come-conta{background:#eef5f8;border:3px solid var(--act);border-radius:14px;padding:8px 12px;margin:0 0 10px;font-size:15px;line-height:1.4}
 .come-conta small{font-size:13px;color:var(--ink-soft);font-weight:700}
 .mini-rules li.conto{margin-top:6px;background:#eef5f8;border-radius:10px;padding:5px 8px;list-style:none;font-size:14px}
@@ -1457,6 +1460,23 @@ function vaiAlGioco(){
   renderFase();
 }
 // il turno da giocare: 3 giorni (mai oltre la fine della fase)
+// i conti della gelateria, in basso nel primo blocco: quanto si guadagna e quanto si spende
+function contiHTML(V){
+  const C = CONFIG, cono = C.costoKg / C.coniPerKg;
+  return `<div class="conti"><b>💰 I conti della gelateria</b>
+    <span>🍦 ogni cono venduto: <b class="pos">+${eur(S.prog.prezzo, 2)}</b></span>
+    <span>🥛 ogni cono preparato: <b class="neg">−${eur(cono, 2)}</b> di ingredienti (anche se poi lo butti)</span>
+    <span>🏠 affitto: <b class="neg">−${eur(C.affittoGiorno)}</b> al giorno (anche se piove)</span>
+    ${V.magazzino ? `<span>🚚 ogni consegna: <b class="neg">−${eur(C.costoConsegna)}</b></span>` : ''}</div>`;
+}
+// il conto del guadagno di un round: incassi meno spese
+function contoRound(T){
+  const ingr = T.cIngredienti + T.cSpreco, voci = [`🍦 incassi <b class="pos">+${eur(T.ricavi)}</b>`, `🥛 ingredienti <b class="neg">−${eur(ingr)}</b>`];
+  if(T.cAffitto) voci.push(`🏠 affitto <b class="neg">−${eur(T.cAffitto)}</b>`);
+  if(T.cConsegna) voci.push(`🚚 consegne <b class="neg">−${eur(T.cConsegna)}</b>`);
+  if(T.cMulta) voci.push(`⚖️ multa <b class="neg">−${eur(T.cMulta)}</b>`);
+  return `<div class="conto-round">${voci.join(' ')} = <b class="${T.profitto>=0?'pos':'neg'}">${eurS(T.profitto)}</b></div>`;
+}
 function turno(){ const F = faseInfo(S.sfida.fase), da = S.sfida.giorno || F.da; return { da, a: Math.min(F.a, da + CONFIG.turno - 1) }; }
 // la schermata del gestionale per la fase in corso
 function renderFase(){
@@ -1471,7 +1491,7 @@ function renderFase(){
     : `<div class="fday unk ${grande ? 'grande' : ''}">${evIc(g)}${GIORNI_SETT[g.dow]} ${g.n}<span class="ic">❓</span></div>`;
   const ricevuto = !F.previsioni || S.sfida.meteo === TU.da;
   $('#coach').innerHTML = `<div class="fase-sx"><div class="mascot">🍦</div><div class="body">
-       <p style="margin:0 0 8px">${F.testo}</p>${es}</div></div>
+       <p style="margin:0 0 8px">${F.testo}</p>${es}${contiHTML(V)}</div></div>
      <div class="fase-dx">${ricevuto
        ? `<div class="domani-tit">DOMANI</div>${giornoBox(giorni[0], true)}
           ${giorni.length > 1 ? `<div class="poi-tit">${F.previsioni ? 'I giorni dopo' : '📡💥 Niente previsioni'}</div><div class="poi">${giorni.slice(1).map(g => giornoBox(g, false)).join('')}</div>` : ''}`
@@ -2457,6 +2477,7 @@ async function avviaSfida(){
     // schermata 1: i risultati del round (3 giorni)
     await modal(`<div class="ic">✅</div><h3>Giorni ${TU.da}–${TU.a}: fatto!</h3>
       <div class="stats"><span class="${sim.tot.profitto>=0?'pos':'neg'}">${eurS(sim.tot.profitto)}</span><span>🍦 ${sim.tot.venduti} venduti</span><span>😞 ${sim.tot.persi} persi</span><span>🗑️ ${sim.tot.avanzati} buttati</span></div>
+      ${contoRound(sim.tot)}
       ${esitoASL(sim.giorni)}
       ${nuovaFase ? '' : `<p style="margin-top:12px">Controlla le regole e avvia i prossimi giorni!</p>`}`, [{t:'Avanti ▶', cls:'mint'}]);
     // schermata 2: EVENTI, la novità che arriva con il nuovo round

@@ -208,7 +208,7 @@ window.Diorama = (() => {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#9fd3ee'; ctx.font = fontGrassetto(56); ctx.fillText('RIVALE', W / 2, 58);
       ctx.fillStyle = '#fff6e6'; ctx.font = fontGrassetto(92); ctx.fillText('2,50', W / 2 - 50, 138);
-      monetaEinaudi(ctx, W / 2 + 120, 138, 1.15);                       // il prezzo è in Einaudi, la moneta del gioco
+      monetaEinaudi(ctx, W / 2 + 125, 138, 0.95);                       // il prezzo è in Einaudi, la moneta del gioco
     });
     metti(corpo, rettangoloGeo(0.78, 0.31, 0.04), new THREE.MeshStandardMaterial({ map: cartello, roughness: 0.6, emissive: '#ffffff', emissiveMap: cartello, emissiveIntensity: 0.25 }), [-0.08, 1.1, 0.08], null, false);
     cartellone(g, ['GELATI', 'PIÙ BUONI!'], '#5f8fae', '#ffffff', -0.45, -0.8, 1.9, 0.8, 2.0);        // il cartellone dietro il chiosco della concorrenza
@@ -278,14 +278,16 @@ window.Diorama = (() => {
     metti(g, rettangoloGeo(w, h, 0.03), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }), [0, alto + h / 2 - 0.05, 0], null, false);
     return g;
   }
-  // la moneta del gioco, l'Einaudi: la sagoma della Consolazione di Todi, in oro (centrata in x, y)
+  // la moneta del gioco, l'Einaudi: una moneta d'oro con la sagoma della Consolazione di Todi (centrata in x, y)
   function monetaEinaudi(ctx, x, y, k = 1) {
-    ctx.save(); ctx.translate(x - 42 * k, y - 52 * k); ctx.scale(k * 0.84, k * 0.84);
-    const gr = ctx.createLinearGradient(0, 0, 100, 122);
-    gr.addColorStop(0, '#ffe680'); gr.addColorStop(0.55, '#f2bb2c'); gr.addColorStop(1, '#b9820c');
-    ctx.fillStyle = gr; ctx.strokeStyle = '#8a6410'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-    const p = new Path2D('M0 122L0 76L3 76L3 73Q5 62 17 60L20 60L20 56L25 56L25 53L29 53L29 34L27 34L27 31L30 31C31 20 39 15.5 46 14.5L46 9Q50 5.5 54 9L54 14.5C61 15.5 69 20 70 31L73 31L73 34L71 34L71 53L75 53L75 56L80 56L80 60L83 60Q95 62 97 73L97 76L100 76L100 122Z'); ctx.fill(p); ctx.stroke(p);
-    ctx.fillStyle = 'rgba(138,100,16,0.55)'; ctx.fill(new Path2D('M49.3 0h1.4v7h-1.4zM47.8 1.6h4.4v1.2h-4.4zM0 79h100v2.4H0zM0 99h100v2H0zM25 56h50v2H25zM45 107h10v15H45zM34 39h4v9h-4zM48 39h4v9h-4zM62 39h4v9h-4zM12 86h5v8h-5zM83 86h5v8h-5zM29 86h5v8h-5zM66 86h5v8h-5z'));
+    ctx.save(); ctx.translate(x - 50 * k, y - 50 * k); ctx.scale(k / 2, k / 2);
+    const gr = ctx.createLinearGradient(0, 0, 200, 200);
+    gr.addColorStop(0, '#fff0a0'); gr.addColorStop(0.5, '#f5c53a'); gr.addColorStop(1, '#c08a12');
+    ctx.beginPath(); ctx.arc(100, 100, 95, 0, Math.PI * 2); ctx.fillStyle = gr; ctx.fill(); ctx.lineWidth = 7; ctx.strokeStyle = '#8a6410'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(100, 100, 80, 0, Math.PI * 2); ctx.lineWidth = 4; ctx.strokeStyle = '#b9820c'; ctx.stroke();
+    ctx.translate(56, 46.5); ctx.scale(0.88, 0.88);
+    const p = new Path2D('M0 122L0 76L3 76L3 73Q5 62 17 60L20 60L20 56L25 56L25 53L29 53L29 34L27 34L27 31L30 31C31 20 39 15.5 46 14.5L46 9Q50 5.5 54 9L54 14.5C61 15.5 69 20 70 31L73 31L73 34L71 34L71 53L75 53L75 56L80 56L80 60L83 60Q95 62 97 73L97 76L100 76L100 122Z'); ctx.fillStyle = '#c99317'; ctx.fill(p); ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.strokeStyle = '#7a560c'; ctx.stroke(p);
+    ctx.fillStyle = 'rgba(122,86,12,0.5)'; ctx.fill(new Path2D('M49.3 0h1.4v7h-1.4zM47.8 1.6h4.4v1.2h-4.4zM0 79h100v2.4H0zM0 99h100v2H0zM25 56h50v2H25zM45 107h10v15H45zM34 39h4v9h-4zM48 39h4v9h-4zM62 39h4v9h-4zM12 86h5v8h-5zM83 86h5v8h-5zM29 86h5v8h-5zM66 86h5v8h-5z'));
     ctx.restore();
   }
   // il fumetto sopra la testa dei turisti: la bandiera e il saluto nella loro lingua
