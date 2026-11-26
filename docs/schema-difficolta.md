@@ -84,7 +84,24 @@ Ogni evento è **annunciato nel gestionale**, all'inizio di un turno, e accade *
 | **13** | 🇬🇧🇫🇷 Inglese e Francese | Arrivano i turisti col pullman | giorni **14, 17, 20, 23, 26, 29** | +9 clienti circa · fumetti con le bandiere · blocco **SE 🚌 oggi arrivano i turisti** |
 | **19** | ⚖️ Diritto | Controllo dell'ASL | giorno **24** | ingredienti arrivati da 5 giorni o più = scaduti: buttati e **multa di 25** |
 
-## 5. Tempi (velocità 1×, grafica 3D)
+## 5. Come conta il robot (regole che valgono insieme)
+
+Il robot legge le regole **dall'alto in basso** e applica tutte quelle vere:
+- **🍦 produci X** imposta il numero, come `coni = X`: se ne valgono più di una, vince quella più in basso;
+- **➕ produci in più X / ➖ produci in meno X** aggiungono o tolgono, come `coni = coni + X`.
+
+Esempio: SE nuvoloso → produci 20, SE weekend → ➕ 35. In un weekend nuvoloso il robot fa 20 + 35 = **55 coni**.
+Nel gestionale, dalla fase del weekend, il riquadro "🧮 Come conta il robot" lo spiega. Nella simulazione, "🧮 Il conto del robot" mostra il calcolo passo per passo.
+
+**Perché "produci" non si somma:** meteo e temperatura descrivono la stessa giornata. Con "SE sole → produci 26" e "SE temperatura > 30 → produci 30", sommando si arriverebbe a 56 coni invece di 30.
+
+**Alternative da valutare in futuro** (per ora non attive):
+1. **Tutte le regole si sommano.** È la più intuitiva, ma bisogna riscrivere gli esempi della temperatura come "➕ in più" (es. temperatura > 30 → ➕ 6). C'è il rischio di raddoppiare la produzione a chi mette insieme meteo e temperatura.
+2. **"Produci" solo nella prima regola che vale.** La prima regola vera fissa la base e le successive possono solo aggiungere o togliere (➕/➖). È chiara, ma lascia meno libertà.
+
+Il codice da cambiare è in `src/index.html`, funzione `eseguiProgramma`.
+
+## 6. Tempi (velocità 1×, grafica 3D)
 
 - **Tutorial:** circa 25–30 s per giorno, più la ricezione del meteo (circa 4 s).
 - **Sfida:** circa 12 s per giorno, quindi circa 6 minuti in tutto, più gli annunci e il tempo per scrivere le regole.
@@ -92,7 +109,7 @@ Ogni evento è **annunciato nel gestionale**, all'inizio di un turno, e accade *
 
 ---
 
-## 6. Presentazione per l'open day
+## 7. Presentazione per l'open day
 
 Si apre `index.html?promo` (online: https://profostili.github.io/GelatoExpress/?promo).
 1. Si sceglie la musica (si può ascoltare un pezzetto): ⚡ Sfida elettronica, 👾 Arcade 8-bit, 🎬 Epica.
