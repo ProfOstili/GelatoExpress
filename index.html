@@ -310,6 +310,9 @@ select,input{font-family:inherit}
 .btns-regole{display:flex;gap:10px;flex-wrap:wrap}
 /* la moneta del gioco: l'Einaudi (il logo della scuola, in oro) */
 .ei{display:inline-block;width:1.2em;height:.86em;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%2072%27%3E%3Cpath%20d%3D%27M47%2064C30%2044%2016%2035%203%2032C17%2047%2031%2059%2047%2064Z%27%20fill%3D%27%23f5c84c%27/%3E%3Cpath%20d%3D%27M53%2064C70%2044%2084%2035%2097%2032C83%2047%2069%2059%2053%2064Z%27%20fill%3D%27%23f5c84c%27/%3E%3Cpath%20d%3D%27M46%2062C35%2042%2031%2022%2033%203C44%2021%2048%2041%2046%2062Z%27%20fill%3D%27%23d9a21b%27/%3E%3Cpath%20d%3D%27M54%2062C65%2042%2069%2022%2067%203C56%2021%2052%2041%2054%2062Z%27%20fill%3D%27%23d9a21b%27/%3E%3Cpath%20d%3D%27M39%2057L50%2070L61%2057L50%2063Z%27%20fill%3D%27%238a6410%27/%3E%3C/svg%3E") center/contain no-repeat;vertical-align:-.06em;margin-left:.1em}
+.come-conta{background:#eef5f8;border:3px solid var(--act);border-radius:14px;padding:8px 12px;margin:0 0 10px;font-size:15px;line-height:1.4}
+.come-conta small{font-size:13px;color:var(--ink-soft);font-weight:700}
+.mini-rules li.conto{margin-top:6px;background:#eef5f8;border-radius:10px;padding:5px 8px;list-style:none;font-size:14px}
 .prezzo-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff4d9;border:3px solid var(--yellow-d);border-radius:14px;padding:8px 12px;margin:0 0 10px;font-weight:800;font-size:17px}
 .prezzo-box .val{min-width:96px;text-align:center;font-size:22px;font-weight:900;background:#fff;border:3px dashed var(--line);border-radius:12px;padding:2px 6px}
 .prezzo-box button{width:42px;height:42px;border-radius:12px;border:3px solid var(--line);background:var(--yellow);font-size:24px;font-weight:900;line-height:1;box-shadow:0 3px 0 var(--line)}
@@ -540,6 +543,10 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
         <button id="prezzo-meno" aria-label="Prezzo più basso">−</button><span class="val" id="prezzo-val"></span><button id="prezzo-piu" aria-label="Prezzo più alto">+</button>
         <small>È il prezzo di tutti i giorni. Una regola «metti il prezzo a» lo cambia solo nei giorni in cui è vera.</small></div>
       <p class="hint">Il robot legge le regole dall'alto in basso. Se nessuna regola dice di produrre, non fa coni!</p>
+      <div class="come-conta hidden" id="come-conta">🧮 <b>Come conta il robot:</b> usa <b>tutte</b> le regole vere, dall'alto in basso.
+        <b>🍦 produci</b> = <i>mette</i> quel numero (se due «produci» sono vere, vince quella più in basso) ·
+        <b>➕ in più</b> / <b>➖ in meno</b> = <i>aggiunge</i> o <i>toglie</i>.<br>
+        <small>Esempio: SE ⛅ nuvoloso ALLORA 🍦 produci 20 · SE 📅 weekend ALLORA ➕ produci in più 35 → in un weekend nuvoloso: 20 + 35 = <b>55 coni</b>.</small></div>
       <div class="rules" id="rules"></div>
       <div class="btns-regole">
         <button class="btn yellow" id="btn-add">➕ Aggiungi regola</button>
@@ -7258,17 +7265,17 @@ function condVera(r, ctx){
   return false;
 }
 function eseguiProgramma(prog, ctx){
-  let produzione = prog.produzione, prezzo = prog.prezzo, riordina = 0; const fired = [];
+  let produzione = prog.produzione, prezzo = prog.prezzo, riordina = 0; const fired = [], conto = [];
   prog.regole.forEach((r,i)=>{
     if(!condVera(r, ctx)) return;
     fired.push(i);
-    if(r.a==='produci') produzione = r.av;
-    else if(r.a==='piu') produzione += r.av;
-    else if(r.a==='meno') produzione = Math.max(0, produzione - r.av);
+    if(r.a==='produci'){ produzione = r.av; conto.push([i, '=', r.av, produzione]); }
+    else if(r.a==='piu'){ produzione += r.av; conto.push([i, '+', r.av, produzione]); }
+    else if(r.a==='meno'){ produzione = Math.max(0, produzione - r.av); conto.push([i, '−', r.av, produzione]); }
     else if(r.a==='prezzo') prezzo = r.av;
     else if(r.a==='riordina') riordina = r.av;
   });
-  return { produzione, prezzo, riordina, fired };
+  return { produzione, prezzo, riordina, fired, conto };
 }
 // quanti clienti arrivano: { tot, turisti (compresi in tot), rivale (andati alla concorrenza, NON compresi in tot) }
 function clientiDelGiorno(g, prezzo){
@@ -7354,7 +7361,7 @@ function simula(prog, giorni, stato0, opz={}){
     const profitto = ricavi - costi;
     const cassaInizio = st.cassa;
     st.cassa += profitto;
-    res.push({ ...g, prezzo:dec.prezzo, obiettivo:dec.produzione, fired:dec.fired, prodotti, limitato,
+    res.push({ ...g, prezzo:dec.prezzo, obiettivo:dec.produzione, fired:dec.fired, conto:dec.conto, prodotti, limitato,
       clienti, turistiN:cl.turisti, rivale:cl.rivale, venduti, persi, avanzati, arrivo, eccesso, scaduti, multa, ordine, stockPrimaArrivo, stockInizio, stockFine:st.stock,
       ricavi, cIngredienti, cSpreco, cConsegna, cAffitto, cMulta, costi, profitto, cassaInizio, cassaFine:st.cassa, auto:!!opz.auto });
     st.ieri = { persi, avanzati };
@@ -7704,6 +7711,7 @@ for(const [id, k] of [['#prezzo-meno', -1], ['#prezzo-piu', 1]]) $(id).onclick =
 };
 function renderRegole(){
   renderPrezzo();
+  $('#come-conta').classList.toggle('hidden', !blocchiDisponibili().azioni.includes('piu'));
   const box = $('#rules'), R = S.prog.regole, D = blocchiDisponibili();
   if(!R.length){
     box.innerHTML = `<div class="empty-rules">Nessuna regola: il robot non sa cosa fare e <b>non produce coni</b>.<br>Premi <b>➕ Aggiungi regola</b>!</div>`;
@@ -8109,10 +8117,14 @@ function renderDecisione(d, V = {}){
   if(d.eccesso > 0) rows.push(`<div class="warn"><span>❄️ Congelatore pieno</span><span>−${round1(d.eccesso)} kg</span></div>`);
   $('#s-decision').innerHTML = rows.join('');
 }
-function renderMiniRegole(fired){
+function renderMiniRegole(fired, conto = []){
   const R = S.prog.regole;
-  $('#s-rules').innerHTML = R.length ? R.map((r,i)=>`<li class="${fired.includes(i)?'fired':''}">${i+1}. ${testoRegola(r)}</li>`).join('')
-    : '<li>Nessuna regola: solo valori di base.</li>';
+  // il conto del robot: le regole vere, una dopo l'altra (🍦 produci = metti questo numero · ➕ ➖ = aggiungi o togli)
+  const passi = conto.map(([i, op, v], k) => op === '=' ? `regola ${i+1} → <b>${v}</b>` : `regola ${i+1} → ${op}${v}`).join(' · ');
+  const tot = conto.length ? conto[conto.length-1][3] : 0;
+  $('#s-rules').innerHTML = (R.length ? R.map((r,i)=>`<li class="${fired.includes(i)?'fired':''}">${i+1}. ${testoRegola(r)}</li>`).join('')
+    : '<li>Nessuna regola!</li>')
+    + `<li class="conto">🧮 <b>Il conto del robot:</b> ${conto.length ? `${passi} = <b>${tot} coni</b>` : 'nessuna regola dice di produrre → <b>0 coni</b>'}</li>`;
 }
 async function animaGiorno(d, opz){
   if(G3.attivo && G3.pronto) return animaGiorno3D(d, opz);
@@ -8137,7 +8149,7 @@ async function animaGiorno(d, opz){
   }
   setStock(d.stockInizio);
   // il programma decide
-  renderMiniRegole(d.fired); renderDecisione(d, opz.vedi);
+  renderMiniRegole(d.fired, d.conto); renderDecisione(d, opz.vedi);
   await sleep(durata*0.08);
   setStock(d.stockFine);
   $('#s-cones').textContent = '🍦 ' + d.prodotti;
@@ -8235,7 +8247,7 @@ async function animaGiorno3D(d, opz){
   Diorama.setPacchi(pacchiDi(d.stockInizio));
   if(d.arrivo > 0 && opz.vedi.magazzino) floater3D(`+${d.arrivo} kg 📦`, 'casse', '#3f866c');
   Diorama.setFinito(false); Diorama.setConi(d.prodotti, Math.max(1, d.prodotti));   // all'alba: i coni che il robot ha preparato stanotte
-  renderMiniRegole(d.fired); renderDecisione(d, opz.vedi);
+  renderMiniRegole(d.fired, d.conto); renderDecisione(d, opz.vedi);
   // apertura: il gelataio porta dentro i pacchi che servono per i coni di oggi, poi porta fuori il bancone
   let n = pacchiDi(d.stockInizio) - pacchiDi(d.stockFine);
   if(d.prodotti > 0) n = Math.max(1, n);
