@@ -114,6 +114,19 @@ window.Diorama = (() => {
     f.material = tipo === 'cuori' ? O.matCuori : O.matRabbia; f.visible = true;
     f.userData = { vivo: true, t0: tReale(), x, y, z, fase: hash(x, z) * 6 };
   }
+  // la monetina che sale accanto a chi compra: «+2,50» con la moneta degli Einaudi (sale solo per un terzo dell'altezza delle faccine)
+  function emettiMoneta(testo, x, y, z) {
+    const f = O.faccine.find((q) => !q.visible); if (!f) return;
+    O.matMonete ??= {};
+    O.matMonete[testo] ??= new THREE.SpriteMaterial({ depthTest: false, depthWrite: false, fog: false, map: texCanvas(256, 112, (ctx, W, H) => {
+      ctx.fillStyle = '#fffbe8'; ctx.strokeStyle = '#b9820c'; ctx.lineWidth = 7; ctx.beginPath(); ctx.roundRect(5, 5, W - 10, H - 10, 50); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1f7a3f'; ctx.font = fontGrassetto(62); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(testo, W / 2 - 38, H / 2 + 3, W - 110);
+      monetaEinaudi(ctx, W - 58, H / 2, 0.82);
+    }) });
+    f.material = O.matMonete[testo]; f.visible = true;
+    f.userData = { vivo: true, t0: tReale(), x, y, z, fase: 0, dur: 1.9, sale: 5.5, ax: 2.1, ay: 0.92, fermo: true };
+  }
   function cono(padre) {
     const g = new THREE.Group(); padre.add(g);
     metti(g, geo().cono, PAL.cialda, [0, -0.1, 0], [Math.PI, 0, 0]); metti(g, geo().pallina, PAL.accento, [0, 0.02, 0]);
@@ -727,7 +740,7 @@ window.Diorama = (() => {
       if (!f.visible) return;
       const u = (t - f.userData.t0) / (f.userData.dur || 2.8);
       if (u >= 1) { f.visible = false; return; }
-      f.position.set(f.userData.x + Math.sin(t * 3 + f.userData.fase) * 0.25, f.userData.y + u * (f.userData.sale || 17), f.userData.z);
+      f.position.set(f.userData.x + (f.userData.fermo ? 0 : Math.sin(t * 3 + f.userData.fase) * 0.25), f.userData.y + u * (f.userData.sale || 17), f.userData.z);
       const sf = 0.85 * grandezzaSegni() * Math.max(0.001, easeOutBack(clamp(u * 5))); f.scale.set(sf * (f.userData.ax || 1), sf * (f.userData.ay || 1), 1);
     });
     aggiornaClienti(t, dt);
@@ -1050,7 +1063,7 @@ window.Diorama = (() => {
         if (!e.alBancoFatto && u > 0.5) { e.alBancoFatto = true; if (e.alBanco) e.alBanco(); }       // per il gioco: il cliente è al bancone
         if (e.servito && !e.venduto && u > 0.5 && !e.rivale) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
         // appena prende il gelato (o capisce che non c'è) dalla testa esce la faccina
-        if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); }
+        if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); if (e.servito && e.moneta && !e.rivale) emettiMoneta(e.moneta, banco[0] + 0.75, 1.3, banco[1] + 0.2); }
       } else {
         const k = (u - 0.6) / 0.4;
         if (e.servito) { pos = passi(banco, via, k, e.rivale ? 4 : 6, 0.22); verso = via[0] < banco[0] ? Math.PI : 0; }
@@ -1143,7 +1156,7 @@ window.Diorama = (() => {
       if (stato.finito && !opz.rivale) servito = false;          // coni finiti: resta senza (e si arrabbia)
       const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
       if (!libero) { if (alBanco) setTimeout(alBanco, durataMs * 0.5 / Math.max(1, stato.speed)); return; }   // troppa gente: non si vede, ma compra lo stesso
-      const n = eventi.length, e = { piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 };
+      const n = eventi.length, e = { piolo: libero, servito, moneta: opz.moneta, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 };
       if (opz.turista) { e.turista = opz.turista; e.da = [3.9 + (n % 3) * 0.3, 9.5]; libero.userData.fumetto.material = opz.turista === 'fr' ? O.matBonjour : O.matHello; }
       if (opz.rivale) { e.rivale = true; e.banco = [RIVALE.x + ((n % 3) - 1) * 0.28, 8.35]; e.via = [2.6, 8.95 + e.dz]; e.dur *= 0.8; }
       eventi.push(e);

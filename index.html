@@ -164,6 +164,9 @@ select,input{font-family:inherit}
   text-align:center;font-weight:900;font-size:16px;transform:rotate(-6deg);padding:2px}
 .street{position:absolute;left:0;right:210px;top:46%;height:24%}
 .cust{position:absolute;bottom:2px;left:0;font-size:34px;line-height:1;will-change:transform}
+.cust .piu-moneta{position:absolute;right:calc(100% + 4px);top:-4px;z-index:5;font-size:15px;font-weight:900;color:#1f7a3f;background:#fffbe8;border:2px solid #d9a21b;border-radius:999px;padding:0 6px;white-space:nowrap;animation:piumoneta 900ms ease-out forwards;pointer-events:none}
+.cust .piu-moneta .ei{position:static;font-size:15px;margin-left:2px}
+@keyframes piumoneta{0%{transform:translateY(6px) scale(.5);opacity:0}20%{transform:translateY(0) scale(1.1);opacity:1}80%{opacity:1}100%{transform:translateY(-26px) scale(1);opacity:0}}
 .cust i{font-style:normal;font-size:22px;position:absolute;top:-16px;right:-10px}
 .road{position:absolute;left:0;right:0;top:70%;height:16%;border-top:3px dashed rgba(255,255,255,.7)}
 .truck{position:absolute;bottom:calc(14% + 4px);left:2%;z-index:3;width:118px;height:62px;transition:left .25s linear}
@@ -5967,6 +5970,19 @@ window.Diorama = (() => {
     f.material = tipo === 'cuori' ? O.matCuori : O.matRabbia; f.visible = true;
     f.userData = { vivo: true, t0: tReale(), x, y, z, fase: hash(x, z) * 6 };
   }
+  // la monetina che sale accanto a chi compra: «+2,50» con la moneta degli Einaudi (sale solo per un terzo dell'altezza delle faccine)
+  function emettiMoneta(testo, x, y, z) {
+    const f = O.faccine.find((q) => !q.visible); if (!f) return;
+    O.matMonete ??= {};
+    O.matMonete[testo] ??= new THREE.SpriteMaterial({ depthTest: false, depthWrite: false, fog: false, map: texCanvas(256, 112, (ctx, W, H) => {
+      ctx.fillStyle = '#fffbe8'; ctx.strokeStyle = '#b9820c'; ctx.lineWidth = 7; ctx.beginPath(); ctx.roundRect(5, 5, W - 10, H - 10, 50); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1f7a3f'; ctx.font = fontGrassetto(62); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(testo, W / 2 - 38, H / 2 + 3, W - 110);
+      monetaEinaudi(ctx, W - 58, H / 2, 0.82);
+    }) });
+    f.material = O.matMonete[testo]; f.visible = true;
+    f.userData = { vivo: true, t0: tReale(), x, y, z, fase: 0, dur: 1.9, sale: 5.5, ax: 2.1, ay: 0.92, fermo: true };
+  }
   function cono(padre) {
     const g = new THREE.Group(); padre.add(g);
     metti(g, geo().cono, PAL.cialda, [0, -0.1, 0], [Math.PI, 0, 0]); metti(g, geo().pallina, PAL.accento, [0, 0.02, 0]);
@@ -6580,7 +6596,7 @@ window.Diorama = (() => {
       if (!f.visible) return;
       const u = (t - f.userData.t0) / (f.userData.dur || 2.8);
       if (u >= 1) { f.visible = false; return; }
-      f.position.set(f.userData.x + Math.sin(t * 3 + f.userData.fase) * 0.25, f.userData.y + u * (f.userData.sale || 17), f.userData.z);
+      f.position.set(f.userData.x + (f.userData.fermo ? 0 : Math.sin(t * 3 + f.userData.fase) * 0.25), f.userData.y + u * (f.userData.sale || 17), f.userData.z);
       const sf = 0.85 * grandezzaSegni() * Math.max(0.001, easeOutBack(clamp(u * 5))); f.scale.set(sf * (f.userData.ax || 1), sf * (f.userData.ay || 1), 1);
     });
     aggiornaClienti(t, dt);
@@ -6903,7 +6919,7 @@ window.Diorama = (() => {
         if (!e.alBancoFatto && u > 0.5) { e.alBancoFatto = true; if (e.alBanco) e.alBanco(); }       // per il gioco: il cliente è al bancone
         if (e.servito && !e.venduto && u > 0.5 && !e.rivale) { e.venduto = true; O.gelataio.userData.vendita = tGioco; }
         // appena prende il gelato (o capisce che non c'è) dalla testa esce la faccina
-        if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); }
+        if (!e.faccina && u > 0.53) { e.faccina = true; emetti(e.servito ? 'cuori' : 'rabbia', banco[0], 1.75, banco[1]); if (e.servito && e.moneta && !e.rivale) emettiMoneta(e.moneta, banco[0] + 0.75, 1.3, banco[1] + 0.2); }
       } else {
         const k = (u - 0.6) / 0.4;
         if (e.servito) { pos = passi(banco, via, k, e.rivale ? 4 : 6, 0.22); verso = via[0] < banco[0] ? Math.PI : 0; }
@@ -6996,7 +7012,7 @@ window.Diorama = (() => {
       if (stato.finito && !opz.rivale) servito = false;          // coni finiti: resta senza (e si arrabbia)
       const libero = O.clienti.find((p) => !eventi.some((e) => e.piolo === p));
       if (!libero) { if (alBanco) setTimeout(alBanco, durataMs * 0.5 / Math.max(1, stato.speed)); return; }   // troppa gente: non si vede, ma compra lo stesso
-      const n = eventi.length, e = { piolo: libero, servito, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 };
+      const n = eventi.length, e = { piolo: libero, servito, moneta: opz.moneta, el: 0, x: 0, fase: 'va', alBanco, dur: Math.max(0.5, durataMs / 1000), dx: ((n % 3) - 1) * 0.3, dz: (n % 2) * 0.16 };
       if (opz.turista) { e.turista = opz.turista; e.da = [3.9 + (n % 3) * 0.3, 9.5]; libero.userData.fumetto.material = opz.turista === 'fr' ? O.matBonjour : O.matHello; }
       if (opz.rivale) { e.rivale = true; e.banco = [RIVALE.x + ((n % 3) - 1) * 0.28, 8.35]; e.via = [2.6, 8.95 + e.dz]; e.dur *= 0.8; }
       eventi.push(e);
@@ -7864,6 +7880,7 @@ $('#btn-run').onclick = async ()=>{
     $('#btn-meteo').classList.add('pulse'); return;
   }
   if(!(await controllaPrima())) return;
+  Suoni.avvio();                                     // parte il round: la fanfara
   if(S.mode==='tutorial') return avviaGiornoTutorial();
   avviaSfida();
 };
@@ -8101,7 +8118,7 @@ function setTruck(oreTrascorse){
   const mancano = Math.max(0, Math.ceil(24 - oreTrascorse));
   $('#truck-label').textContent = $('#d3-camion').textContent = mancano > 0 ? `🚚 ${truck.kg} kg · arriva tra ${mancano} h` : `🚚 ${truck.kg} kg · arrivato!`;
 }
-function spawnCliente(servito, durata, turista, alBanco){
+function spawnCliente(servito, durata, turista, alBanco, moneta){
   const el = document.createElement('div');
   el.className = 'cust';
   el.innerHTML = CLIENTI_EMOJI[Math.floor(Math.random()*CLIENTI_EMOJI.length)] + (turista ? `<b class="fumetto">${bandiera(turista)}</b>` : '');
@@ -8113,12 +8130,16 @@ function spawnCliente(servito, durata, turista, alBanco){
     { transform:`translateX(${w-40}px)`, offset:.75 },
     { transform: servito ? `translateX(${w+40}px)` : 'translateX(-60px)' }
   ], { duration: durata, easing:'linear' });
-  setTimeout(()=>{ el.insertAdjacentHTML('beforeend', servito ? '<i>🍦</i>' : '<i>😞</i>'); if(alBanco) alBanco(); }, durata*0.62);
+  setTimeout(()=>{ el.insertAdjacentHTML('beforeend', servito ? '<i>🍦</i>' : '<i>😞</i>');
+    if(servito && moneta){ const b = document.createElement('b'); b.className = 'piu-moneta'; b.innerHTML = moneta + '<i class="ei"></i>'; b.style.animationDuration = Math.max(500, durata*0.5) + 'ms'; el.appendChild(b); }
+    if(alBanco) alBanco(); }, durata*0.62);
   anim.onfinish = () => el.remove();
 }
 // i coni calano solo quando un cliente arriva al bancone e prende il gelato: i coni venduti nel giorno
 // si dividono tra i clienti che si vedono; l'ultimo servito lascia sul contatore proprio i coni avanzati
 let giornoInCorso = 0;
+// la scritta che sale accanto a chi compra: quanti Einaudi entrano in cassa con un cono (+2,50)
+const piuPrezzo = p => '+' + p.toLocaleString('it-IT', { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 });
 function vendite(d, nVis, mostra){
   const servito = i => (i+0.5)/nVis*d.clienti <= d.prodotti, nServ = Array.from({length:nVis}, (_,i)=>i).filter(servito).length;
   const token = ++giornoInCorso; let coni = d.prodotti, serviti = 0;
@@ -8126,7 +8147,7 @@ function vendite(d, nVis, mostra){
     servito,
     alBanco(i){
       if(token !== giornoInCorso) return;                 // un cliente in ritardo di un giorno già finito
-      if(servito(i)){ serviti++; const v = Math.round(d.venduti * Math.min(1, serviti / Math.max(1, nServ))); coni = Math.min(coni, d.prodotti - v); mostra(coni, d.cassaInizio + v*d.prezzo, false); }
+      if(servito(i)){ serviti++; Suoni.cassa(); const v = Math.round(d.venduti * Math.min(1, serviti / Math.max(1, nServ))); coni = Math.min(coni, d.prodotti - v); mostra(coni, d.cassaInizio + v*d.prezzo, false); }
       else if(d.persi > 0) mostra(coni, null, true);
     },
     fine(){ if(token === giornoInCorso){ coni = d.avanzati; mostra(coni, d.cassaInizio + d.venduti*d.prezzo, d.persi > 0); giornoInCorso++; } }
@@ -8196,7 +8217,7 @@ async function animaGiorno(d, opz){
     while(spawned < nVis && p >= soglie[spawned]){
       const i = spawned;
       const tur = Math.floor((i+1)*quotaTur + 0.5) > Math.floor(i*quotaTur + 0.5) ? (i % 2 ? 'fr' : 'gb') : null;
-      spawnCliente(V.servito(i), Math.min(1400, durApertura*0.5)/speed, tur, () => V.alBanco(i));
+      spawnCliente(V.servito(i), Math.min(1400, durApertura*0.5)/speed, tur, () => V.alBanco(i), piuPrezzo(d.prezzo));
       spawned++;
     }
   });
@@ -8298,7 +8319,7 @@ async function animaGiorno3D(d, opz){
     if(truck.attivo) setTruck(ora - 8);
     while(spawned < nVis && p >= soglie[spawned]){
       const i = spawned;
-      Diorama.cliente(V.servito(i), GRAFICA3D.clienteMs[k]/speed, () => V.alBanco(i), { turista: turista(i) });
+      Diorama.cliente(V.servito(i), GRAFICA3D.clienteMs[k]/speed, () => V.alBanco(i), { turista: turista(i), moneta: piuPrezzo(d.prezzo) });
       spawned++;
     }
   });
@@ -8543,6 +8564,47 @@ const Musica = (() => {
     get attiva(){ return !!timer; },
     get muto(){ return muto; },
     set muto(v){ muto = !!v; if(ctx){ master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setValueAtTime(muto ? 0.0001 : volume, ctx.currentTime); } }
+  };
+})();
+// gli effetti sonori (sintetizzati): la fanfara quando parte un round e il «cha-ching!» della cassa a ogni gelato venduto
+const Suoni = (() => {
+  let ctx = null, out = null, rumore = null, ultimo = 0;
+  function pronto(){
+    if(Musica.muto) return false;
+    if(!ctx){
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return false; }
+      out = ctx.createGain(); out.gain.value = 0.32; out.connect(ctx.destination);
+      rumore = ctx.createBuffer(1, ctx.sampleRate / 4, ctx.sampleRate); const d = rumore.getChannelData(0); for(let i=0;i<d.length;i++) d[i] = Math.random()*2 - 1;
+    }
+    if(ctx.state === 'suspended') ctx.resume();
+    return true;
+  }
+  function tono(t, f, dur, tipo, g0, f2){
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo; o.frequency.setValueAtTime(f, t); if(f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(g0, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.03);
+  }
+  function fruscio(t, dur, g0, freq){
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = rumore; fl.type = 'highpass'; fl.frequency.value = freq;
+    g.gain.setValueAtTime(g0, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(fl); fl.connect(g); g.connect(out); s.start(t); s.stop(t + dur + 0.02);
+  }
+  return {
+    // «cha-ching!»: lo scatto del cassetto, poi il campanello della cassa
+    cassa(){
+      if(!pronto()) return; const n = ctx.currentTime; if(n - ultimo < 0.08) return; ultimo = n;
+      fruscio(n, 0.05, 0.55, 2500); tono(n, 1900, 0.04, 'square', 0.07);
+      fruscio(n + 0.06, 0.05, 0.35, 4000);
+      const t = n + 0.09;
+      tono(t, 1568, 0.55, 'triangle', 0.34); tono(t, 3136, 0.4, 'sine', 0.14);
+      tono(t + 0.07, 2093, 0.6, 'triangle', 0.3); tono(t + 0.07, 4186, 0.35, 'sine', 0.1);
+    },
+    // la fanfara 8-bit quando parte un round
+    avvio(){
+      if(!pronto()) return; const t = ctx.currentTime + 0.03;
+      [72, 76, 79].forEach((m, i) => tono(t + i * 0.1, 440 * Math.pow(2, (m - 69) / 12), 0.12, 'square', 0.16));
+      [84, 88, 91].forEach(m => tono(t + 0.3, 440 * Math.pow(2, (m - 69) / 12), 0.5, 'square', 0.09));
+      tono(t + 0.3, 130.8, 0.45, 'triangle', 0.3);
+    }
   };
 })();
 $('#btn-musica').onclick = () => { Musica.muto = !Musica.muto; $('#btn-musica').textContent = Musica.muto ? '🔇' : '🔊'; };

@@ -71,6 +71,8 @@ La moneta del gioco è l'**Einaudi**. Il simbolo è una moneta d'oro con la sago
 
 Nel gestionale, in basso nel blocco "Cosa c'è da fare?", il riquadro **💰 I conti della gelateria** ricorda quanto vale ogni cono venduto (il prezzo scelto), il costo degli ingredienti per ogni cono preparato, l'affitto e, quando il magazzino è manuale, il costo della consegna.
 
+**Suoni e segnali:** quando parte un round si sente una fanfara 8-bit. A ogni gelato venduto suona il «cha-ching!» della cassa e accanto al cliente sale per poco la scritta col prezzo e la moneta (es. «+2,50 🪙»). Il pulsante 🔊/🔇 spegne anche gli effetti sonori.
+
 Alla fine di ogni round di 3 giorni compaiono due schermate:
 1. **i risultati**: guadagno, coni venduti, clienti persi, coni buttati, il conto del guadagno (incassi − ingredienti − affitto − consegne − multa) ed eventuale esito del controllo ASL;
 2. **📣 EVENTI**: la novità del nuovo round (per esempio il weekend). Con la stessa intestazione compaiono anche gli annunci delle altre materie.
