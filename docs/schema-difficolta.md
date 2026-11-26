@@ -61,7 +61,7 @@ Ogni "AVVIA" fa giocare **3 giorni** (un round), poi si torna al gestionale (ris
 |---|---|---|---|---|---|
 | 1 | 1–3 | 1 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 10 kg) |
 | 2 | 4–6 | 1 | 📅 **Weekend** | SE oggi è weekend · ALLORA produci in più / in meno | automatico |
-| 3 | 7–9 | 1 | 🌡️ **Temperatura** | SE temperatura > / < … | automatico |
+| 3 | 7–9 | 1 | 🌡️ **Temperatura** (esempio: SE > 30 °C → ➕ 4) | SE temperatura > / < … | automatico |
 | 4 | 10–15 | 2 | 🏷️ **Prezzo** (selettore "Prezzo del gelato in Einaudi" nelle regole) | ALLORA metti il prezzo a… | automatico |
 | 5 | 16–18 | 1 | 📦 **Magazzino** a carico dello studente | SE magazzino < / > … · ALLORA riordina … kg | **manuale** |
 | 6 | 19–21 | 1 | 🍨 **Ieri** | SE ieri ho finito / ho buttato… | manuale |
@@ -92,22 +92,24 @@ Ogni evento è **annunciato nel gestionale**, all'inizio di un turno, e accade *
 | **13** | 🇬🇧🇫🇷 Inglese e Francese | Arrivano i turisti col pullman | giorni **14, 17, 20, 23, 26, 29** | +9 clienti circa · fumetti con le bandiere · blocco **SE 🚌 oggi arrivano i turisti** |
 | **19** | ⚖️ Diritto | Controllo dell'ASL | giorno **24** | ingredienti arrivati da 5 giorni o più = scaduti: buttati e **multa di 25** |
 
-## 5. Come conta il robot (regole che valgono insieme)
+## 5. Come conta il robot: il meteo dà la base, le altre regole la correggono
 
-Il robot legge le regole **dall'alto in basso** e applica tutte quelle vere:
-- **🍦 produci X** imposta il numero, come `coni = X`: se ne valgono più di una, vince quella più in basso;
-- **➕ produci in più X / ➖ produci in meno X** aggiungono o tolgono, come `coni = coni + X`.
+- **Solo le regole sul ☁️ meteo** possono dire **🍦 produci X**: è la base del giorno, come `coni = X`. Ogni giorno c'è un solo meteo, quindi vale una sola regola.
+- **Tutte le altre regole** (weekend, temperatura, gara, turisti, ieri…) possono solo **➕ produrre in più** o **➖ produrre in meno**, come `coni = coni + X`.
+- **L'ordine delle regole non conta.** Il robot prende la base del meteo e poi somma e sottrae le altre regole vere. Il risultato non scende mai sotto 0.
 
-Esempio: SE nuvoloso → produci 20, SE weekend → ➕ 35. In un weekend nuvoloso il robot fa 20 + 35 = **55 coni**.
-Nel gestionale, dalla fase del weekend, il riquadro "🧮 Come conta il robot" lo spiega. Nella simulazione, "🧮 Il conto del robot" mostra il calcolo passo per passo.
+Esempio: SE ⛅ nuvoloso → produci 16, SE 📅 weekend → ➕ 8, SE 🌡️ temperatura > 30 → ➕ 4. In un weekend nuvoloso e caldo il robot fa 16 + 8 + 4 = **28 coni**.
 
-**Perché "produci" non si somma:** meteo e temperatura descrivono la stessa giornata. Con "SE sole → produci 26" e "SE temperatura > 30 → produci 30", sommando si arriverebbe a 56 coni invece di 30.
+Nel gestionale:
+- Nel menu dell'azione, "🍦 produci" compare **solo se la condizione è il meteo**. Se si cambia la condizione da meteo a un'altra, l'azione diventa "➕ in più"; se si torna al meteo, ridiventa "🍦 produci".
+- Se ci sono due regole "produci" per lo stesso meteo, compare l'avviso "⚠️ Hai più regole per ☀️ sole: il robot usa quella più in basso".
+- Dalla fase del weekend, il riquadro "🧮 Come conta il robot" spiega tutto in una riga con l'esempio.
 
-**Alternative da valutare in futuro** (per ora non attive):
-1. **Tutte le regole si sommano.** È la più intuitiva, ma bisogna riscrivere gli esempi della temperatura come "➕ in più" (es. temperatura > 30 → ➕ 6). C'è il rischio di raddoppiare la produzione a chi mette insieme meteo e temperatura.
-2. **"Produci" solo nella prima regola che vale.** La prima regola vera fissa la base e le successive possono solo aggiungere o togliere (➕/➖). È chiara, ma lascia meno libertà.
+Nella simulazione, "🧮 Il conto del robot" mostra il calcolo: prima la base del meteo, poi i ➕ e i ➖. Se manca la regola per il meteo del giorno, scrive "nessuna regola del meteo → base 0".
 
-Il codice da cambiare è in `src/index.html`, funzione `eseguiProgramma`.
+Perché così: meteo e temperatura descrivono la stessa giornata. Se la temperatura potesse dire "produci", "SE sole → produci 26" e "SE temperatura > 30 → produci 30" si sostituirebbero o si sommerebbero (56 coni). Come correzione (➕ 4) invece funzionano bene insieme.
+
+Il codice è in `src/index.html`, funzione `eseguiProgramma`. Le regole salvate in precedenza con "produci" fuori dal meteo valgono come "➕ in più".
 
 ## 6. Tempi (velocità 1×, grafica 3D)
 

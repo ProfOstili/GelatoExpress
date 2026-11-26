@@ -323,6 +323,7 @@ select,input{font-family:inherit}
 .moneta-intro{background:#fff6dc;border-radius:12px;padding:8px 12px}.moneta-intro .ei{font-size:1.8em;vertical-align:middle;margin-right:4px}
 .ei{display:inline-block;width:1em;height:1em;background:url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%270%27%20x2=%271%27%20y2=%271%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23fff0a0%27/%3E%3Cstop%20offset=%27.5%27%20stop-color=%27%23f5c53a%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23c08a12%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle%20cx=%27100%27%20cy=%27100%27%20r=%2795%27%20fill=%27url%28%23g%29%27%20stroke=%27%238a6410%27%20stroke-width=%277%27/%3E%3Ccircle%20cx=%27100%27%20cy=%27100%27%20r=%2780%27%20fill=%27none%27%20stroke=%27%23b9820c%27%20stroke-width=%274%27/%3E%3Cg%20transform=%27translate%2856%2046.5%29%20scale%28.88%29%27%3E%3Cpath%20d=%27M0%20122L0%2076L3%2076L3%2073Q5%2062%2017%2060L20%2060L20%2056L25%2056L25%2053L29%2053L29%2034L27%2034L27%2031L30%2031C31%2020%2039%2015.5%2046%2014.5L46%209Q50%205.5%2054%209L54%2014.5C61%2015.5%2069%2020%2070%2031L73%2031L73%2034L71%2034L71%2053L75%2053L75%2056L80%2056L80%2060L83%2060Q95%2062%2097%2073L97%2076L100%2076L100%20122Z%27%20fill=%27%23c99317%27%20stroke=%27%237a560c%27%20stroke-width=%274%27%20stroke-linejoin=%27round%27/%3E%3Cpath%20d=%27M49.3%200h1.4v7h-1.4zM47.8%201.6h4.4v1.2h-4.4zM0%2079h100v2.4H0zM0%2099h100v2H0zM25%2056h50v2H25zM45%20107h10v15H45zM34%2039h4v9h-4zM48%2039h4v9h-4zM62%2039h4v9h-4zM12%2086h5v8h-5zM83%2086h5v8h-5zM29%2086h5v8h-5zM66%2086h5v8h-5z%27%20fill=%27%237a560c%27%20fill-opacity=%27.5%27/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;vertical-align:-.06em;margin-left:.1em}
 .come-conta{background:#eef5f8;border:3px solid var(--act);border-radius:14px;padding:8px 12px;margin:0 0 10px;font-size:15px;line-height:1.4}
+.doppi{margin:8px 0 0;background:#fff1d6;border:2px solid var(--orange);border-radius:10px;padding:6px 10px;font-weight:700;font-size:14px}
 .come-conta small{font-size:13px;color:var(--ink-soft);font-weight:700}
 .mini-rules li.conto{margin-top:6px;background:#eef5f8;border-radius:10px;padding:5px 8px;list-style:none;font-size:14px}
 .prezzo-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff4d9;border:3px solid var(--yellow-d);border-radius:14px;padding:8px 12px;margin:0 0 10px;font-weight:800;font-size:17px}
@@ -554,10 +555,8 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
       <div class="prezzo-box hidden" id="prezzo-box">🏷️ Prezzo del gelato in Einaudi:
         <button id="prezzo-meno" aria-label="Prezzo più basso">−</button><span class="val" id="prezzo-val"></span><button id="prezzo-piu" aria-label="Prezzo più alto">+</button>
         <small>È il prezzo di tutti i giorni. Una regola «metti il prezzo a» lo cambia solo nei giorni in cui è vera.</small></div>
-      <div class="come-conta hidden" id="come-conta">🧮 <b>Come conta il robot:</b> usa <b>tutte</b> le regole vere, dall'alto in basso.
-        <b>🍦 produci</b> = <i>mette</i> quel numero (se due «produci» sono vere, vince quella più in basso) ·
-        <b>➕ in più</b> / <b>➖ in meno</b> = <i>aggiunge</i> o <i>toglie</i>.<br>
-        <small>Esempio: SE ⛅ nuvoloso ALLORA 🍦 produci 20 · SE 📅 weekend ALLORA ➕ produci in più 35 → in un weekend nuvoloso: 20 + 35 = <b>55 coni</b>.</small></div>
+      <div class="come-conta hidden" id="come-conta">🧮 <b>Come conta il robot:</b> il <b>☁️ meteo</b> dice quanti coni fare (<b>🍦 produci</b>). Tutte le altre regole ne <b>aggiungono ➕</b> o ne <b>tolgono ➖</b>, in qualsiasi ordine.<br>
+        <small>Esempio: SE ⛅ nuvoloso ALLORA 🍦 produci 16 · SE 📅 weekend ALLORA ➕ 8 · SE 🌡️ temperatura &gt; 30 ALLORA ➕ 4 → in un weekend nuvoloso e caldo: 16 + 8 + 4 = <b>28 coni</b>.</small></div>
       <div class="rules" id="rules"></div>
       <div class="btns-regole">
         <button class="btn yellow" id="btn-add">➕ Aggiungi regola</button>
@@ -7152,8 +7151,8 @@ const CONFIG = {
       testo:'Novità: il <b>weekend</b>! Sabato e domenica arriva più gente. Puoi anche dire al robot di produrre <b>in più</b> o <b>in meno</b>.',
       esempio:{ c:'giorno', cv:'weekend', a:'piu', av:8 } },
     { giorni:3, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
-      testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano. Con 30 °C e sole servono molti più coni.',
-      esempio:{ c:'temp', op:'>', cv:30, a:'produci', av:30 } },
+      testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano: sopra i 30 °C servono <b>più coni</b>. Il meteo dà la base, la temperatura la corregge.',
+      esempio:{ c:'temp', op:'>', cv:30, a:'piu', av:4 } },
     { giorni:6, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'🏷️ Il prezzo',
       testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50<i class="ei"></i>). Più caro = più guadagno a cono, ma meno clienti!',
       esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
@@ -7239,7 +7238,7 @@ function nuovaRegola(){
   const D = blocchiDisponibili(), c = D.cond.includes('meteo') ? 'meteo' : D.cond[0];
   if(c === 'meteo'){ const coperti = S.prog.regole.filter(r=>r.c==='meteo').map(r=>r.cv); const cv = ['sole','nuvoloso','pioggia'].find(m=>!coperti.includes(m)) || 'sole';
     return { c:'meteo', op:'>', cv, a:'produci', av:(S.mode==='tutorial' ? {sole:15,nuvoloso:10,pioggia:5} : {sole:26,nuvoloso:16,pioggia:7})[cv] }; }
-  return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'produci', av:25 };
+  return { c, op:COND[c].def.op || '>', cv:COND[c].def.cv, a:'piu', av:AZIONI.piu.def };
 }
 function testoRegola(r){
   const C = COND[r.c], A = AZIONI[r.a];
@@ -7293,18 +7292,18 @@ function condVera(r, ctx){
   }
   return false;
 }
+// le regole: solo il ☁️ meteo può dire «🍦 produci» (la base del giorno: c'è un solo meteo al giorno);
+// tutte le altre regole aggiungono ➕ o tolgono ➖ dalla base. Così l'ordine delle regole non conta.
+const azioneDi = r => r.a === 'produci' && r.c !== 'meteo' ? 'piu' : r.a;      // regole vecchie: «produci» fuori dal meteo vale come ➕
 function eseguiProgramma(prog, ctx){
-  let produzione = prog.produzione, prezzo = prog.prezzo, riordina = 0; const fired = [], conto = [];
-  prog.regole.forEach((r,i)=>{
-    if(!condVera(r, ctx)) return;
-    fired.push(i);
-    if(r.a==='produci'){ produzione = r.av; conto.push([i, '=', r.av, produzione]); }
-    else if(r.a==='piu'){ produzione += r.av; conto.push([i, '+', r.av, produzione]); }
-    else if(r.a==='meno'){ produzione = Math.max(0, produzione - r.av); conto.push([i, '−', r.av, produzione]); }
-    else if(r.a==='prezzo') prezzo = r.av;
-    else if(r.a==='riordina') riordina = r.av;
-  });
-  return { produzione, prezzo, riordina, fired, conto };
+  let prezzo = prog.prezzo, riordina = 0, base = prog.produzione; const fired = [], conto = [];
+  const veri = prog.regole.map((r, i) => [r, i, azioneDi(r)]).filter(([r]) => condVera(r, ctx));
+  veri.forEach(([r, i, a]) => { fired.push(i); if(a === 'prezzo') prezzo = r.av; if(a === 'riordina') riordina = r.av; });
+  const basi = veri.filter(([, , a]) => a === 'produci');
+  if(basi.length){ const [r, i] = basi[basi.length - 1]; base = r.av; conto.push([i, '=', r.av, base]); }   // due regole per lo stesso meteo: vale l'ultima
+  let tot = base;
+  veri.filter(([, , a]) => a === 'piu' || a === 'meno').forEach(([r, i, a]) => { tot += a === 'piu' ? r.av : -r.av; conto.push([i, a === 'piu' ? '+' : '−', r.av, tot]); });
+  return { produzione: Math.max(0, tot), prezzo, riordina, fired, conto };
 }
 // quanti clienti arrivano: { tot, turisti (compresi in tot), rivale (andati alla concorrenza, NON compresi in tot) }
 function clientiDelGiorno(g, prezzo){
@@ -7426,7 +7425,7 @@ function analizza(sim){
     const d = esauriti.reduce((a,b)=> b.persi > a.persi ? b : a);
     const persi = esauriti.reduce((s,x)=>s+x.persi,0);
     let fix = '🔧 Prova ad aumentare i coni al giorno.';
-    if(d.temp >= 29) fix = `🔧 Quel giorno c'erano ${d.temp} °C: prova SE 🌡️ temperatura > ${Math.min(d.temp-1,30)} °C ALLORA 🍦 produci di più.`;
+    if(d.temp >= 29) fix = `🔧 Quel giorno c'erano ${d.temp} °C: prova SE 🌡️ temperatura > ${Math.min(d.temp-1,30)} °C ALLORA ➕ produci in più.`;
     else if(d.weekend) fix = '🔧 Nel weekend arrivano più clienti: prova SE 📅 oggi è weekend ALLORA ➕ produci in più.';
     out.push({ peso: persi*(d.prezzo-costoCono), ic:'🍦', tema:'programmazione',
       t:`Giorno ${d.n}: gelato finito alle ${oraFinito(d)}:00, persi ${d.persi} clienti!`,
@@ -7742,6 +7741,7 @@ function renderRegole(){
   renderPrezzo();
   $('#come-conta').classList.toggle('hidden', !blocchiDisponibili().azioni.includes('piu'));
   const box = $('#rules'), R = S.prog.regole, D = blocchiDisponibili();
+  R.forEach(r => { if(r.a === 'produci' && r.c !== 'meteo') r.a = 'piu'; });        // regole salvate prima: «produci» fuori dal meteo diventa ➕
   if(!R.length){
     box.innerHTML = `<div class="empty-rules">Nessuna regola: il robot non sa cosa fare e <b>non produce coni</b>.<br>Premi <b>➕ Aggiungi regola</b>!</div>`;
   } else box.innerHTML = R.map((r,i)=>{
@@ -7754,7 +7754,7 @@ function renderRegole(){
         <select data-k="cv">${opts(C.values, r.cv, C.fmt)}</select>
       </div>
       <div class="blk act"><b>ALLORA</b>
-        <select data-k="a">${opts(Object.keys(AZIONI).filter(k=>D.azioni.includes(k) || k===r.a), r.a, k=>AZIONI[k].label)}</select>
+        <select data-k="a">${opts(Object.keys(AZIONI).filter(k=>(D.azioni.includes(k) || k===r.a) && (k!=='produci' || r.c==='meteo')), r.a, k=>AZIONI[k].label)}</select>
         <select data-k="av">${opts(A.values, r.av, A.fmt)}</select>
       </div>
       <div class="tools">
@@ -7763,6 +7763,8 @@ function renderRegole(){
         <button data-t="del" title="Elimina">🗑️</button>
       </div></div>`;
   }).join('');
+  const doppi = ['sole','nuvoloso','pioggia'].filter(m => R.filter(r => r.c === 'meteo' && r.cv === m && r.a === 'produci').length > 1);
+  if(doppi.length) box.insertAdjacentHTML('beforeend', `<p class="doppi">⚠️ Hai più regole per ${doppi.map(m => `${METEO[m].ic} ${METEO[m].nome.toLowerCase()}`).join(' e ')}: il robot usa quella più in basso.</p>`);
   $('#btn-add').disabled = R.length >= CONFIG.maxRegole;
   $('#btn-add').textContent = R.length >= CONFIG.maxRegole ? `Massimo ${CONFIG.maxRegole} regole` : '➕ Aggiungi regola';
 }
@@ -7772,7 +7774,9 @@ $('#rules').addEventListener('change', e=>{
   let v = sel.value;
   if(k==='cv' || k==='av'){ const n = parseFloat(v); if(!isNaN(n) && String(n)===v || !isNaN(n) && /^[\d.]+$/.test(v)) v = n; }
   r[k] = v;
-  if(k==='c'){ const d = COND[v].def; r.op = d.op; r.cv = d.cv; }
+  if(k==='c'){ const d = COND[v].def; r.op = d.op; r.cv = d.cv;
+    if(v !== 'meteo' && r.a === 'produci'){ r.a = 'piu'; r.av = AZIONI.piu.def; }          // «produci» solo col meteo
+    else if(v === 'meteo' && (r.a === 'piu' || r.a === 'meno')){ r.a = 'produci'; r.av = 16; } }
   if(k==='a'){ r.av = AZIONI[v].def; }
   renderRegole(); salvaGiocatore(); pulisciErroreCoach();
 });
@@ -8178,10 +8182,10 @@ function renderMiniRegole(fired, conto = []){
   const R = S.prog.regole;
   // il conto del robot: le regole vere, una dopo l'altra (🍦 produci = metti questo numero · ➕ ➖ = aggiungi o togli)
   const passi = conto.map(([i, op, v], k) => op === '=' ? `regola ${i+1} → <b>${v}</b>` : `regola ${i+1} → ${op}${v}`).join(' · ');
-  const tot = conto.length ? conto[conto.length-1][3] : 0;
+  const tot = conto.length ? Math.max(0, conto[conto.length-1][3]) : 0;
   $('#s-rules').innerHTML = (R.length ? R.map((r,i)=>`<li class="${fired.includes(i)?'fired':''}">${i+1}. ${testoRegola(r)}</li>`).join('')
     : '<li>Nessuna regola!</li>')
-    + `<li class="conto">🧮 <b>Il conto del robot:</b> ${conto.length ? `${passi} = <b>${tot} coni</b>` : 'nessuna regola dice di produrre → <b>0 coni</b>'}</li>`;
+    + `<li class="conto">🧮 <b>Il conto del robot:</b> ${conto.length ? `${conto[0][1] === '=' ? '' : 'nessuna regola del meteo → base <b>0</b> · '}${passi} = <b>${tot} coni</b>` : 'nessuna regola del meteo → <b>0 coni</b>'}</li>`;
 }
 async function animaGiorno(d, opz){
   if(G3.attivo && G3.pronto) return animaGiorno3D(d, opz);
