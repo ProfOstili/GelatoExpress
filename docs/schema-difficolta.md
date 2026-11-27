@@ -53,31 +53,39 @@ Prima della sfida un messaggio avvisa che da ora **arriverà molta più gente**.
 
 ---
 
-## 3. La sfida: 30 giorni, 10 turni da 3 giorni, 7 fasi
+## 3. La sfida: 30 giorni, 10 turni da 3 giorni, 5 fasi
 
 Ogni "AVVIA" fa giocare **3 giorni** (un round), poi si torna al gestionale (risultati, poi EVENTI). Le novità arrivano sempre all'inizio di un turno.
 
-| Fase | Giorni | Turni | Novità (meccanica) | Blocchi nuovi | Magazzino |
-|---|---|---|---|---|---|
-| 1 | 1–3 | 1 | ☁️ **Meteo** (e arriva molta più gente che nella prova) | SE meteo è… · ALLORA produci… | automatico (il fornitore riporta a 10 kg) |
-| 2 | 4–6 | 1 | 📅 **Weekend** | SE oggi è weekend · ALLORA produci in più / in meno | automatico |
-| 3 | 7–9 | 1 | 🌡️ **Temperatura** (esempio: SE > 30 °C → ➕ 4) | SE temperatura > / < … | automatico |
-| 4 | 10–15 | 2 | 🏷️ **Prezzo** (selettore "Prezzo del gelato in Einaudi" nelle regole) | ALLORA metti il prezzo a… | automatico |
-| 5 | 16–18 | 1 | 📦 **Magazzino** a carico dello studente | SE magazzino < / > … · ALLORA riordina … kg | **manuale** |
-| 6 | 19–21 | 1 | 🍨 **Ieri** | SE ieri ho finito / ho buttato… | manuale |
-| 7 | 22–30 | 3 | 📡💥 **Stazione meteo rotta** (niente previsioni) | — | manuale |
+**Il magazzino è sempre automatico:** ogni notte il fornitore riempie il congelatore (il camioncino arriva e scarica, come prima), quindi non ci sono regole sul riordino. Non ci sono nemmeno le regole su "ieri".
+**Regole:** al massimo **10** (prima erano 6), così c'è posto per meteo, weekend, temperatura, gara, turisti e prezzo anche quando la stazione meteo è rotta.
+
+### La progressione giorno per giorno
+
+| Giorni | Fase | Novità nel gestionale (inizio del turno) | Eventi annunciati | Cosa succede nei giorni |
+|---|---|---|---|---|
+| **1–3** | 1 · ☁️ Meteo | Regole sul meteo: SE meteo è… ALLORA 🍦 produci… (arriva molta più gente che nella prova) | — | — |
+| **4–6** | 2 · 📅 Weekend | SE oggi è weekend · ALLORA ➕ produci in più / ➖ produci in meno | — | — |
+| **7–9** | 3 · 🌡️ Temperatura | SE temperatura > / < … (esempio: > 30 °C → ➕ 4) | 🏅 gara (giorno 13) | — |
+| **10–12** | 4 · 🏷️ Prezzo | Selettore "Prezzo del gelato in Einaudi" e ALLORA metti il prezzo a… | 🆚 concorrenza (dal giorno 14) | — |
+| **13–15** | 4 · 🏷️ Prezzo | — | 🚌 turisti (dal giorno 14) | **13** gara · **14** apre la Rivale, primo pullman |
+| **16–18** | 4 · 🏷️ Prezzo | — | — | **17** pullman |
+| **19–21** | 4 · 🏷️ Prezzo | — | 🕵️ controllo ASL (giorno 24) | **20** pullman · **21** primo giorno che conta per l'ASL |
+| **22–24** | 5 · 📡💥 Stazione meteo rotta | Niente più previsioni | — | **22–23** contano per l'ASL · **23** pullman · **24** controllo ASL |
+| **25–27** | 5 · 📡💥 Stazione meteo rotta | — | — | **26** pullman |
+| **28–30** | 5 · 📡💥 Stazione meteo rotta | — | — | **29** pullman · fine e classifica |
 
 La moneta del gioco è l'**Einaudi**. Il simbolo è una moneta d'oro con la sagoma del Tempio della Consolazione di Todi e viene presentato nel primo messaggio del tutorial.
 
-Nel gestionale, sotto "Partiamo!", il riquadro **📝 Ricorda** dice quanto vale ogni cono venduto (il prezzo scelto) e quanto costano gli ingredienti di ogni cono preparato e l'affitto. Quando il magazzino è manuale, aggiunge il costo della consegna.
+Nel gestionale, sotto "Partiamo!", il riquadro **📝 Ricorda** dice quanto vale ogni cono venduto (il prezzo scelto) e quanto costano gli ingredienti di ogni cono preparato e l'affitto. 
 
 **Suoni e segnali:** quando parte un round si sente una fanfara 8-bit. A ogni gelato venduto suona il «cha-ching!» della cassa e accanto al cliente sale per poco la scritta col prezzo e la moneta (es. «+2,50 🪙»). Il pulsante 🔊/🔇 spegne anche gli effetti sonori.
 
 Alla fine di ogni round di 3 giorni compaiono due schermate:
-1. **i risultati**: guadagno, coni venduti, clienti persi, coni buttati, il conto voce per voce: soldi fatti con i coni, costi per preparare i coni, affitto (più consegne e multa, se ci sono) e guadagno ed eventuale esito del controllo ASL;
+1. **i risultati**: guadagno, coni venduti, clienti persi, coni buttati, il conto voce per voce: soldi fatti con i coni, costi per preparare i coni, affitto (più la multa, se c'è) e guadagno ed eventuale esito del controllo ASL;
 2. **📣 EVENTI**: la novità del nuovo round (per esempio il weekend). Con la stessa intestazione compaiono anche gli annunci delle altre materie.
 
-**Quanti clienti:** ogni cliente compra un cono. In un giorno normale di sole vengono **20–30 persone** (di più col caldo sopra i 30 °C e nel weekend: +30%), con le nuvole circa 12–18, con la pioggia circa 4–8. Magazzino: 10 kg all'inizio (1 kg = 10 coni), al massimo 25 kg. Affitto 15 al giorno, consegna 3, ingredienti 0,80 a cono, prezzo normale 2,50 Einaudi.
+**Quanti clienti:** ogni cliente compra un cono. In un giorno normale di sole vengono **20–30 persone** (di più col caldo sopra i 30 °C e nel weekend: +30%), con le nuvole circa 12–18, con la pioggia circa 4–8. Magazzino automatico: 10 kg all'inizio (1 kg = 10 coni), poi il fornitore lo riempie ogni notte fino a 25 kg (250 coni). Affitto 15 al giorno, ingredienti 0,80 a cono, prezzo normale 2,50 Einaudi.
 
 ---
 
@@ -90,12 +98,14 @@ Ogni evento è **annunciato nel gestionale**, all'inizio di un turno, e accade *
 | **7** | 🏃 Educazione fisica | Giochi studenteschi: gara a Todi | giorno **13** | clienti ×1,6 · blocco **SE 🏅 oggi c'è la gara** · in 3D la corsa con l'arco a scacchi e il cartellone "Giochi Studenteschi" |
 | **10** | 📈 Economia politica | Apre la Gelateria Rivale (cono a 2,50) | dal giorno **14** | oltre 2,50 si perdono molti clienti · chiosco con il cartellone "Gelati più buoni!" |
 | **13** | 🇬🇧🇫🇷 Inglese e Francese | Arrivano i turisti col pullman | giorni **14, 17, 20, 23, 26, 29** | +9 clienti circa · fumetti con le bandiere · blocco **SE 🚌 oggi arrivano i turisti** |
-| **19** | ⚖️ Diritto | Controllo dell'ASL | giorno **24** | ingredienti arrivati da 5 giorni o più = scaduti: buttati e **multa di 25** |
+| **19** | ⚖️ Diritto | Controllo dell'ASL sugli sprechi | giorno **24** | se nei 3 giorni prima (21, 22, 23) si buttano **più di 8 coni**, **multa di 25** |
+
+Soglia dell'ASL: un giocatore attento butta 2–3 coni in quei 3 giorni, uno che produce troppo (es. sole 35, nuvoloso 22, pioggia 12) ne butta circa 9 e prende la multa.
 
 ## 5. Come conta il robot: il meteo dà la base, le altre regole la correggono
 
 - **Solo le regole sul ☁️ meteo** possono dire **🍦 produci X**: è la base del giorno, come `coni = X`. Ogni giorno c'è un solo meteo, quindi vale una sola regola.
-- **Tutte le altre regole** (weekend, temperatura, gara, turisti, ieri…) possono solo **➕ produrre in più** o **➖ produrre in meno**, come `coni = coni + X`.
+- **Tutte le altre regole** (weekend, temperatura, gara, turisti) possono solo **➕ produrre in più** o **➖ produrre in meno**, come `coni = coni + X`.
 - **L'ordine delle regole non conta.** Il robot prende la base del meteo e poi somma e sottrae le altre regole vere. Il risultato non scende mai sotto 0.
 
 Esempio: SE ⛅ nuvoloso → produci 16, SE 📅 weekend → ➕ 8, SE 🌡️ temperatura > 30 → ➕ 4. In un weekend nuvoloso e caldo il robot fa 16 + 8 + 4 = **28 coni**.

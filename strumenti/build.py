@@ -3,7 +3,7 @@
 
   @DATA:percorso@        -> data URI base64 (immagini, font)
   /*@JS:percorso@*/      -> contenuto del file JavaScript
-  @VERSIONE@             -> numero di versione (file VERSIONE) e data/ora della build (ora italiana)
+  @VERSIONE@             -> numero di versione (file VERSIONE) e data della build (ora italiana)
 
 Uso:  python3 strumenti/build.py src/prova-stile.html prova-stile.html
 """
@@ -26,7 +26,7 @@ html = (ROOT / src).read_text(encoding='utf-8')
 html = re.sub(r'/\*@JS:([^@]+)@\*/', js, html)
 html = re.sub(r'@DATA:([^@]+)@', data_uri, html)
 versione = (ROOT / 'VERSIONE').read_text(encoding='utf-8').strip()
-quando = datetime.datetime.now(ZoneInfo('Europe/Rome')).strftime('%d/%m/%Y %H:%M')
+quando = datetime.datetime.now(ZoneInfo('Europe/Rome')).strftime('%d/%m/%Y')
 html = html.replace('@VERSIONE@', f'v{versione} · {quando}')
 (ROOT / dst).write_text(html, encoding='utf-8')
 print(f"{dst}: {len(html.encode())/1024:.0f} KB · v{versione}")

@@ -72,6 +72,7 @@ select,input{font-family:inherit}
 #scr-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 60px);text-align:center;gap:14px}
 .hero-ico{font-size:84px;line-height:1;animation:bob 2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-10px) rotate(-4deg)}}
+#scr-welcome .firma{position:fixed;right:8px;bottom:6px;font-size:11px;font-weight:700;color:var(--ink-soft);opacity:.75;pointer-events:none;z-index:2;text-align:right;max-width:60vw}
 #scr-welcome .versione{position:fixed;left:8px;bottom:6px;font-size:11px;font-weight:700;color:var(--ink-soft);opacity:.75;pointer-events:none;z-index:2}
 #scr-welcome h1{font-size:44px;margin:0;line-height:1.05}
 #scr-welcome h1 span{color:var(--pink)}
@@ -524,6 +525,7 @@ body.promo-sfoca #scene .diorama-tela{filter:blur(5px) saturate(1.1);transition:
 <!-- ============ BENVENUTO ============ -->
 <section id="scr-welcome" class="screen">
   <div class="versione" title="Versione del gioco">@VERSIONE@</div>
+  <div class="firma">un gioco creato dal Prof Ostili insieme a Claudio</div>
   <div class="hero-ico">🍦🤖</div>
   <h1>La Gelateria <span>Automatica</span></h1>
   <p class="sub">Non vendi tu il gelato: scrivi il <b>programma</b> che gestisce la gelateria al posto tuo!</p>
@@ -758,7 +760,7 @@ const CONFIG = {
   costoKg: 8,               // € per kg di ingredienti  (=> 0,80 € a cono)
   costoConsegna: 3,         // € fissi per ogni riordino (il camion)
   affittoGiorno: 15,        // € al giorno: affitto + bollette (costo fisso)
-  maxRegole: 6,
+  maxRegole: 10,
 
   // valori di base iniziali e limiti
   prezzoBase: 2.5, prezzoMin: 1.5, prezzoMax: 5, prezzoPasso: 0.5,
@@ -806,16 +808,10 @@ const CONFIG = {
     { giorni:3, cond:['temp'], azioni:[], auto:true, previsioni:true, titolo:'🌡️ La temperatura',
       testo:'Novità: la <b>temperatura</b>! Più fa caldo, più clienti arrivano: sopra i 30 °C servono <b>più coni</b>. Il meteo dà la base, la temperatura la corregge.',
       esempio:{ c:'temp', op:'>', cv:30, a:'piu', av:4 } },
-    { giorni:6, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'🏷️ Il prezzo',
+    { giorni:12, cond:[], azioni:['prezzo'], auto:true, previsioni:true, titolo:'🏷️ Il prezzo',
       testo:'Novità: puoi cambiare il <b>prezzo</b> del cono (di solito 2,50<i class="ei"></i>). Più caro = più guadagno a cono, ma meno clienti!',
       esempio:{ c:'temp', op:'>', cv:30, a:'prezzo', av:3 } },
-    { giorni:3, cond:['magazzino'], azioni:['riordina'], auto:false, previsioni:true, titolo:'📦 Il magazzino',
-      testo:'Novità: da oggi il fornitore <b>non porta più gli ingredienti da solo</b>! Devi ordinarli tu col camion, che arriva <b>il giorno dopo</b>. 1 kg = 10 coni.',
-      esempio:{ c:'magazzino', op:'<', cv:6, a:'riordina', av:8 } },
-    { giorni:3, cond:['ieri'], azioni:[], auto:false, previsioni:true, titolo:'🍨 Ieri',
-      testo:'Novità: il robot si ricorda di <b>ieri</b>. Se ieri il gelato è finito, oggi produci di più; se l\'hai buttato, produci meno.',
-      esempio:{ c:'ieri', cv:'finito', a:'piu', av:4 } },
-    { giorni:9, cond:[], azioni:[], auto:false, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
+    { giorni:9, cond:[], azioni:[], auto:true, previsioni:false, titolo:'📡💥 La stazione meteo è rotta',
       testo:'Ultima fase, 9 giorni: la stazione meteo si è <b>rotta</b> e non vedi più le previsioni. Il tuo programma deve funzionare con <b>qualsiasi</b> tempo!' }
   ],
 
@@ -827,7 +823,7 @@ const CONFIG = {
     gara:        { annuncio:7,  giorno:13, molt:1.6 },                          // 🏅 Educazione fisica: più clienti
     concorrenza: { annuncio:10, da:14, prezzo:2.5, sensibilita:0.6 },           // 🆚 Economia politica: oltre 2,50 si perdono clienti
     turisti:     { annuncio:13, giorni:[14,17,20,23,26,29], extra:9 },         // 🚌 Inglese e Francese: il pullman dei turisti
-    asl:         { annuncio:19, giorno:24, scadenza:5, multa:25 }              // 🕵️ Diritto: ingredienti arrivati da 5 giorni o più = scaduti
+    asl:         { annuncio:19, giorno:24, giorni:3, soglia:8, multa:25 }      // 🕵️ Diritto: più di 8 coni buttati nei 3 giorni prima del controllo = multa
   },
 
   // tutorial: 3 giorni con meteo noto e un numero fisso di clienti (niente affitto: si impara solo a usare le regole)
@@ -873,9 +869,7 @@ const GIORNI_SETT = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 const COND = {
   temp:      { label:'🌡️ temperatura', ops:['>','<'], values:range(15,40,1), fmt:v=>v+' °C', def:{op:'>',cv:30} },
   meteo:     { label:'☁️ meteo è', values:['sole','nuvoloso','pioggia'], fmt:v=>METEO[v].ic+' '+METEO[v].nome, def:{cv:'pioggia'} },
-  magazzino: { label:'📦 magazzino', ops:['<','>'], values:range(0,25,1), fmt:v=>v+' kg', def:{op:'<',cv:6} },
   giorno:    { label:'📅 oggi è', values:['weekend','feriale'], fmt:v=>v==='weekend'?'weekend':'giorno feriale', def:{cv:'weekend'} },
-  ieri:      { label:'🍨 ieri', values:['finito','buttato'], fmt:v=>v==='finito'?'ho finito il gelato':'ho buttato gelato', def:{cv:'finito'} },
   gara:      { label:'🏅 oggi', values:['gara'], fmt:()=>"c'è la gara", def:{cv:'gara'} },
   turisti:   { label:'🚌 oggi', values:['turisti'], fmt:()=>'arrivano i turisti', def:{cv:'turisti'} }
 };
@@ -883,8 +877,8 @@ const AZIONI = {
   produci:  { label:'🍦 produci', values:range(0,80,1), fmt:v=>v+' coni', def:25 },
   piu:      { label:'➕ produci in più', values:range(1,40,1), fmt:v=>v+' coni', def:5 },
   meno:     { label:'➖ produci in meno', values:range(1,40,1), fmt:v=>v+' coni', def:5 },
-  prezzo:   { label:'🏷️ metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>v.toLocaleString('it-IT',{minimumFractionDigits:2})+' Einaudi', def:3 },
-  riordina: { label:'🚚 riordina', values:range(1,25,1), fmt:v=>v+' kg', def:8 }
+  prezzo:   { label:'🏷️ metti il prezzo a', values:range(1.5,5,0.5), fmt:v=>v.toLocaleString('it-IT',{minimumFractionDigits:2})+' Einaudi', def:3 }
+  // (il riordino degli ingredienti lo fa da solo il fornitore: niente regole sul magazzino)
 };
 function nuovaRegola(){
   // la prima condizione disponibile, e per il meteo il primo tempo che non ha ancora una regola
@@ -937,9 +931,7 @@ function condVera(r, ctx){
   switch(r.c){
     case 'temp':      return r.op==='>' ? ctx.temp > r.cv : ctx.temp < r.cv;
     case 'meteo':     return ctx.meteo === r.cv;
-    case 'magazzino': return r.op==='<' ? ctx.stock < r.cv : ctx.stock > r.cv;
     case 'giorno':    return r.cv==='weekend' ? ctx.weekend : !ctx.weekend;
-    case 'ieri':      return r.cv==='finito' ? ctx.ieri.persi > 0 : ctx.ieri.avanzati >= CONFIG.sogliaSpreco;
     case 'gara':      return !!ctx.gara;
     case 'turisti':   return !!ctx.turisti;
   }
@@ -950,7 +942,7 @@ function condVera(r, ctx){
 const azioneDi = r => r.a === 'produci' && r.c !== 'meteo' ? 'piu' : r.a;      // regole vecchie: «produci» fuori dal meteo vale come ➕
 function eseguiProgramma(prog, ctx){
   let prezzo = prog.prezzo, riordina = 0, base = prog.produzione; const fired = [], conto = [];
-  const veri = prog.regole.map((r, i) => [r, i, azioneDi(r)]).filter(([r]) => condVera(r, ctx));
+  const veri = prog.regole.map((r, i) => [r, i, azioneDi(r)]).filter(([r]) => COND[r.c] && AZIONI[r.a] && condVera(r, ctx));
   veri.forEach(([r, i, a]) => { fired.push(i); if(a === 'prezzo') prezzo = r.av; if(a === 'riordina') riordina = r.av; });
   const basi = veri.filter(([, , a]) => a === 'produci');
   if(basi.length){ const [r, i] = basi[basi.length - 1]; base = r.av; conto.push([i, '=', r.av, base]); }   // due regole per lo stesso meteo: vale l'ultima
@@ -987,7 +979,7 @@ function prelevaLotti(L, kg){
 // giorni da cui sono fermi gli ingredienti più vecchi
 function etaMagazzino(st, giorno){ const L = st.lotti || []; return L.length ? giorno - L[0].arr : 0; }
 // Simula una lista di giorni. Restituisce i risultati giorno per giorno e lo stato finale.
-// opz.auto = il fornitore riporta da solo il magazzino a 40 kg ogni notte (senza costo di consegna); le regole "riordina" non servono
+// opz.auto = il fornitore riempie da solo il congelatore ogni notte (senza costo di consegna); le regole "riordina" non servono
 // opz.affitto = affitto al giorno (nel tutorial 0)
 function simula(prog, giorni, stato0, opz={}){
   const C = CONFIG, E = C.eventi, costoCono = C.costoKg / C.coniPerKg;
@@ -1007,11 +999,11 @@ function simula(prog, giorni, stato0, opz={}){
       const ul = st.lotti[st.lotti.length-1]; ul.kg = round1(ul.kg - eccesso); st.stock = C.magazzinoMax;
     }
     // 1b. 🕵️ il controllo dell'ASL: gli ingredienti arrivati da troppi giorni sono scaduti, si buttano e c'è la multa
-    let scaduti = 0, multa = 0;
+    // (ora l'ASL controlla gli SPRECHI: quanti coni sono stati buttati nei 3 giorni prima del controllo)
+    let scaduti = 0, multa = 0, buttatiASL = 0;
     if(g.asl){
-      st.lotti = st.lotti.filter(l => { if(g.n - l.arr >= E.asl.scadenza){ scaduti += l.kg; return false; } return true; });
-      scaduti = round1(scaduti); st.stock = kgLotti(st.lotti);
-      if(scaduti > 0) multa = E.asl.multa;
+      buttatiASL = (st.buttati || []).slice(-E.asl.giorni).reduce((a, b) => a + b, 0);
+      if(buttatiASL > E.asl.soglia) multa = E.asl.multa;
     }
     const stockInizio = st.stock;
     // 2. il programma decide
@@ -1029,7 +1021,7 @@ function simula(prog, giorni, stato0, opz={}){
     const persi = clienti - venduti;
     const avanzati = prodotti - venduti;
     // 5. riordino: arriva domani mattina
-    const ordine = opz.auto ? Math.max(0, Math.round(C.magazzinoIniziale - st.stock)) : dec.riordina;
+    const ordine = opz.auto ? Math.max(0, Math.round(C.magazzinoMax - st.stock)) : dec.riordina;   // il fornitore riempie il congelatore ogni notte
     if(ordine > 0) st.ordini.push({ kg:ordine, arriva:g.n+1 });
     // 6. conti
     const ricavi = venduti * dec.prezzo;
@@ -1043,9 +1035,10 @@ function simula(prog, giorni, stato0, opz={}){
     const cassaInizio = st.cassa;
     st.cassa += profitto;
     res.push({ ...g, prezzo:dec.prezzo, obiettivo:dec.produzione, fired:dec.fired, conto:dec.conto, prodotti, limitato,
-      clienti, turistiN:cl.turisti, rivale:cl.rivale, venduti, persi, avanzati, arrivo, eccesso, scaduti, multa, ordine, stockPrimaArrivo, stockInizio, stockFine:st.stock,
+      clienti, turistiN:cl.turisti, rivale:cl.rivale, venduti, persi, avanzati, arrivo, eccesso, scaduti, multa, buttatiASL, ordine, stockPrimaArrivo, stockInizio, stockFine:st.stock,
       ricavi, cIngredienti, cSpreco, cConsegna, cAffitto, cMulta, costi, profitto, cassaInizio, cassaFine:st.cassa, auto:!!opz.auto });
     st.ieri = { persi, avanzati };
+    st.buttati = [...(st.buttati || []), avanzati].slice(-5);           // per il controllo dell'ASL sugli sprechi
   }
   return { giorni:res, tot:totali(res), stato:st };
 }
@@ -1070,7 +1063,7 @@ function analizza(sim){
     out.push({ peso: persi*(d.prezzo-costoCono) + 1000, ic:'📦', tema:'scorte',
       t:`Giorno ${d.n}: ingredienti finiti! Hai potuto fare solo ${d.prodotti} coni.`,
       x:`Con il magazzino vuoto hai perso ${persi} clienti in ${vuoti.length} ${vuoti.length===1?'giorno':'giorni'}.`,
-      fix:'🔧 Prova: SE 📦 magazzino < 6 kg ALLORA 🚚 riordina 8 kg (il camion arriva il giorno dopo!)' });
+      fix:`🔧 Il congelatore contiene al massimo ${CONFIG.magazzinoMax * CONFIG.coniPerKg} coni: non chiederne di più al robot.` });
   }
   // gelato finito (non per colpa del magazzino)
   const esauriti = G.filter(d => d.persi > 0 && !d.limitato);
@@ -1109,12 +1102,13 @@ function analizza(sim){
     out.push({ peso: 100, ic:'💰', tema:'prezzo', t:`Prezzo basso (in media ${eur(prezzoMedio,2)}): vendi tanto ma guadagni poco su ogni cono.`,
       x:`Ogni cono ti costa ${eur(costoCono,2)} di ingredienti.`, fix:'🔧 Prova ad alzare un po\' il prezzo.' });
   }
-  // 🕵️ il controllo dell'ASL
-  if(T.cMulta > 0){
-    out.push({ peso: T.cMulta + T.scaduti*CONFIG.costoKg + 200, ic:'⚖️', tema:'legge',
-      t:`Controllo ASL: ${round1(T.scaduti)} kg di ingredienti scaduti e una multa di ${eur(T.cMulta)}!`,
-      x:`Gli ingredienti erano fermi in magazzino da ${CONFIG.eventi.asl.scadenza} giorni o più: il magazzino era troppo pieno.`,
-      fix:'🔧 Riordina meno kg alla volta, così gli ingredienti restano freschi: per esempio SE 📦 magazzino < 5 kg ALLORA 🚚 riordina 6 kg.' });
+  // 🕵️ il controllo dell'ASL sugli sprechi
+  const asl = G.find(d => d.asl && d.multa);
+  if(asl){
+    out.push({ peso: T.cMulta + 200, ic:'⚖️', tema:'legge',
+      t:`Controllo ASL: ${asl.buttatiASL} coni buttati in ${CONFIG.eventi.asl.giorni} giorni e una multa di ${eur(T.cMulta)}!`,
+      x:`L'ASL multa chi spreca troppo cibo: il massimo era ${CONFIG.eventi.asl.soglia} coni.`,
+      fix:'🔧 Nei giorni prima del controllo produci un po\' meno, soprattutto quando piove o è nuvoloso.' });
   }
   // 🆚 la concorrenza
   if(T.rivale >= 5){
@@ -1371,7 +1365,7 @@ function avvisiHTML(oggi){
     if(prossimi.length) r.push(`<div class="avviso"><span class="ic">🚌</span><div><b>Pullman di turisti</b> ${bandiera('gb')} ${bandiera('fr')}: giorni ${prossimi.join(', ')}<br><small>Più clienti! Puoi usare la regola SE 🚌 oggi arrivano i turisti.</small></div><span class="conta">${prossimi[0] - oggi}<small>${(prossimi[0] - oggi) === 1 ? "giorno" : "giorni"}</small></span></div>`);
   }
   if(eventoNoto('asl', oggi) && EV.asl.giorno >= oggi)
-    r.push(`<div class="avviso"><span class="ic">🕵️</span><div><b>Controllo ASL</b>: ${traGiorni(EV.asl.giorno, oggi)} · giorno ${EV.asl.giorno}<br><small>Gli ingredienti arrivati da ${EV.asl.scadenza} giorni o più sono scaduti: multa di ${eur(EV.asl.multa)}! Non riempire troppo il magazzino.</small></div><span class="conta">${EV.asl.giorno - oggi}<small>${(EV.asl.giorno - oggi) === 1 ? "giorno" : "giorni"}</small></span></div>`);
+    r.push(`<div class="avviso"><span class="ic">🕵️</span><div><b>Controllo ASL</b>: ${traGiorni(EV.asl.giorno, oggi)} · giorno ${EV.asl.giorno}<br><small>Controlla gli <b>sprechi</b>: se nei ${EV.asl.giorni} giorni prima (${EV.asl.giorno-3}, ${EV.asl.giorno-2}, ${EV.asl.giorno-1}) butti più di ${EV.asl.soglia} coni, multa di ${eur(EV.asl.multa)}!</small></div><span class="conta">${EV.asl.giorno - oggi}<small>${(EV.asl.giorno - oggi) === 1 ? "giorno" : "giorni"}</small></span></div>`);
   return r.length ? `<div class="avvisi"><div class="hint">📣 Avvisi</div>${r.join('')}</div>` : '';
 }
 // cosa si mostra nella simulazione: la temperatura, il magazzino, il prezzo… solo quando servono
@@ -1394,6 +1388,7 @@ function renderRegole(){
   renderPrezzo();
   $('#come-conta').classList.toggle('hidden', !blocchiDisponibili().azioni.includes('piu'));
   const box = $('#rules'), R = S.prog.regole, D = blocchiDisponibili();
+  for(let i = R.length - 1; i >= 0; i--) if(!COND[R[i].c] || !AZIONI[R[i].a]) R.splice(i, 1);   // regole salvate con blocchi tolti (magazzino, ieri, riordina)
   R.forEach(r => { if(r.a === 'produci' && r.c !== 'meteo') r.a = 'piu'; });        // regole salvate prima: «produci» fuori dal meteo diventa ➕
   if(!R.length){
     box.innerHTML = `<div class="empty-rules">Nessuna regola: il robot non sa cosa fare e <b>non produce coni</b>.<br>Premi <b>➕ Aggiungi regola</b>!</div>`;
@@ -1733,7 +1728,7 @@ async function avviaGiornoTutorial(){
   await modal(`<div class="ic">🏁</div><h3>Ora tocca a te!</h3>
     <p>La sfida vera dura <b>${CONFIG.giorni} giorni</b>. Le tue 3 regole sono già nel programma.</p>
     <p>Attento: nella prova la gelateria era appena aperta. Ora inizia la stagione e arriveranno <b>molti più clienti</b>!</p>
-    <p>Ogni 3-4 giorni arriva una <b>novità</b> da gestire: il weekend, la temperatura, il prezzo, il magazzino… e qualche sorpresa!</p>
+    <p>Ogni 3-4 giorni arriva una <b>novità</b> da gestire: il weekend, la temperatura, il prezzo… e qualche sorpresa!</p>
     <p>Alla fine conta quanto hai guadagnato in tutto!</p>`, [{t:'Alla sfida! 🚀', cls:'mint'}]);
   vaiAlGioco();
 }
@@ -1827,7 +1822,7 @@ function renderDecisione(d, V = {}){
   if(d.gara) rows.push(`<div><span>🏅 Gara a Todi</span><span>${d.clienti} clienti</span></div>`);
   if(d.turistiN > 0) rows.push(`<div><span>🚌 Turisti</span><span>${d.turistiN}</span></div>`);
   if(d.rivale > 0) rows.push(`<div class="warn"><span>🆚 Andati alla Rivale</span><span>${d.rivale} clienti</span></div>`);
-  if(d.asl) rows.push(d.multa ? `<div class="warn"><span>🕵️ ASL: ${round1(d.scaduti)} kg scaduti</span><span>multa −${eur(d.multa)}</span></div>` : `<div><span>🕵️ Controllo ASL</span><span>✅ in regola</span></div>`);
+  if(d.asl) rows.push(d.multa ? `<div class="warn"><span>🕵️ ASL: ${d.buttatiASL} coni buttati</span><span>multa −${eur(d.multa)}</span></div>` : `<div><span>🕵️ Controllo ASL</span><span>✅ in regola</span></div>`);
   if(d.eccesso > 0) rows.push(`<div class="warn"><span>❄️ Congelatore pieno</span><span>−${round1(d.eccesso)} kg</span></div>`);
   $('#s-decision').innerHTML = rows.join('');
 }
@@ -2478,9 +2473,9 @@ const ANNUNCI = {
     <p>I pullman arrivano nei giorni <b>${EV.turisti.giorni.filter(n => n >= oggi).join(', ')}</b>: nel calendario li riconosci dal 🚌. Puoi usare la regola <b>SE 🚌 oggi arrivano i turisti</b>.</p>
     <div class="materia"><h4>🗣️ Inglese e Francese al SIA</h4><p>Al SIA si studiano <b>due lingue straniere</b>: servono per parlare con clienti e aziende di tutto il mondo. <i>Hello! = Ciao! · Bonjour! = Buongiorno!</i></p></div>`,
   asl: oggi => `<div class="ic">📣🕵️</div><h3>Arriva il controllo dell'ASL!</h3>
-    <p>${maiuscola(traGiorni(EV.asl.giorno, oggi))} (il giorno ${EV.asl.giorno}) arriva l'ispettore dell'<b>ASL</b> (Azienda Sanitaria Locale) a controllare il magazzino.</p>
-    <p>La legge dice: gli ingredienti freschi vanno usati <b>entro ${EV.asl.scadenza} giorni</b> dall'arrivo. Se trova ingredienti scaduti, li butta via e ti dà una <b>multa di ${eur(EV.asl.multa)}</b>!</p>
-    <p>Consiglio: non riempire troppo il magazzino, <b>ordina poco e spesso</b>. Il robot usa sempre prima gli ingredienti più vecchi.</p>
+    <p>${maiuscola(traGiorni(EV.asl.giorno, oggi))} (il giorno ${EV.asl.giorno}) arriva l'ispettore dell'<b>ASL</b> (Azienda Sanitaria Locale) a controllare gli <b>sprechi di cibo</b>.</p>
+    <p>Guarderà quanti coni hai <b>buttato</b> nei ${EV.asl.giorni} giorni prima del controllo (giorni ${EV.asl.giorno-3}, ${EV.asl.giorno-2} e ${EV.asl.giorno-1}). Se sono <b>più di ${EV.asl.soglia}</b>, ti dà una <b>multa di ${eur(EV.asl.multa)}</b>!</p>
+    <p>Consiglio: in quei giorni prepara i coni giusti, senza esagerare.</p>
     <div class="materia"><h4>⚖️ Diritto al SIA</h4><p>Si studiano le <b>leggi</b>: le regole che valgono per tutti, anche per le aziende (igiene, contratti, lavoro). Il tuo robot segue le tue regole… ma la gelateria deve seguire anche quelle della legge!</p></div>`
 };
 // nel gestionale, all'inizio di un turno: gli annunci degli eventi in arrivo (una volta sola)
@@ -2496,12 +2491,12 @@ async function eventiDelGiorno(d){
   if(d.gara) toast('🏅 Oggi c\'è la gara a Todi: arrivano atleti e tifosi!', 3200);
   if(d.n === EV.concorrenza.da) toast(`🆚 Oggi apre la Gelateria Rivale: cono a ${eur(EV.concorrenza.prezzo,2)}`, 3200);
   if(d.turisti) toast(`🚌 Arriva un pullman di turisti! ${bandiera('gb')} Hello! ${bandiera('fr')} Bonjour!`, 3200);
-  if(d.asl) toast(d.multa ? `🕵️❌ Controllo ASL: ${round1(d.scaduti)} kg scaduti, multa di ${eur(d.multa)}!` : '🕵️✅ Controllo ASL: tutto in regola!', 3600);
+  if(d.asl) toast(d.multa ? `🕵️❌ Controllo ASL: ${d.buttatiASL} coni buttati in ${EV.asl.giorni} giorni, multa di ${eur(d.multa)}!` : '🕵️✅ Controllo ASL: pochi sprechi, tutto in regola!', 3600);
 }
 // il risultato del controllo ASL, nel riepilogo della fase
 const esitoASL = giorni => { const d = giorni.find(x => x.asl); if(!d) return '';
-  return d.multa ? `<div class="avviso" style="margin-top:10px"><span class="ic">🕵️</span><div><b>Controllo ASL: ingredienti scaduti!</b><br><small>L'ispettore ha trovato ${round1(d.scaduti)} kg di ingredienti arrivati da ${EV.asl.scadenza} giorni o più: li ha buttati e ti ha dato una multa di ${eur(d.multa)}. Riordina meno kg alla volta!</small></div></div>`
-    : `<div class="avviso" style="margin-top:10px"><span class="ic">🕵️</span><div><b>Controllo ASL: tutto in regola!</b><br><small>Nessun ingrediente scaduto in magazzino: niente multa.</small></div></div>`; };
+  return d.multa ? `<div class="avviso" style="margin-top:10px"><span class="ic">🕵️</span><div><b>Controllo ASL: troppi sprechi!</b><br><small>Nei ${EV.asl.giorni} giorni prima del controllo hai buttato ${d.buttatiASL} coni (il massimo era ${EV.asl.soglia}): multa di ${eur(d.multa)}.</small></div></div>`
+    : `<div class="avviso" style="margin-top:10px"><span class="ic">🕵️</span><div><b>Controllo ASL: tutto in regola!</b><br><small>Nei ${EV.asl.giorni} giorni prima del controllo hai buttato solo ${d.buttatiASL} coni: niente multa.</small></div></div>`; };
 // la pillola sopra la scena: il prossimo evento con il conto alla rovescia
 function aggiornaPillEvento(n){
   const el = $('#s-evento'), fs = $('#f-evento');
@@ -2574,9 +2569,9 @@ function mostraRisultati(sim, recordPrima, pos){
     <tr><td>💰 Ricavi <span class="tag">${T.venduti} coni</span></td><td class="pos">+${eur(T.ricavi)}</td></tr>
     <tr><td>🍦 Ingredienti <span class="tag">variabile</span></td><td class="neg">−${eur(T.cIngredienti)}</td></tr>
     <tr><td>🗑️ Spreco <span class="tag">variabile</span></td><td class="neg">−${eur(T.cSpreco)}</td></tr>
-    <tr><td>🚚 Consegne <span class="tag">${T.ordini}×</span></td><td class="neg">−${eur(T.cConsegna)}</td></tr>
+    ${T.cConsegna ? `<tr><td>🚚 Consegne <span class="tag">${T.ordini}×</span></td><td class="neg">−${eur(T.cConsegna)}</td></tr>` : ''}
     <tr><td>🏠 Affitto <span class="tag">fisso</span></td><td class="neg">−${eur(T.cAffitto)}</td></tr>
-    ${T.cMulta ? `<tr><td>⚖️ Multa ASL <span class="tag">${round1(T.scaduti)} kg scaduti</span></td><td class="neg">−${eur(T.cMulta)}</td></tr>` : ''}
+    ${T.cMulta ? `<tr><td>⚖️ Multa ASL <span class="tag">troppi sprechi</span></td><td class="neg">−${eur(T.cMulta)}</td></tr>` : ''}
     <tr class="tot"><td>= Profitto</td><td class="${T.profitto>=0?'pos':'neg'}">${eurS(T.profitto)}</td></tr>`;
   $('#r-chart').innerHTML = graficoSVG(sim.giorni);
   const msgs = analizza(sim);
